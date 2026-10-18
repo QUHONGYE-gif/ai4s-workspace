@@ -12,10 +12,17 @@
 ## 服务器部署（已完成）
 
 - 已在数据盘配置独立 rootless Docker，镜像、容器和持久卷均使用该实例；统一资源限额和具体路径见 [环境说明](environment.md)。已有共享 Docker 容器保持运行。
-- 已完成服务器 Coder、数据库、管理员、工作区模板和原型工作区初始化。通过 SSH 隧道访问，操作见 [服务器运行说明](server_docker.md)。
+- 已完成服务器 Coder、数据库、管理员、工作区模板和原型工作区初始化。现通过 HTTPS 入口访问，操作见 [服务器运行说明](server_docker.md)。
 - 登录 API、Coder SSH、仓库读写、home／共享卷写入以及停止／启动后持久化全部通过；工作区保持运行，探针临时文件已清理。
 - 服务器镜像和 provider 经本地网络中转；首次数据库迁移因机械盘同步开销而超出首轮等待时间，随后原生迁移完成。备用初始库未切换使用，已删除。
 - 远程 `.local/initialization.json` 记录集成检查，本地 `.local/remote/` 保存回传证据、镜像来源和部署源码快照。没有科研实验或 GPU 运行结果。
+
+## 浏览器直连入口（服务端已部署，公网 DNS 待生效）
+
+- 用户已认领 Tailscale 设备，并明确批准 Funnel 承载 Coder 登录、API、网页终端及开发流量。实际 HTTPS 网址和操作统一见 [服务器运行说明](server_docker.md#访问)。目标为成员无需 SSH 隧道或 Tailscale 客户端，公网可用性仍待下述验证。
+- 已经本地中转、官方 SHA-256 校验，将 Tailscale `1.104.1` AMD64 安装到数据盘；独立 userspace 用户服务已启动，属于现有项目资源限额。Funnel 持久代理 Coder 回环端口，HTTPS 覆盖配置已生效，个人模板保持 Docker 内部 agent 连接。
+- 已通过 HTTPS 验证四位成员登录、Secure Cookie、工作区在线及跨成员访问拒绝；WebSocket 终端在 `qhy/dev` 成功执行命令并确认个人分支。仅重建了 Coder 控制面，四个成员工作区、管理员原型和数据库的容器身份均未改变。证据保存在本地 `.local/remote/public-access/verification.json` 及远程 `.local/public-access/containers-after.json`。
+- 本机已接入 Tailscale，前述检查走现有网络，不能作为公网 Funnel 验证。首次开启超过约 10 分钟后，Google／Cloudflare 公共 DNS 仍无该域名记录，服务器普通 DNS 也无法解析；已核对 Funnel 能力、HTTPS 权限、持久配置及 `Hostinfo.IngressEnabled=true` 上报，并重载专用接入服务。当前公网发布阻塞，需记录生效后执行非 tailnet 验证，也未进行各成员所在地网络及多人并发评测。入口依赖 Tailscale Funnel 中继和带宽限制；当前用于开发交互，大型科研数据在服务器内部处理。
 
 ## 成员与代码隔离
 
@@ -26,7 +33,7 @@
 
 ## 当前限制
 
-- 用户已确认 [团队协作约定](collaboration.md)，已记录个人工作区、分支及会议后合并流程，并补充 PR 模板。协作规则与成员配置 PR 已在仓库端合并；本轮四人成员接入记录另经 `dev-qhy` 提交待审 PR，不直接写入 `main`。2026-10-18 查询时 GitHub `main` 分支保护尚未启用；文档约定不等于平台强制执行。
+- 用户已确认 [团队协作约定](collaboration.md)，已记录个人工作区、分支及会议后合并流程，并补充 PR 模板。协作规则、成员配置及四人成员接入记录 PR 已在仓库端合并；本轮 HTTPS 入口变更经 `dev-qhy` 提交待审 PR，不直接写入 `main`。2026-10-18 查询时 GitHub `main` 分支保护尚未启用；文档约定不等于平台强制执行。
 
 - 已实现范围为开发底座；科学产物目录、复用策略、工作台业务网页和模型接入尚未实施，无科研效果结论。
 - 本地原型与服务器各有一个管理员及原型工作区；正式成员已开户，尚未进行真实多人协作业务评测。
