@@ -63,18 +63,6 @@ resource "coder_app" "preview" {
   tooltip      = "启动个人开发服务（3000 端口）后打开；无需提交或合并代码。"
 }
 
-resource "coder_app" "analysis" {
-  agent_id     = coder_agent.dev.id
-  slug         = "analysis"
-  display_name = "分析页面"
-  url          = "http://localhost:8501"
-  share        = "owner"
-  subdomain    = false
-  open_in      = "tab"
-  order        = 2
-  tooltip      = "启动个人分析服务（8501 端口）后打开；默认仅工作区本人可访问。"
-}
-
 resource "docker_volume" "home" {
   name = "ai4s-personal-${data.coder_workspace.me.id}-home"
   lifecycle {

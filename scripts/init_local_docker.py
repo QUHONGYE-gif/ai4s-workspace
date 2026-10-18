@@ -47,7 +47,7 @@ def main():
         if line and not line.startswith("#")
     )
     if args.server and settings.get("AI4S_PUBLIC_URL"):
-        COMPOSE.extend(["-f", str(ROOT / "compose.funnel.yaml")])
+        COMPOSE.extend(["-f", str(ROOT / "compose.https.yaml")])
     prefix = "ai4s-server" if args.server else "ai4s-local"
     template = "server-docker" if args.server else "local-docker"
     workspace_image = "ai4s-workspace:server-0.1.0" if args.server else "ai4s-workspace:0.1.0"

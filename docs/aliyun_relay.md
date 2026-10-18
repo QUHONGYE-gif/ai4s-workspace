@@ -1,6 +1,6 @@
 # 阿里云 Coder HTTPS 中转
 
-当前入口为 `https://coder.my-rustdesk.xyz`，旧 Funnel 路由已撤下；实际验收结果见 [状态](status.md)。用户已确认根域名完成备案，使用范围为成员个人开发；该信息为用户确认，不冒充平台备案审查结果。
+当前入口为 `https://coder.my-rustdesk.xyz`；实际验收结果见 [状态](status.md)。用户已确认根域名完成备案，使用范围为成员个人开发；该信息为用户确认，不冒充平台备案审查结果。
 
 ## 访问路径与配置职责
 
@@ -10,7 +10,7 @@
   → lab-gpu 127.0.0.1:17080 → Docker 中的 Coder
 ```
 
-成员无需 SSH、Tailscale 或 Cloudflare 客户端，仍使用个人 Coder 邮箱和密码。账号和代码隔离见 [成员说明](members.md)，分支与合并规则见 [协作约定](collaboration.md)。
+成员无需建立 SSH 隧道或安装接入客户端，仍使用个人 Coder 邮箱和密码。账号和代码隔离见 [成员说明](members.md)，分支与合并规则见 [协作约定](collaboration.md)。
 
 | 配置 | 维护内容 |
 | --- | --- |
@@ -19,7 +19,7 @@
 | [中转账号 SSH 限制](../configs/ai4s-tunnel-sshd.conf) | 仅允许 `ai4s-tunnel` 远程转发到云服务器回环端口 27080，禁止会话及其他转发方式 |
 | [常驻通道服务](../configs/ai4s-coder-relay.service) | 在科研服务器由 `qhy` 运行，固定中转机主机公钥，掉线自动重连 |
 | [证书续期钩子](../configs/ai4s-certbot-reload.sh) | 新证书续期后校验并平滑 reload Nginx |
-| [共用 HTTPS 覆盖配置](../compose.funnel.yaml) | Coder 对外 URL、Secure Cookie、DERP WebSocket；文件名为兼容既有部署保留 |
+| [共用 HTTPS 覆盖配置](../compose.https.yaml) | Coder 对外 URL、Secure Cookie、DERP WebSocket |
 
 ## 两端位置
 
@@ -70,8 +70,8 @@ curl -fsS http://127.0.0.1:17080/healthz
 
 ## 回退
 
-先将科研服务器 `.env` 的 `AI4S_PUBLIC_URL` 恢复为备份值，仅重建 Coder 控制面。若旧 Funnel 路由已撤下，可按 [原入口步骤](server_docker.md#免成员隧道的-https-入口) 恢复，但其既有公网稳定性限制仍在。
+入口异常时，通过 [管理员维护隧道](server_docker.md#访问) 检查 Coder 回环健康状态，再核对服务器间通道与 Nginx 日志。恢复本次变更前的独立 Nginx／SSH 通道配置时，保留当前 `AI4S_PUBLIC_URL`；只有修改 Coder 环境配置时才按 [控制面更新步骤](server_docker.md#https-入口配置) 重建控制面。
 
 需撤下本项目新入口时，移除本项目 Nginx 启用链接，`nginx -t` 后平滑 reload，再停止科研服务器 `ai4s-coder-relay.service`。不删除原网站配置、数据库、成员卷或 SSH 管理账号。仅停用服务时保留密钥和配置用于恢复。
 
-依据：[Coder Nginx 指南](https://coder.com/docs/tutorials/reverse-proxy-nginx) · [OpenSSH 转发](https://man.openbsd.org/ssh#R)。返回：[服务器运行说明](server_docker.md) · [状态](status.md) · [Cloudflare 备用方案](cloudflare_tunnel.md)。
+依据：[Coder Nginx 指南](https://coder.com/docs/tutorials/reverse-proxy-nginx) · [OpenSSH 转发](https://man.openbsd.org/ssh#R)。返回：[服务器运行说明](server_docker.md) · [状态](status.md)。

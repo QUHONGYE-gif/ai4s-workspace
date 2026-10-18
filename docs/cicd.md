@@ -6,7 +6,7 @@
 
 | 内容 | 当前来源与后续用途 |
 | --- | --- |
-| 服务定义 | [基础 Compose](../compose.yaml)、[服务器覆盖配置](../compose.server.yaml) 与 [HTTPS 入口覆盖配置](../compose.funnel.yaml)，由 Git 版本管理；入口运维见 [服务器说明](server_docker.md) |
+| 服务定义 | [基础 Compose](../compose.yaml)、[服务器覆盖配置](../compose.server.yaml) 与 [HTTPS 入口覆盖配置](../compose.https.yaml)，由 Git 版本管理；入口运维见 [服务器说明](server_docker.md) |
 | 工作区镜像 | [Dockerfile](../docker/workspace/Dockerfile)，服务器构建目标为 `linux/amd64`、`USER_UID=1000` |
 | 工作区模板 | [原型模板](../coder/templates/local-docker/main.tf) 与 [个人模板](../coder/templates/server-personal/main.tf) 及各自锁文件，更新模板是独立步骤 |
 | 服务器变量 | [.env.server.example](../.env.server.example) 描述字段，真实 `.env` 留在服务器，不能用示例覆盖 |
@@ -33,9 +33,9 @@ Git 不存储登录密码、会话 token、SSH 密钥、镜像导出文件、缓
    ```bash
    cd /data1/qhy/projects/ai4s-workbench/repo
    export DOCKER_HOST=unix:///data1/qhy/docker-ai4s/run/docker.sock
-   docker compose -f compose.yaml -f compose.server.yaml -f compose.funnel.yaml config --quiet
-   docker compose -f compose.yaml -f compose.server.yaml -f compose.funnel.yaml up -d --wait --wait-timeout 180
-   docker compose -f compose.yaml -f compose.server.yaml -f compose.funnel.yaml ps
+   docker compose -f compose.yaml -f compose.server.yaml -f compose.https.yaml config --quiet
+   docker compose -f compose.yaml -f compose.server.yaml -f compose.https.yaml up -d --wait --wait-timeout 180
+   docker compose -f compose.yaml -f compose.server.yaml -f compose.https.yaml ps
    curl --fail --silent --show-error --max-time 15 http://127.0.0.1:17080/api/v2/buildinfo
    ```
 

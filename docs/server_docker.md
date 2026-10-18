@@ -58,44 +58,20 @@ python3 scripts/check_local_docker.py --server
 
 Git 仓库不包含镜像或 provider 包。目前 Coder 镜像版本已在既有环境核验，但注册表同名标签的可拉取性不能由本地标签保证；新环境需要先准备并核验镜像。后续发布镜像与部署自动化的安排见 [CI/CD 接入计划](cicd.md)。
 
-## 免成员隧道的 HTTPS 入口
+## HTTPS 入口配置
 
-当前正式开发入口使用 [阿里云 HTTPS 中转](aliyun_relay.md)。下面保留此前 Funnel 的配置与回退方法；公网解析和访问路径曾出现差异，不再作为成员主入口。Cloudflare 仅保留 [未启用的准备方案](cloudflare_tunnel.md)。
+正式开发入口使用 [阿里云 HTTPS 中转](aliyun_relay.md)。[HTTPS 覆盖配置](../compose.https.yaml) 维护 Coder 对外 URL、Secure Cookie 和 DERP WebSocket；服务器 `.env` 的 `AI4S_PUBLIC_URL` 应为当前 HTTPS 地址。
 
-此前使用 [Tailscale Funnel](https://tailscale.com/kb/1223/funnel)：服务器运行接入组件，成员直接在浏览器使用 HTTPS 地址及个人 Coder 账号，无需安装 Tailscale、Docker 或建立 SSH 隧道。公网入口受 Coder 登录和工作区权限控制；Funnel 本身不代替成员认证。它提供 `*.ts.net` 域名及 TLS，但有带宽限制，当前用于开发交互，大型数据仍在服务器内部处理。
+需要更新控制面时，在服务器项目目录明确使用独立 Docker 和 HTTPS 覆盖文件：
 
-采用独立的 [用户服务](../configs/ai4s-tailscale.service)，通过 userspace networking 运行，不更改宿主机网络路由，也不启用 Tailscale SSH 或子网路由。二进制、身份状态和 socket 均位于 `/data1/qhy/tailscale-ai4s/`。服务纳入现有 `ai4s.slice`，自身上限 0.25 核、256 MiB；现有项目总资源预算不增加。
+```bash
+cd /data1/qhy/projects/ai4s-workbench/repo
+export DOCKER_HOST=unix:///data1/qhy/docker-ai4s/run/docker.sock
+docker compose -f compose.yaml -f compose.server.yaml -f compose.https.yaml config --quiet
+docker compose -f compose.yaml -f compose.server.yaml -f compose.https.yaml up -d --no-deps coder
+```
 
-部署顺序：
-
-1. 从 [官方稳定包](https://pkgs.tailscale.com/stable/) 下载服务器 AMD64 静态包并核对官方 SHA-256。当前安装版本为 `1.104.1`；网络失败时从本地中转。将 `tailscale`、`tailscaled` 放入上述目录的 `bin/`，不覆盖已有安装。
-2. 在服务器项目目录执行 `sh scripts/start_coder_funnel.sh`；[启动脚本](../scripts/start_coder_funnel.sh) 保留既有配置，内容不同则停止并要求核对。
-3. 用下面的命令生成设备登录链接，由管理员在浏览器完成一次性认领。此时尚未发布 Coder 公网入口。
-
-   ```bash
-   /data1/qhy/tailscale-ai4s/bin/tailscale \
-     --socket=/data1/qhy/tailscale-ai4s/run/tailscaled.sock \
-     up --hostname=ai4s-coder --accept-dns=false --accept-routes=false --timeout=30s
-   ```
-
-4. 账号接入后，在 Tailscale 控制台按官方流程启用 HTTPS／Funnel。只代理 `http://127.0.0.1:17080`：
-
-   ```bash
-   /data1/qhy/tailscale-ai4s/bin/tailscale \
-     --socket=/data1/qhy/tailscale-ai4s/run/tailscaled.sock \
-     funnel --bg http://127.0.0.1:17080
-   ```
-
-5. 将实际 `https://...ts.net` 地址写为服务器 `.env` 的 `AI4S_PUBLIC_URL`，发布更新后的个人模板，再应用 [HTTPS 覆盖配置](../compose.funnel.yaml)。只重建控制面，保留数据库、工作区和持久卷；成员当前网页连接会短暂断开。
-
-   ```bash
-   export DOCKER_HOST=unix:///data1/qhy/docker-ai4s/run/docker.sock
-   docker compose -f compose.yaml -f compose.server.yaml -f compose.funnel.yaml up -d --no-deps coder
-   ```
-
-6. 从服务器外部验证证书、账号登录、网页终端及成员访问隔离后，才向成员分发入口。之后更新／重建控制面也须带上 `compose.funnel.yaml`；新工作区的 agent 使用 Docker 内部地址连接控制面。
-
-撤回公网入口使用同一 socket 的 `tailscale funnel reset`，从服务器 `.env` 移除 `AI4S_PUBLIC_URL` 后，只对控制面执行不含 `compose.funnel.yaml` 的原 Compose 命令，即恢复旧访问配置。不要删除 Tailscale 身份状态、Coder 数据库或工作区卷。原有 SSH 隧道保留为管理员维护入口。实际完成情况及验证范围以 [状态](status.md) 为准。
+该操作只更新控制面；成员网页连接可能短暂断开，工作区及数据库不随此命令重建。个人模板更新的影响另见 [开发预览说明](development_preview.md#管理员更新)。
 
 ## 访问
 
