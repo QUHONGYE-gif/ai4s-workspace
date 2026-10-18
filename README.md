@@ -19,6 +19,7 @@
 | [CI/CD 接入计划](docs/cicd.md) | 后续自动检查与部署的入口、前提和边界 |
 | [团队协作约定](docs/collaboration.md) | 个人 Coder 工作区、开发分支及会议后的合并流程 |
 | [成员与个人工作区](docs/members.md) | 创建普通成员、使用独立代码卷及更新离线 Git 种子 |
+| [个人开发预览](docs/development_preview.md) | 在个人容器中查看开发及分析页面，无需合并到 main |
 | [配置来源](docs/workflow_sources.md) | 维护工作规则时核对来源与配置调整 |
 
 文档以相对 Markdown 链接相互引用，并提供返回入口。方案、阶段任务、实际状态和运行环境各自维护；原文归档保留用户措辞，其余文件避免重复展开。
@@ -49,6 +50,7 @@
     ├── cicd.md
     ├── collaboration.md
     ├── members.md
+    ├── development_preview.md
     └── workflow_sources.md
 ```
 

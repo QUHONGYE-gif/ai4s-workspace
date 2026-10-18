@@ -32,6 +32,13 @@
 - 已按用户确认的名单创建 `csr`、`zjx`、`qhy`、`ckz` 四个普通成员账号；各自 `dev` 工作区已运行，使用独立代码卷及对应 `dev-首字母` 分支，GitHub 同名分支均已存在。四人登录、本人工作区访问、跨成员访问拒绝和旧模板访问拒绝均已验证，管理员原型保持运行。
 - 账号邮箱及独立初始密码只保存在本地 `.local/members/`，未发送邮件或代配成员 GitHub 凭据、协作者权限；工作区和访问检查记录在 `.local/remote/member-onboarding*.json` 与 `.local/remote/named-members-verification.json`。
 
+## 个人开发预览（已部署并验证）
+
+- `server-personal` 已增加两个固定的 `owner` 权限应用入口，四位成员现有工作区均已更新；不配置任意端口预览。服务启动示例、路径适配和持久化边界统一见 [个人页面说明](development_preview.md)。业务应用由成员自己启动，入口不依赖提交或合并 `main`。
+- 通过公网 HTTPS 实测四人登录及网页终端、8 个入口的本人页面／相对资源／WebSocket；24 次跨成员访问及 8 次匿名访问均被拒绝。修改临时页面后 8 个入口均读到新内容，未进行 Git 提交或合并。初次新 agent 连接预热曾出现一次 502，随后完整检查通过；不是所有框架、成员所在地网络或长期稳定性的验证。
+- Coder 2.38.0 普通工作区重新构建会更换 agent 令牌，本次逐个重建四个已确认空闲的成员容器；未改变工作区身份和持久卷。前后分支、HEAD、Git 状态、索引、受版本管理及非忽略未跟踪文件的内容摘要一致。管理员原型、控制面和数据库容器未重启或替换，原网站 HTTPS 正常。
+- 临时 HTTP／WebSocket 探针已移除，固定端口已释放。私密证据在本地 `.local/remote/preview/public-verification.json`、`preservation.json`、`before.json` 和 `after.json`；服务器 `.local/preview/` 保留计划、构建及状态备份。配置和操作说明随 `dev-qhy` 的待审 PR 提交，未合并 `main`。
+
 ## 当前限制
 
 - 用户已确认 [团队协作约定](collaboration.md)，已记录个人工作区、分支及会议后合并流程，并补充 PR 模板。协作规则、成员配置及四人成员接入记录 PR 已在仓库端合并；本轮 HTTPS 入口变更经 `dev-qhy` 提交待审 PR，不直接写入 `main`。2026-10-18 查询时 GitHub `main` 分支保护尚未启用；文档约定不等于平台强制执行。

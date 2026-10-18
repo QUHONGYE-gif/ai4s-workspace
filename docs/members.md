@@ -40,6 +40,8 @@ python3 scripts/configure_members.py add \
 
 ## 成员首次使用
 
+个人“开发预览”和“分析页面”的固定端口、启动示例及路径适配见 [个人页面说明](development_preview.md)。运行自己的代码即可查看效果，无需合并到 `main`。
+
 1. 打开 [服务器访问说明](server_docker.md#访问) 中的 HTTPS 入口，使用自己的 Coder 邮箱与密码登录；成员无需 SSH 隧道或 Tailscale 客户端。
 2. 打开已分配的个人 `dev` 工作区；尚未分配时从 `server-personal` 创建，等待仓库初始化完成。
 3. 在终端检查 `cd ~/ai4s-workspace && git status -sb`，确认分支为自己的 `dev-abc`。后续需要最新代码时自行 `git fetch origin`，按协作约定同步 `main`。
