@@ -1,6 +1,6 @@
 # 成员账号与个人工作区
 
-本文件维护开户和代码隔离操作；分支及会议合并规则统一见 [团队协作约定](collaboration.md)，实际验证状态见 [当前状态](status.md)。正式成员名单由用户后续提供，不预建或猜测成员身份。
+本文件维护开户和代码隔离操作；分支及会议合并规则统一见 [团队协作约定](collaboration.md)，实际成员接入与验证状态见 [当前状态](status.md)。只按用户确认的身份开户，登录邮箱和初始凭据保存在私密记录中，不发布到公开仓库。
 
 ## 已配置的个人模板
 
@@ -24,12 +24,12 @@
 
 ## 管理员开户
 
-取得成员姓名、三字首字母和登录邮箱后，在服务器项目目录执行：
+取得成员首字母和登录邮箱后，在服务器项目目录执行；显示名称可先使用已确认的首字母，真实姓名后续由成员自行补充：
 
 ```bash
 cd /data1/qhy/projects/ai4s-workbench/repo
 python3 scripts/configure_members.py add \
-  --initials abc --name '成员真实姓名' --email 'member@example.com'
+  --initials abc --name 'abc' --email 'member@example.com'
 ```
 
 将示例替换为确认后的信息。也可在本地已打开服务器 SSH 隧道时执行同一脚本，在 `add` 前添加 `--env-file .local/remote/.env`。该选项只供管理员读取既有登录配置，不向成员分发管理员 `.env`。
@@ -41,7 +41,7 @@ python3 scripts/configure_members.py add \
 ## 成员首次使用
 
 1. 按 [服务器访问说明](server_docker.md#访问) 连接个人 SSH 隧道，使用自己的 Coder 邮箱与密码登录。
-2. 从 `server-personal` 创建个人工作区，例如 `dev`；等待仓库初始化完成。
+2. 打开已分配的个人 `dev` 工作区；尚未分配时从 `server-personal` 创建，等待仓库初始化完成。
 3. 在终端检查 `cd ~/ai4s-workspace && git status -sb`，确认分支为自己的 `dev-abc`。后续需要最新代码时自行 `git fetch origin`，按协作约定同步 `main`。
 4. 成员使用自己的 GitHub 凭据，并在获得目标仓库写入权限后执行首次 `git push -u origin dev-abc`。模板只初始化本地分支，不使用管理员 GitHub 身份替成员推送。
 
