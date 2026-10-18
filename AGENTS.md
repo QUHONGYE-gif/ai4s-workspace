@@ -78,6 +78,7 @@
 
 # 开发底座
 
+- 团队使用个人 Coder 工作区及 `dev-姓名三字首字母` 分支；完整规则见 [团队协作约定](docs/collaboration.md)。所有改动先汇总并经会议通过，才可合并到 `main`；Agent 不得直接推送 `main` 或自行代替会议批准。
 - 用户已选 Docker + Coder，共同开发模式及实际本地环境见 [环境说明](docs/environment.md)，操作见 [本地运行说明](docs/local_docker.md)。本地原型已完成；用户已授权使用服务器 Docker，操作见 [服务器运行说明](docs/server_docker.md)。系统 `lab` Conda 可用于本地下载中转及辅助脚本。
 - 先验证开发底座，再实施工作台业务和科学工作流；不同执行环境分别记录，不将本地容器可运行描述为 GPU 蛋白质流程已验证。
 

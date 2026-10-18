@@ -17,6 +17,7 @@
 | [本地 Docker 运行说明](docs/local_docker.md) | 启动、使用和停止 Docker + Coder 开发底座 |
 | [服务器 Docker 运行说明](docs/server_docker.md) | 数据盘独立 Docker、SSH 隧道与服务器操作 |
 | [CI/CD 接入计划](docs/cicd.md) | 后续自动检查与部署的入口、前提和边界 |
+| [团队协作约定](docs/collaboration.md) | 个人 Coder 工作区、开发分支及会议后的合并流程 |
 | [配置来源](docs/workflow_sources.md) | 维护工作规则时核对来源与配置调整 |
 
 文档以相对 Markdown 链接相互引用，并提供返回入口。方案、阶段任务、实际状态和运行环境各自维护
@@ -30,6 +31,7 @@
 ├── .gitignore
 ├── .env.example
 ├── .env.server.example
+├── .github/pull_request_template.md
 ├── compose.yaml
 ├── compose.server.yaml
 ├── docker/workspace/Dockerfile
@@ -44,6 +46,7 @@
     ├── local_docker.md
     ├── server_docker.md
     ├── cicd.md
+    ├── collaboration.md
     └── workflow_sources.md
 ```
 
