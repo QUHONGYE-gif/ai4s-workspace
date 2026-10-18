@@ -1,0 +1,17 @@
+# Applied after compose.yaml; use the dedicated rootless Docker socket.
+name: ai4s-server
+
+services:
+  database:
+    cpus: 0.5
+  coder:
+    user: "0:0"
+    cpus: 1
+    environment:
+      HOME: /home/coder
+    volumes:
+      - ${AI4S_DOCKER_SOCKET:?Set the project rootless socket}:/var/run/docker.sock
+
+networks:
+  default:
+    name: ai4s-server

@@ -1,0 +1,55 @@
+name: ai4s-local
+
+services:
+  database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: coder
+      POSTGRES_DB: coder
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Initialize .env first}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U coder -d coder"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    mem_limit: 512m
+
+  coder:
+    image: ${CODER_IMAGE:?Initialize .env first}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${CODER_PORT:-7080}:7080"
+    environment:
+      CODER_PG_CONNECTION_URL: postgresql://coder:${POSTGRES_PASSWORD}@database:5432/coder?sslmode=disable
+      CODER_HTTP_ADDRESS: 0.0.0.0:7080
+      CODER_ACCESS_URL: http://localhost:${CODER_PORT:-7080}
+      CODER_TELEMETRY_ENABLE: "false"
+      CODER_PROVISIONER_DAEMONS: "1"
+      CODER_DERP_SERVER_STUN_ADDRESSES: disable
+      HTTP_PROXY: ${AI4S_HTTP_PROXY:-}
+      HTTPS_PROXY: ${AI4S_HTTP_PROXY:-}
+      NO_PROXY: localhost,127.0.0.1,coder,database
+      TF_CLI_CONFIG_FILE: /etc/terraform.tfrc
+    group_add:
+      - "0"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - coder_home:/home/coder
+      - ./coder/templates/local-docker:/templates/local-docker:ro
+      - ./coder/terraform.tfrc:/etc/terraform.tfrc:ro
+      - ./.local/provider-mirror:/provider-mirror:ro
+    depends_on:
+      database:
+        condition: service_healthy
+    mem_limit: 1536m
+
+networks:
+  default:
+    name: ai4s-local
+
+volumes:
+  database:
+  coder_home:
