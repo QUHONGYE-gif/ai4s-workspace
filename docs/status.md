@@ -17,13 +17,13 @@
 - 服务器镜像和 provider 经本地网络中转；首次数据库迁移因机械盘同步开销而超出首轮等待时间，随后原生迁移完成。备用初始库未切换使用，已删除。
 - 远程 `.local/initialization.json` 记录集成检查，本地 `.local/remote/` 保存回传证据、镜像来源和部署源码快照。没有科研实验或 GPU 运行结果。
 
-## 浏览器直连入口（Funnel 公网访问不稳定，Cloudflare 待域名）
+## 浏览器直连入口（阿里云入口已部署并验证）
 
-- 用户已认领 Tailscale 设备，并明确批准 Funnel 承载 Coder 登录、API、网页终端及开发流量。实际 HTTPS 网址和操作统一见 [服务器运行说明](server_docker.md#访问)。目标为成员无需 SSH 隧道或 Tailscale 客户端，公网可用性仍待下述验证。
-- 已经本地中转、官方 SHA-256 校验，将 Tailscale `1.104.1` AMD64 安装到数据盘；独立 userspace 用户服务已启动，属于现有项目资源限额。Funnel 持久代理 Coder 回环端口，HTTPS 覆盖配置已生效，个人模板保持 Docker 内部 agent 连接。
-- 已通过 HTTPS 验证四位成员登录、Secure Cookie、工作区在线及跨成员访问拒绝；WebSocket 终端在 `qhy/dev` 成功执行命令并确认个人分支。仅重建了 Coder 控制面，四个成员工作区、管理员原型和数据库的容器身份均未改变。证据保存在本地 `.local/remote/public-access/verification.json` 及远程 `.local/public-access/containers-after.json`。
-- 本机已接入 Tailscale，前述检查不能作为公网 Funnel 验证。2026-10-18 后续复查发现公共 DNS 回答不一致，部分返回两个公网 IP，部分无 A 记录；服务器强制访问这两个公网 IP 均返回登录页 200 且证书验证通过，本机绕过 DNS 和代理环境变量后，curl 与 Python/OpenSSL 均在 TLS 握手阶段失败。尚未确定是网络路径还是中继差异，不将相似社区报告当作已确认根因。公网成员登录、终端和多人开发未验收，大型科研数据仍在服务器内部处理。
-- 用户已选择尝试 Cloudflare Tunnel＋固定域名，目前没有域名。已将官方 `cloudflared 2026.10.1` Linux AMD64 经本地中转安装到数据盘，双端 SHA-256 一致；准备了未启动、未启用的独立用户服务及 Token 文件接入方式。Shell、systemd 服务和实际二进制 CLI 参数检查通过；Coder 健康检查正常，控制面、数据库及成员容器身份保持不变。服务器 7844 端点返回了 Cloudflare Origin CA 证书，普通 curl 校验未通过；这不等于已建立认证隧道。准备证据位于 `.local/remote/cloudflare/preparation.json`；完整隧道、域名与公网业务验证待账号、域名及 Token 就绪。所需材料、操作、资源限额和回退见 [Cloudflare 接入说明](cloudflare_tunnel.md)。
+- 用户已明确授权使用既有域名与阿里云中转服务器，并确认根域名备案已完成。当前成员入口为 `https://coder.my-rustdesk.xyz`；结构、两端位置、配置及回退统一见 [阿里云中转说明](aliyun_relay.md)。
+- 已部署独立 HTTPS 虚拟主机与专用受限 SSH 通道，固定中转机主机公钥，使用双向保活及 systemd 自动重连。转发只监听云服务器回环地址，未向公网开放 Coder 原始端口。
+- 从本机直连公网 IP、保留域名 SNI 和证书校验、禁用代理环境变量后，四位成员登录、Secure Cookie、本人工作区在线、跨成员访问拒绝均通过；四人的 WebSocket 网页终端执行命令并确认各自 `dev-首字母` 分支。通道手动重连后健康检查通过。证据在 `.local/remote/aliyun/public-verification.json`；这不是各成员所在地网络、多人负载或长期稳定性评测。
+- 切换仅重建 Coder 控制面。原网站文件摘要、数据库与四个成员及管理员原型容器身份、全部持久卷挂载已核对保留，原网站 HTTPS 保持正常；证据在 `.local/remote/aliyun/preservation.json`。首次 ACME 验证因新目录父目录权限过严失败，修正为可遍历权限后签发成功；新证书到期日为 2027-01-16，Certbot 自动续期演练及 Nginx reload 钩子均通过，既有续期 timer 保持启用。
+- 旧 Funnel 公网路由已撤下并保留恢复配置；此前私网验证曾通过，但公网 DNS 和 TLS 访问存在路径差异，未作为完整公网验收。Cloudflare 二进制和用户服务已准备但未启用，当前不再等待新购域名；备选步骤见 [Cloudflare 接入说明](cloudflare_tunnel.md)。
 
 ## 成员与代码隔离
 

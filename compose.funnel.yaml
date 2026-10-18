@@ -1,5 +1,5 @@
 # Shared HTTPS proxy override; retain the filename for existing deployments.
-# Apply after compose.yaml and compose.server.yaml for Funnel or Cloudflare Tunnel.
+# Apply after compose.yaml and compose.server.yaml for a public HTTPS reverse proxy.
 # Does not expose additional host ports or start an ingress connector.
 services:
   coder:

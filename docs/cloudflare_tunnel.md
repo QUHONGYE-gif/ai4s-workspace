@@ -1,6 +1,6 @@
 # Cloudflare Tunnel 固定域名接入
 
-本文件维护 Cloudflare 接入的准备、启用与回退步骤；实际进度见 [状态](status.md)，现有服务和维护入口见 [服务器说明](server_docker.md)。域名示例 `coder.example.com` 不能直接用于部署。
+当前已采用 [阿里云中转入口](aliyun_relay.md)，Cloudflare 服务保持未启用。本文件维护备用方案的准备、启用与回退步骤；实际进度见 [状态](status.md)，现有服务和维护入口见 [服务器说明](server_docker.md)。域名示例 `coder.example.com` 不能直接用于部署。
 
 ## 管理员需要准备什么
 

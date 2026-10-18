@@ -60,9 +60,9 @@ Git 仓库不包含镜像或 provider 包。目前 Coder 镜像版本已在既�
 
 ## 免成员隧道的 HTTPS 入口
 
-当前 Funnel 公网访问存在解析及路径差异；用户已选择尝试 Cloudflare Tunnel，准备与切换步骤统一见 [Cloudflare 固定域名接入](cloudflare_tunnel.md)。在新入口验收前，保留下述已有配置作为维护和回退依据。
+当前正式开发入口使用 [阿里云 HTTPS 中转](aliyun_relay.md)。下面保留此前 Funnel 的配置与回退方法；公网解析和访问路径曾出现差异，不再作为成员主入口。Cloudflare 仅保留 [未启用的准备方案](cloudflare_tunnel.md)。
 
-已使用 [Tailscale Funnel](https://tailscale.com/kb/1223/funnel)：服务器运行接入组件，成员直接在浏览器使用 HTTPS 地址及个人 Coder 账号，无需安装 Tailscale、Docker 或建立 SSH 隧道。公网入口受 Coder 登录和工作区权限控制；Funnel 本身不代替成员认证。它提供 `*.ts.net` 域名及 TLS，但有带宽限制，当前用于开发交互，大型数据仍在服务器内部处理。
+此前使用 [Tailscale Funnel](https://tailscale.com/kb/1223/funnel)：服务器运行接入组件，成员直接在浏览器使用 HTTPS 地址及个人 Coder 账号，无需安装 Tailscale、Docker 或建立 SSH 隧道。公网入口受 Coder 登录和工作区权限控制；Funnel 本身不代替成员认证。它提供 `*.ts.net` 域名及 TLS，但有带宽限制，当前用于开发交互，大型数据仍在服务器内部处理。
 
 采用独立的 [用户服务](../configs/ai4s-tailscale.service)，通过 userspace networking 运行，不更改宿主机网络路由，也不启用 Tailscale SSH 或子网路由。二进制、身份状态和 socket 均位于 `/data1/qhy/tailscale-ai4s/`。服务纳入现有 `ai4s.slice`，自身上限 0.25 核、256 MiB；现有项目总资源预算不增加。
 
@@ -99,11 +99,11 @@ Git 仓库不包含镜像或 provider 包。目前 Coder 镜像版本已在既�
 
 ## 访问
 
-配置入口：[https://ai4s-coder.tail8b7421.ts.net](https://ai4s-coder.tail8b7421.ts.net)。**当前公网访问未通过完整验收，暂不向成员承诺可用；实测范围见 [状态](status.md)。**目标是使用各自的 Coder 邮箱和密码，打开自己的 `dev` 工作区及 Terminal，成员无需安装 Tailscale／Docker、获取服务器 SSH 账号或建立隧道；GitHub 凭据和个人分支流程见 [成员操作说明](members.md)，合并遵循 [团队协作约定](collaboration.md)。
+当前入口：[https://coder.my-rustdesk.xyz](https://coder.my-rustdesk.xyz)。使用各自的 Coder 邮箱和密码，打开自己的 `dev` 工作区及 Terminal；成员无需安装隧道客户端或获取服务器 SSH 账号。GitHub 凭据和个人分支流程见 [成员操作说明](members.md)，合并遵循 [团队协作约定](collaboration.md)。
 
-Docker 的 17080 端口仍只绑定服务器回环地址，Funnel 仅代理这一 Coder 服务；数据库、Docker socket 与其他服务器端口不发布。HTTPS 下的会话 cookie 已开启 Secure，DERP 使用 WebSocket 以适配反向代理。服务登录正常不等于所有成员所在地网络都已实测，访问异常时先检查 Funnel 状态和网络。
+阿里云 DNS、Nginx、证书续期、受限服务器通道与回退统一见 [阿里云中转说明](aliyun_relay.md)。科研服务器的 17080 端口仍仅绑定回环，数据库和 Docker socket 不发布。HTTPS 会话启用 Secure Cookie，DERP 使用 WebSocket。
 
-管理员仍可用 `ssh -N -L 127.0.0.1:17080:127.0.0.1:17080 lab-gpu` 转发维护端口；开启 Secure Cookie 后，网页登录统一使用上述 HTTPS 入口，回环 HTTP 供 CLI／健康检查使用。本机独立 Docker 原型的 7080 端口保持原样。
+管理员仍可用 `ssh -N -L 127.0.0.1:17080:127.0.0.1:17080 lab-gpu` 转发维护端口；网页登录使用上述 HTTPS 入口，回环 HTTP 供 CLI／健康检查。本机独立 Docker 原型的 7080 端口保持原样。实测范围见 [状态](status.md)。
 
 ## 网络中转与更新
 

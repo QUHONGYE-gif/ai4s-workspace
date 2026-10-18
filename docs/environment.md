@@ -70,7 +70,7 @@ Coder 控制面通过 Docker socket 创建工作区；已核对 Docker Desktop V
 | 开发镜像 | `ai4s-workspace:server-0.1.0`；Python 3.12.15、Git 2.47.3、curl 8.14.1 |
 | 工作区 | `server-admin/prototype`，模板 `server-docker`；容器 `ai4s-server-server-admin-prototype` |
 | 仓库与持久化 | `/workspace/project` 挂载远程代码副本；独立 home 命名卷、`ai4s-server_shared` 共享卷均在上述数据根目录 |
-| HTTPS 接入 | Tailscale Funnel 独立 userspace 服务；文件位于 `/data1/qhy/tailscale-ai4s`；网址、命令与回退见 [服务器说明](server_docker.md#免成员隧道的-https-入口) |
+| HTTPS 接入 | 阿里云 DNS＋独立 Nginx 虚拟主机＋服务器间受限 SSH 通道；两端路径、资源限额和证书维护统一见 [中转说明](aliyun_relay.md) |
 | 控制面卷 | `ai4s-server_database`、`ai4s-server_coder_home`；数据库仍使用服务器原生初始化的 `coder` 库 |
 | 私有凭据 | 远程副本 `.env`；本地备份 `.local/remote/.env`，权限 600 |
 | 资源检查 | 部署前系统盘仅余约 562 MB，`/data1` 约 33 GB；因此采用独立数据目录，不迁移共享 Docker |
