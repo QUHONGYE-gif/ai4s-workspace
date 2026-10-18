@@ -68,7 +68,7 @@ ssh -N -L 127.0.0.1:17080:127.0.0.1:17080 lab-gpu
 
 本轮已建立该隧道，控制 socket 在本地 `.local/remote/coder-tunnel.sock`；如需关闭本轮隧道，在本地仓库运行 `ssh -S .local/remote/coder-tunnel.sock -O exit lab-gpu`。后续重新访问可使用上面的普通前台隧道命令。
 
-然后访问 `http://localhost:17080`。该地址区别于本机 Docker 原型的 7080 端口。服务只绑定服务器回环地址；具有服务器 SSH 权限的协作者可建立各自隧道。当前提供管理员原型工作区，尚未配置团队账户及独立代码 checkout；多人接入遵循 [团队协作约定](collaboration.md)。
+然后访问 `http://localhost:17080`。该地址区别于本机 Docker 原型的 7080 端口。服务只绑定服务器回环地址；具有服务器 SSH 权限的协作者可建立各自隧道。管理员原型工作区保留；新增的个人隔离模板、开户及成员登录见 [成员操作说明](members.md)，开发与合并遵循 [团队协作约定](collaboration.md)。
 
 ## 网络中转与更新
 

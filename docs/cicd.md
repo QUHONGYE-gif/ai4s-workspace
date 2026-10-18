@@ -8,7 +8,7 @@
 | --- | --- |
 | 服务定义 | [基础 Compose](../compose.yaml) 与 [服务器覆盖配置](../compose.server.yaml)，由 Git 版本管理 |
 | 工作区镜像 | [Dockerfile](../docker/workspace/Dockerfile)，服务器构建目标为 `linux/amd64`、`USER_UID=1000` |
-| 工作区模板 | [Terraform 模板](../coder/templates/local-docker/main.tf) 及同目录锁文件，更新模板是独立步骤 |
+| 工作区模板 | [原型模板](../coder/templates/local-docker/main.tf) 与 [个人模板](../coder/templates/server-personal/main.tf) 及各自锁文件，更新模板是独立步骤 |
 | 服务器变量 | [.env.server.example](../.env.server.example) 描述字段，真实 `.env` 留在服务器，不能用示例覆盖 |
 | provider 缓存 | [下载脚本](../scripts/cache_terraform_providers.py) 按版本、架构下载并校验，服务启动前准备到 `.local/provider-mirror/` |
 | 运行数据 | 数据库、Coder home、工作区 home 和共享卷留在独立 Docker 中；不随代码发布替换 |
@@ -40,6 +40,7 @@ Git 不存储登录密码、会话 token、SSH 密钥、镜像导出文件、缓
    ```
 
 4. 需要更新模板时单独处理。现有 [初始化入口](../scripts/init_local_docker.py) `--server --skip-build` 会登录管理员并推送模板，适用于初始化／手动更新；接入 CD 时再拆出独立模板发布步骤及认证。仅更新 Compose 不会更新已经运行的 Coder 工作区镜像。
+   个人模板使用 [成员说明](members.md#管理员准备种子与发布模板) 中的独立发布命令，并保留旧原型模板私有权限；不要将个人代码卷替换成共享部署目录。
 5. 保存 commit、镜像 digest、执行时间及健康检查结果。初次数据库迁移可能超过等待上限，先查日志与迁移状态，不把超时直接视为数据库损坏或触发重建。
 
 [集成验证脚本](../scripts/check_local_docker.py) 会停止和重启 `prototype`，应在专用验证工作区或明确的检查窗口执行，不能直接作为每次部署的在线健康探针。现有完整验证结果见状态文件。
