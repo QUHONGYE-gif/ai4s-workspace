@@ -88,6 +88,28 @@ Coder 控制面通过 Docker socket 创建工作区；已核对 Docker Desktop V
 | 单工作区资源 | 1 核、1 GiB；所有实例仍受上表 `ai4s.slice` 总量限制，无 GPU 分配 |
 | 成员私有记录 | 本地 `.local/members/` 保存已交付账号的邮箱和独立初始密码，文件权限 `600`，不入 Git |
 
+## 工作台模拟网页与本地 Coder CLI
+
+2026-10-18 将用户指定的 HTML 载入 `qhy/dev`，随后拆为前端资源与 Python 模拟状态 API；文件分工见 [前后端开发说明](../web/README.md)，使用方式见 [成员指南](collaboration.md#工作台模拟网页)。未修改模板、控制面或 Docker 配置，未部署真实科研执行或成员共享后端。
+
+| 项目 | 位置与实际配置 |
+| --- | --- |
+| 远程网页 | `qhy/dev` 容器内 `/home/coder/ai4s-workspace/web/demo/index.html`，处于个人 home 持久卷 |
+| 服务 | 容器已有 Python 3.12.15；运行 `scripts/serve_workbench.py`，监听 `127.0.0.1:3000`，同源提供 `web/demo` 与 `/api/` |
+| 个人 HTTPS 预览 | [qhy 开发预览](https://coder.my-rustdesk.xyz/@qhy/dev.dev/apps/preview/)，沿用本人访问权限 |
+| 模拟快照 | `/home/coder/.local/state/ai4s-workbench-demo/api-state/`，按浏览器命名空间隔离的 JSON，不入 Git |
+| 远程日志与身份记录 | `/home/coder/.local/state/ai4s-workbench-demo/server.log`、`deployment.json`、`server.pid` |
+| 本机访问 | [http://127.0.0.1:18080/](http://127.0.0.1:18080/)，由 Coder CLI 转发到上述容器端口 |
+| 本机 CLI | `.local/tools/coder/coder`，macOS ARM64 slim 版 `v2.38.0+c3c6a67`，与服务端一致 |
+| CLI 来源 | 现有 Coder 服务的 HTTPS `/bin/coder-darwin-arm64`；文件 SHA-1 与响应 ETag 一致，SHA-256 见本地验证记录 |
+| CLI 入口与配置 | [scripts/coder-cli.sh](../scripts/coder-cli.sh)；独立配置 `.local/tools/coder/config/`，已以 qhy 登录，不修改系统级配置 |
+| 本机转发记录 | `.local/workbench-demo/port-forward.json`、`port-forward.log`；服务和转发为后台进程，未设置开机自启 |
+| 私密验收证据 | `.local/workbench-demo/`，包含部署、HTTPS／匿名拒绝、本机转发及浏览器验收记录，不入 Git |
+
+当前为多文件版本；逐文件摘要与部署身份保存于远程 `deployment.json` 及本地 `.local/frontend-backend-split/`。原单文件备份在远程运行目录的 `before-frontend-backend-split/`。CLI 与登录配置只位于本机，不同步到成员工作区。
+
+Coder CLI 转发语法依据 [官方端口转发说明](https://coder.com/docs/reference/cli/port-forward)，本项目实际命令见成员指南。此访问方式用于开发与体验检查，不代表独立正式业务入口或真实多人共享后端已完成。
+
 ## HTTPS 中转位置
 
 成员入口为 [https://coder.my-rustdesk.xyz](https://coder.my-rustdesk.xyz)。用户确认根域名已备案、用途为成员个人开发；这不是平台备案审查结论。访问链路为：

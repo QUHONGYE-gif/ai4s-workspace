@@ -1,11 +1,12 @@
 # 面向 AI4S 工作流的语义感知数据管理与计算—存储协同工作台
 
-本项目探索科学中间结果的身份、依赖与复用，先以蛋白质生成工作流验证。Docker + Coder 开发底座已建立，日常开发使用服务器个人工作区；工作台业务和科学流程仍处于规划阶段。实际进展以 [当前状态](docs/status.md) 为准。
+本项目探索科学中间结果的身份、依赖与复用，先以蛋白质生成工作流验证。Docker + Coder 开发底座已建立，日常开发使用服务器个人工作区；已接入可交互的模拟工作台网页，已拆出前端资源与模拟状态 API，真实科学流程及服务端执行仍处于规划阶段。实际进展以 [当前状态](docs/status.md) 为准。
 
 代码仓库：[QUHONGYE-gif/ai4s-workspace](https://github.com/QUHONGYE-gif/ai4s-workspace)。本仓库保存可公开的代码、配置和说明；凭据、运行数据、镜像与缓存留在对应环境。
 
 ## 从哪里开始
 
+- 工作台模拟网页：[前后端开发说明](web/README.md) · [页面源码](web/demo/index.html)；在个人容器启动与本机访问见 [体验说明](docs/collaboration.md#工作台模拟网页)。
 - 成员登录、开发、预览、提交 PR：[成员开发与协作](docs/collaboration.md)。
 - 管理员部署、开户、更新模板和排错：[部署与运维](docs/operations.md)。
 - 了解研究方向和下一步：[设计草案](docs/research_plan.md) → [实施计划](docs/implementation_plan.md) → [当前状态](docs/status.md)。
@@ -43,6 +44,9 @@
 ├── coder/               # 原型与个人工作区模板、Terraform 配置及锁文件
 ├── configs/             # HTTPS 中转、SSH 限制与服务配置
 ├── scripts/             # 初始化、成员管理、provider 下载及辅助入口
+├── web/                # 工作台 HTML、CSS、JS 与开发说明
+├── src/workbench/      # Python 模拟状态 API 与快照存储
+├── tests/              # 状态接口及模拟逻辑关键检查
 └── docs/
     ├── vision.md
     ├── research_plan.md
@@ -55,3 +59,5 @@
 ```
 
 业务代码、专项研究和实验目录按实际需要建立，约定见 [项目规则](AGENTS.md)。配置文件及可执行入口索引见 [运维文档](docs/operations.md#配置入口)；大型产物和环境位置见 [环境说明](docs/environment.md)。`.gitignore` 排除凭据、缓存、数据目录和模型权重。
+
+仓库本地 Coder CLI 入口为 `./scripts/coder-cli.sh`，例如 `./scripts/coder-cli.sh whoami`；安装、版本和本机转发位置见 [环境说明](docs/environment.md#工作台模拟网页与本地-coder-cli)。
