@@ -43,7 +43,8 @@
 | 按计划实现或排错 | 实施计划中的目标阶段、相关代码与配置；后续专项研究再读对应记录 |
 | 阶段验收、比较模型或核验结论 | 对应验收项、运行记录、预测及评价证据 |
 | 论文阅读或数据检查 | 原文/官方实现，或坐标、标识与划分约定 |
-| 远程执行与环境问题 | [环境说明](docs/environment.md)、目标环境、运行入口和相关日志 |
+| 成员开发与团队协作 | [成员指南](docs/collaboration.md)；开户和模板变更再读 [运维说明](docs/operations.md) |
+| 远程执行与环境问题 | [环境说明](docs/environment.md)、[运维说明](docs/operations.md) 对应章节、目标环境和相关日志 |
 | 局部文档或代码修改 | 目标文件及直接依赖 |
 
 # 文件职责与维护
@@ -53,9 +54,11 @@
 | [README](README.md) | 项目入口、文件分工与真实存在的目录／命令导航 |
 | [用户原文](docs/vision.md) | 用户构想和明确要求，保留原意；不混入 Codex 建议 |
 | [设计草案](docs/research_plan.md) | 项目范围、对象与依赖、复用含义、初步评价思路 |
-| [实施计划](docs/implementation_plan.md) | 阶段任务、必要产物、完成条件和何时处理未定项 |
+| [实施计划](docs/implementation_plan.md) | 阶段任务、必要产物、完成条件、未定项和后续 CI/CD 计划 |
 | [当前状态](docs/status.md) | 实际进展、当前限制和最近下一步，不复述整份计划 |
 | [环境说明](docs/environment.md) | 服务器与路径、已有／拟用环境、实际运行与同步位置 |
+| [成员开发与协作](docs/collaboration.md) | 成员登录、个人开发与预览、分支及会议合并流程 |
+| [部署与运维](docs/operations.md) | 管理员部署、开户、种子与模板、HTTPS、排错和本地恢复操作 |
 | [配置来源](docs/workflow_sources.md) | 工作规则来源及配置调整记录，不维护项目方案 |
 
 - 同一事实或规则只维护一处；其他文件使用相对 Markdown 链接引用，相关文件互设返回链接，形成可点击的双向导航。
@@ -79,7 +82,7 @@
 # 开发底座
 
 - 团队使用个人 Coder 工作区及 `dev-姓名三字首字母` 分支；完整规则见 [团队协作约定](docs/collaboration.md)。所有改动先汇总并经会议通过，才可合并到 `main`；Agent 不得直接推送 `main` 或自行代替会议批准。
-- 用户已选 Docker + Coder，共同开发模式及实际本地环境见 [环境说明](docs/environment.md)，操作见 [本地运行说明](docs/local_docker.md)。本地原型已完成；用户已授权使用服务器 Docker，操作见 [服务器运行说明](docs/server_docker.md)。系统 `lab` Conda 可用于本地下载中转及辅助脚本。
+- 用户已选 Docker + Coder，以服务器个人工作区为主要开发环境；配置位置见 [环境说明](docs/environment.md)，部署与本地按需恢复见 [运维说明](docs/operations.md)。系统 `lab` Conda 可用于本地下载中转及辅助脚本。
 - 先验证开发底座，再实施工作台业务和科学工作流；不同执行环境分别记录，不将本地容器可运行描述为 GPU 蛋白质流程已验证。
 
 # 执行环境与数据

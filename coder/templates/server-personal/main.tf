@@ -49,6 +49,20 @@ resource "coder_script" "repository" {
   start_blocks_login = true
 }
 
+# Fixed, owner-only paths: no wildcard domain or host port publication required.
+# Members start their own application in the existing workspace container.
+resource "coder_app" "preview" {
+  agent_id     = coder_agent.dev.id
+  slug         = "preview"
+  display_name = "开发预览"
+  url          = "http://localhost:3000"
+  share        = "owner"
+  subdomain    = false
+  open_in      = "tab"
+  order        = 1
+  tooltip      = "启动个人开发服务（3000 端口）后打开；无需提交或合并代码。"
+}
+
 resource "docker_volume" "home" {
   name = "ai4s-personal-${data.coder_workspace.me.id}-home"
   lifecycle {
@@ -62,7 +76,8 @@ resource "docker_container" "workspace" {
   image = var.workspace_image
   user  = "0:0"
 
-  entrypoint = ["sh", "-c", replace(replace(coder_agent.dev.init_script, "localhost:17080", "coder:7080"), "127.0.0.1:17080", "coder:7080")]
+  # Agents stay on the Docker network even when members use an external HTTPS URL.
+  entrypoint = ["sh", "-c", replace(coder_agent.dev.init_script, data.coder_workspace.me.access_url, "http://coder:7080")]
   env        = ["CODER_AGENT_TOKEN=${coder_agent.dev.token}", "HOME=/home/coder"]
   memory     = 1024
   cpu_period = 100000

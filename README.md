@@ -1,27 +1,30 @@
 # 面向 AI4S 工作流的语义感知数据管理与计算—存储协同工作台
 
-当前工作台业务仍处于初步规划阶段，本地和服务器 Docker + Coder 开发底座已完成初始化。项目内容及设计以以下文档为准；实际进展见状态文件。
+本项目探索科学中间结果的身份、依赖与复用，先以蛋白质生成工作流验证。Docker + Coder 开发底座已建立，日常开发使用服务器个人工作区；工作台业务和科学流程仍处于规划阶段。实际进展以 [当前状态](docs/status.md) 为准。
 
-代码仓库：[QUHONGYE-gif/ai4s-workspace](https://github.com/QUHONGYE-gif/ai4s-workspace)。本仓库保存可公开的配置、脚本和说明，实际凭据、镜像、provider 缓存和运行数据由各部署环境保管。自动 CI/CD 将在后续接入。
+代码仓库：[QUHONGYE-gif/ai4s-workspace](https://github.com/QUHONGYE-gif/ai4s-workspace)。本仓库保存可公开的代码、配置和说明；凭据、运行数据、镜像与缓存留在对应环境。
 
-## 文档入口与分工
+## 从哪里开始
 
-| 文件 | 阅读目的 |
+- 成员登录、开发、预览、提交 PR：[成员开发与协作](docs/collaboration.md)。
+- 管理员部署、开户、更新模板和排错：[部署与运维](docs/operations.md)。
+- 了解研究方向和下一步：[设计草案](docs/research_plan.md) → [实施计划](docs/implementation_plan.md) → [当前状态](docs/status.md)。
+
+## 核心文档分工
+
+| 文件 | 唯一维护内容 |
 | --- | --- |
-| [AGENTS.md](AGENTS.md) | 工作规则、按需阅读和执行约定 |
-| [用户原始构想](docs/vision.md) | 查看用户提供的完整原文和本轮要求 |
-| [项目设计草案](docs/research_plan.md) | 理解范围、数据对象、复用思路与评价安排 |
-| [分阶段实施计划](docs/implementation_plan.md) | 查看接入准备、原型、策略和扩展的任务与完成条件 |
-| [当前状态](docs/status.md) | 查看实际完成内容、限制及下一步 |
-| [环境与路径](docs/environment.md) | 查看本地原型与服务器配置、环境和执行位置 |
-| [本地 Docker 运行说明](docs/local_docker.md) | 启动、使用和停止 Docker + Coder 开发底座 |
-| [服务器 Docker 运行说明](docs/server_docker.md) | 数据盘独立 Docker、SSH 隧道与服务器操作 |
-| [CI/CD 接入计划](docs/cicd.md) | 后续自动检查与部署的入口、前提和边界 |
-| [团队协作约定](docs/collaboration.md) | 个人 Coder 工作区、开发分支及会议后的合并流程 |
-| [成员与个人工作区](docs/members.md) | 创建普通成员、使用独立代码卷及更新离线 Git 种子 |
-| [配置来源](docs/workflow_sources.md) | 维护工作规则时核对来源与配置调整 |
+| [项目规则](AGENTS.md) | Agent 工作方式、按需阅读、科研与执行边界 |
+| [用户原文](docs/vision.md) | 用户构想和明确要求的原始表述 |
+| [设计草案](docs/research_plan.md) | 范围、科学数据对象、复用含义和评价思路 |
+| [实施计划](docs/implementation_plan.md) | 阶段任务、产物、完成条件及后续 CI/CD 计划 |
+| [当前状态](docs/status.md) | 已完成内容、验证证据索引、限制和最近下一步 |
+| [环境说明](docs/environment.md) | 机器、版本、路径、持久卷、资源限额和中转位置 |
+| [成员开发与协作](docs/collaboration.md) | 成员使用、个人开发预览、分支与会议合并流程 |
+| [部署与运维](docs/operations.md) | 管理员部署、开户、种子与模板、HTTPS、排错和本地恢复操作 |
+| [配置来源](docs/workflow_sources.md) | 工作规则的参考来源与职责调整记录 |
 
-文档以相对 Markdown 链接相互引用，并提供返回入口。方案、阶段任务、实际状态和运行环境各自维护
+方案、计划、状态、环境和操作分别维护，通过相对链接引用；成员指南与管理员运维入口分开。
 
 ## 当前文件结构
 
@@ -35,21 +38,20 @@
 ├── .github/pull_request_template.md
 ├── compose.yaml
 ├── compose.server.yaml
+├── compose.https.yaml
 ├── docker/workspace/Dockerfile
-├── coder/               # 工作区模板与 Terraform 镜像配置
-├── scripts/             # 初始化与 provider 下载入口
+├── coder/               # 原型与个人工作区模板、Terraform 配置及锁文件
+├── configs/             # HTTPS 中转、SSH 限制与服务配置
+├── scripts/             # 初始化、成员管理、provider 下载及辅助入口
 └── docs/
     ├── vision.md
     ├── research_plan.md
     ├── implementation_plan.md
     ├── status.md
     ├── environment.md
-    ├── local_docker.md
-    ├── server_docker.md
-    ├── cicd.md
     ├── collaboration.md
-    ├── members.md
+    ├── operations.md
     └── workflow_sources.md
 ```
 
-业务代码、专项研究与实验目录在实际工作需要时建立，约定见 [项目规则](AGENTS.md)。本地开发底座命令见 [运行说明](docs/local_docker.md)。`.gitignore` 排除常见缓存、凭据、数据目录和模型权重；大型产物位置见 [环境说明](docs/environment.md)。
+业务代码、专项研究和实验目录按实际需要建立，约定见 [项目规则](AGENTS.md)。配置文件及可执行入口索引见 [运维文档](docs/operations.md#配置入口)；大型产物和环境位置见 [环境说明](docs/environment.md)。`.gitignore` 排除凭据、缓存、数据目录和模型权重。
