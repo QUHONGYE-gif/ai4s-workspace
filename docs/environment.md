@@ -2,27 +2,27 @@
 
 ## 配置来源与状态
 
-用户于 2026-10-18 指定服务器配置与“空间组转录正式试验”一致。以下服务器信息来自该项目的 `AGENTS.md` 和 `docs/environment.md`；已于本轮连接服务器并核查 Docker 与资源；本地原型保留，服务器部署进度见状态文件。
+用户于 2026-10-18 指定服务器配置与“空间组转录正式试验”一致。以下服务器信息来自该项目的 `AGENTS.md` 和 `docs/environment.md`；已于 2026-10-18 连接服务器核查 Docker 与资源，记录见状态；后续以服务器为主要开发环境，本地原型已停用并保留持久卷与配置，部署状态见状态文件。
 
 本地仓库为 `/Users/quhongye/Documents/ChatGPT/大创`。当前实施状态统一见 [status.md](status.md)。
 
 ## 已有本地原型
 
-用户已指定使用本地 Docker + Coder；系统 `lab` Conda 环境可用于辅助脚本。以下是本轮实际检查及配置：
+本地 Docker + Coder 已完成原型验证，2026-10-18 按用户要求停用并回收项目镜像。日常开发使用服务器成员工作区；系统 `lab` Conda 仍可用于辅助脚本和下载中转。下表的版本为停用前验证值，保留用于恢复参考：
 
 | 项目 | 信息 |
 | --- | --- |
 | 宿主机 | macOS，Apple Silicon `arm64` |
 | Docker | Docker Desktop 4.81.0；Engine 29.6.1；context `desktop-linux` |
-| Compose | v5.2.0；项目 `ai4s-local`，网络同名 |
+| Compose | v5.2.0；项目 `ai4s-local`，同名网络在停用时已移除 |
 | 本地 Conda | `/opt/homebrew/Caskroom/miniforge/base/envs/lab`，Python 3.11.14；本轮未新增包 |
-| Coder | 2.38.0，Linux ARM64；控制面在 Docker 内运行 |
+| Coder | 2.38.0，Linux ARM64；控制面已停止，镜像已移除 |
 | PostgreSQL | 17.11，Linux ARM64；专用于 Coder，不作为科学产物目录 |
 | Terraform 与 provider | Terraform 1.16.2；coder 2.19.0、docker 3.9.0，依赖锁文件在工作区模板目录 |
 | 开发镜像 | `ai4s-workspace:0.1.0`；Python 3.12.15、Git 2.47.3、curl 8.14.1 |
-| 本机网页入口 | `http://localhost:7080`，端口仅发布到 `127.0.0.1` |
+| 本机网页入口 | `http://localhost:7080`，当前已停用；恢复后仅发布到 `127.0.0.1` |
 | 数据库与控制面卷 | `ai4s-local_database`、`ai4s-local_coder_home` |
-| 工作区 | 已创建 `local-admin/prototype`；模板 `local-docker`；`/workspace/project` 挂载本地仓库；每个工作区有独立 home 卷 |
+| 工作区 | `local-admin/prototype` 已通过 Coder 正常停止，容器已移除；模板 `local-docker`；`/workspace/project` 挂载本地仓库；每个工作区有独立 home 卷 |
 | 共享数据 | Docker 命名卷 `ai4s-local_shared`，在工作区挂载为 `/shared` |
 | 本地私有配置与记录 | `.env` 保存初始凭据；`.local/` 保存日志和验证记录，两者均忽略于 Git |
 
@@ -30,7 +30,7 @@
 
 Coder 控制面通过 Docker socket 创建工作区；已核对 Docker Desktop VM 中 socket 为 `root:root`、模式 660，控制面使用附加组 0。具体配置由 [compose.yaml](../compose.yaml) 维护。
 
-已有镜像拉取通道出现 EOF。本轮经本机现有网络下载官方镜像，验证各层 SHA-256 后使用 `docker load` 导入；Coder 实际版本通过镜像内 CLI 核对，PostgreSQL 使用 Google 的 Docker Hub 公共缓存。容器和构建使用的本地代理只记录在 `.env`，未更改全局路由。Terraform provider 通过本机下载并校验后保存在项目镜像目录；模板可使用本地缓存安装。实际检查见 `.local/initialization.json`，日常操作见 [本地运行说明](local_docker.md)。
+已有镜像拉取通道出现 EOF。本轮经本机现有网络下载官方镜像，验证各层 SHA-256 后使用 `docker load` 导入；Coder 实际版本通过镜像内 CLI 核对，PostgreSQL 使用 Google 的 Docker Hub 公共缓存。容器和构建使用的本地代理只记录在 `.env`，未更改全局路由。Terraform provider 通过本机下载并校验后保存在项目镜像目录；模板可使用本地缓存安装。实际检查见 `.local/initialization.json`，日常操作见 [本地运行说明](operations.md#本地原型恢复)。
 
 ## 服务器配置
 
@@ -50,7 +50,7 @@ Coder 控制面通过 Docker socket 创建工作区；已核对 Docker Desktop V
 
 ## 本项目环境与同步位置
 
-个人开发使用独立 `server-personal` 模板，代码保存在各工作区 home 卷的 `/home/coder/ai4s-workspace`；下表中的原型工作区继续保留。成员开户与种子目录统一见 [成员操作说明](members.md)。
+下表维护服务器原型与控制面的部署位置；正式成员使用下方的 [个人工作区](#个人工作区)，开户及更新步骤见 [部署与运维](operations.md)。
 
 蛋白质生成工具的依赖、模型权重、科学数据库和工作台业务前后端环境尚未检查或建立。服务器已有 Cellist 环境仅作为已有资源记录，不表示它适用于本项目；准备阶段核查实际兼容性后，再补充本项目环境路径与用途。
 
@@ -70,15 +70,52 @@ Coder 控制面通过 Docker socket 创建工作区；已核对 Docker Desktop V
 | 开发镜像 | `ai4s-workspace:server-0.1.0`；Python 3.12.15、Git 2.47.3、curl 8.14.1 |
 | 工作区 | `server-admin/prototype`，模板 `server-docker`；容器 `ai4s-server-server-admin-prototype` |
 | 仓库与持久化 | `/workspace/project` 挂载远程代码副本；独立 home 命名卷、`ai4s-server_shared` 共享卷均在上述数据根目录 |
-| HTTPS 接入 | 阿里云 DNS＋独立 Nginx 虚拟主机＋服务器间受限 SSH 通道；两端路径、资源限额和证书维护统一见 [中转说明](aliyun_relay.md) |
+| HTTPS 接入 | 两端位置见下方 [HTTPS 中转](#https-中转位置)，证书与通道操作见 [部署与运维](operations.md#https-接入) |
 | 控制面卷 | `ai4s-server_database`、`ai4s-server_coder_home`；数据库仍使用服务器原生初始化的 `coder` 库 |
 | 私有凭据 | 远程副本 `.env`；本地备份 `.local/remote/.env`，权限 600 |
 | 资源检查 | 部署前系统盘仅余约 562 MB，`/data1` 约 33 GB；因此采用独立数据目录，不迁移共享 Docker |
 
-初始化与连接验证记录位于远程副本 `.local/`，回传记录保存在本机 `.local/remote/`（`initialization.json`、`deployment-inventory.json`、`api-status.json`）；操作统一见 [服务器运行说明](server_docker.md)。
+初始化与连接验证记录位于远程副本 `.local/`，回传记录保存在本机 `.local/remote/`（`initialization.json`、`deployment-inventory.json`、`api-status.json`）；操作统一见 [服务器运行说明](operations.md#服务器部署)。
+
+## 个人工作区
+
+| 项目 | 位置与配置 |
+| --- | --- |
+| 模板与工作区 | `server-personal`；每位成员使用自己的 `dev`，代码与登录规则见 [成员指南](collaboration.md) |
+| 代码与 home 卷 | `/home/coder/ai4s-workspace`，卷名 `ai4s-personal-<workspace-id>-home`，位于独立 Docker 数据目录 |
+| 公开 Git 种子 | 宿主机 `/data1/qhy/projects/ai4s-workbench/member-seed/repository.bundle`；容器只读挂载 `/opt/ai4s-seed` |
+| 共享产物 | `ai4s-server_shared` 卷挂载到 `/shared` |
+| 单工作区资源 | 1 核、1 GiB；所有实例仍受上表 `ai4s.slice` 总量限制，无 GPU 分配 |
+| 成员私有记录 | 本地 `.local/members/` 保存已交付账号的邮箱和独立初始密码，文件权限 `600`，不入 Git |
+
+## HTTPS 中转位置
+
+成员入口为 [https://coder.my-rustdesk.xyz](https://coder.my-rustdesk.xyz)。用户确认根域名已备案、用途为成员个人开发；这不是平台备案审查结论。访问链路为：
+
+```text
+成员浏览器 → coder.my-rustdesk.xyz:443 → 阿里云 Nginx
+  → 中转机 127.0.0.1:27080 → 常驻 SSH 反向转发
+  → lab-gpu 127.0.0.1:17080 → Docker 中的 Coder
+```
+
+阿里云中转机仅承载接入，不运行模型计算：`ssh root@47.109.63.27`，成都 `cn-chengdu`，Ubuntu 26.04。科研服务器不保存该机 root 凭据；运维步骤见 [HTTPS 接入](operations.md#https-接入)。
+
+| 位置 | 配置与约束 |
+| --- | --- |
+| 阿里云 DNS | `coder` A 记录指向 `47.109.63.27`，TTL 600 秒；根域名记录保留 |
+| 中转账号 | `ai4s-tunnel`，home `/var/lib/ai4s-tunnel`，shell `nologin`；`.ssh/authorized_keys` 限制 `permitlisten="127.0.0.1:27080"` |
+| SSH 限制 | `/etc/ssh/sshd_config.d/60-ai4s-tunnel.conf`，只允许指定远程转发，禁止会话及其他转发 |
+| Nginx | `/etc/nginx/sites-available/coder.my-rustdesk.xyz`，由 `sites-enabled` 同名链接启用；原网站配置保留 |
+| ACME webroot | `/var/lib/ai4s-coder/acme`，该目录及父目录权限 `755` 以便 Nginx 遍历；只存公开挑战文件 |
+| 证书与续期 | `/etc/letsencrypt/live/coder.my-rustdesk.xyz/`，私钥只留云服务器；沿用 `certbot.timer`，部署钩子 `/etc/letsencrypt/renewal-hooks/deploy/ai4s-coder-reload` |
+| 中转配置准备副本 | `/opt/ai4s-coder/preparation`；初始 HTTP Nginx 备份 `/opt/ai4s-coder/nginx-http.before` |
+| 接入日志 | `/var/log/nginx/ai4s-coder-access.log`，只记路径、不记查询参数；错误日志为同目录 `ai4s-coder-error.log` |
+| 科研服务器通道密钥 | `/data1/qhy/coder-relay/`，目录 `700`、私钥 `600`，独立私钥不出科研服务器；主机公钥经已认证的云服务器 SSH 会话取得并固定 |
+| 科研服务器用户服务 | `~/.config/systemd/user/ai4s-coder-relay.service`，归入 `ai4s.slice`，自身上限 0.25 核、128 MiB，沿用 linger |
+| Coder 切换前配置 | 服务器项目副本 `.local/aliyun-relay/env.before`；真实 `.env` 保留在服务器 |
 
 日常同步方向为本地代码到远程执行副本；小型指标、图表与运行记录从远程回传本地。同步前检查两端差异，保护未提交修改及既有结果；不包含原始数据、环境、缓存或大型产物。
 
 服务器执行、GPU 检查、数据保护和日志规则统一见 [AGENTS.md](../AGENTS.md)，不在此重复。实际实验的代码／配置／依赖／命令／种子及输出身份写入对应运行记录。
 
-相关文档：[服务器运行说明](server_docker.md) · [本地运行说明](local_docker.md) · [实施计划](implementation_plan.md) · [设计草案](research_plan.md) · [状态](status.md) · [配置来源](workflow_sources.md) · [仓库入口](../README.md)。
+相关文档：[服务器运行说明](operations.md#服务器部署) · [本地运行说明](operations.md#本地原型恢复) · [实施计划](implementation_plan.md) · [设计草案](research_plan.md) · [状态](status.md) · [配置来源](workflow_sources.md) · [仓库入口](../README.md)。
