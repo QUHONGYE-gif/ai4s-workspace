@@ -18,7 +18,7 @@ Git 不存储登录密码、会话 token、SSH 密钥、镜像导出文件、缓
 ## 建议分两步接入
 
 1. **CI：先检查与构建。** 对提交和 PR 检查 Python／Shell 语法、文档链接、Compose 配置；使用示例环境变量，运行 `docker compose --env-file .env.server.example -f compose.yaml -f compose.server.yaml config --quiet`，不要输出展开后的真实配置。随后构建 AMD64 工作区镜像并记录 commit 与镜像 digest 的对应关系。业务实现后再加入相应测试。
-2. **CD：再连接服务器。** 明确部署触发分支和发布条件，选择能通过 SSH 或本机执行访问服务器的 runner；按项目规则只操作独立 rootless Docker。同一环境的部署串行执行。实际 SSH 凭据、主机校验信息及必要发布凭据由后续部署配置提供，不写入仓库。
+2. **CD：再连接服务器。** 共享部署以按照 [团队协作约定](collaboration.md) 经会议通过并合入 `main` 的版本为来源，个人开发分支不触发共享部署。选择能通过 SSH 或本机执行访问服务器的 runner；按项目规则只操作独立 rootless Docker。同一环境的部署串行执行。实际 SSH 凭据、主机校验信息及必要发布凭据由后续部署配置提供，不写入仓库。
 
 当前 `lab-gpu` 是本机 SSH 别名，不能假定 GitHub runner 已配置该别名或能访问服务器。runner 的位置、镜像发布位置和自动部署触发条件在接入时再确定。
 
