@@ -1,0 +1,19 @@
+[Unit]
+Description=AI4S Coder HTTPS ingress via Cloudflare Tunnel
+After=network-online.target
+ConditionPathExists=/data1/qhy/cloudflared-ai4s/tunnel-token
+
+[Service]
+Type=simple
+Slice=ai4s.slice
+WorkingDirectory=/data1/qhy/cloudflared-ai4s
+ExecStart=/data1/qhy/cloudflared-ai4s/bin/cloudflared tunnel --no-autoupdate --protocol http2 --metrics 127.0.0.1:20241 --log-directory /data1/qhy/cloudflared-ai4s/logs run --token-file /data1/qhy/cloudflared-ai4s/tunnel-token
+Restart=on-failure
+RestartSec=10
+UMask=0077
+MemoryMax=256M
+CPUQuota=25%
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

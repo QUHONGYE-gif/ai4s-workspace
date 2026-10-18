@@ -60,6 +60,8 @@ Git 仓库不包含镜像或 provider 包。目前 Coder 镜像版本已在既�
 
 ## 免成员隧道的 HTTPS 入口
 
+当前 Funnel 公网访问存在解析及路径差异；用户已选择尝试 Cloudflare Tunnel，准备与切换步骤统一见 [Cloudflare 固定域名接入](cloudflare_tunnel.md)。在新入口验收前，保留下述已有配置作为维护和回退依据。
+
 已使用 [Tailscale Funnel](https://tailscale.com/kb/1223/funnel)：服务器运行接入组件，成员直接在浏览器使用 HTTPS 地址及个人 Coder 账号，无需安装 Tailscale、Docker 或建立 SSH 隧道。公网入口受 Coder 登录和工作区权限控制；Funnel 本身不代替成员认证。它提供 `*.ts.net` 域名及 TLS，但有带宽限制，当前用于开发交互，大型数据仍在服务器内部处理。
 
 采用独立的 [用户服务](../configs/ai4s-tailscale.service)，通过 userspace networking 运行，不更改宿主机网络路由，也不启用 Tailscale SSH 或子网路由。二进制、身份状态和 socket 均位于 `/data1/qhy/tailscale-ai4s/`。服务纳入现有 `ai4s.slice`，自身上限 0.25 核、256 MiB；现有项目总资源预算不增加。
@@ -97,7 +99,7 @@ Git 仓库不包含镜像或 provider 包。目前 Coder 镜像版本已在既�
 
 ## 访问
 
-配置入口：[https://ai4s-coder.tail8b7421.ts.net](https://ai4s-coder.tail8b7421.ts.net)。**当前公网 DNS 尚未生效，暂不向未接入 Tailscale 的成员承诺可用；完成情况见 [状态](status.md)。**使用各自的 Coder 邮箱和密码，打开自己的 `dev` 工作区及 Terminal。成员无需安装 Tailscale／Docker、获取服务器 SSH 账号或建立隧道；GitHub 凭据和个人分支流程见 [成员操作说明](members.md)，合并遵循 [团队协作约定](collaboration.md)。
+配置入口：[https://ai4s-coder.tail8b7421.ts.net](https://ai4s-coder.tail8b7421.ts.net)。**当前公网访问未通过完整验收，暂不向成员承诺可用；实测范围见 [状态](status.md)。**目标是使用各自的 Coder 邮箱和密码，打开自己的 `dev` 工作区及 Terminal，成员无需安装 Tailscale／Docker、获取服务器 SSH 账号或建立隧道；GitHub 凭据和个人分支流程见 [成员操作说明](members.md)，合并遵循 [团队协作约定](collaboration.md)。
 
 Docker 的 17080 端口仍只绑定服务器回环地址，Funnel 仅代理这一 Coder 服务；数据库、Docker socket 与其他服务器端口不发布。HTTPS 下的会话 cookie 已开启 Secure，DERP 使用 WebSocket 以适配反向代理。服务登录正常不等于所有成员所在地网络都已实测，访问异常时先检查 Funnel 状态和网络。
 

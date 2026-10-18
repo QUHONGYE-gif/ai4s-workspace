@@ -1,8 +1,9 @@
-# Apply after compose.yaml and compose.server.yaml once the Funnel URL is known.
-# Does not expose additional host ports or start Tailscale itself.
+# Shared HTTPS proxy override; retain the filename for existing deployments.
+# Apply after compose.yaml and compose.server.yaml for Funnel or Cloudflare Tunnel.
+# Does not expose additional host ports or start an ingress connector.
 services:
   coder:
     environment:
-      CODER_ACCESS_URL: ${AI4S_PUBLIC_URL:?Set the verified https://...ts.net URL}
+      CODER_ACCESS_URL: ${AI4S_PUBLIC_URL:?Set the actual public https:// URL}
       CODER_SECURE_AUTH_COOKIE: "true"
       CODER_DERP_FORCE_WEBSOCKETS: "true"

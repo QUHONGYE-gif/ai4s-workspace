@@ -17,12 +17,13 @@
 - 服务器镜像和 provider 经本地网络中转；首次数据库迁移因机械盘同步开销而超出首轮等待时间，随后原生迁移完成。备用初始库未切换使用，已删除。
 - 远程 `.local/initialization.json` 记录集成检查，本地 `.local/remote/` 保存回传证据、镜像来源和部署源码快照。没有科研实验或 GPU 运行结果。
 
-## 浏览器直连入口（服务端已部署，公网 DNS 待生效）
+## 浏览器直连入口（Funnel 公网访问不稳定，Cloudflare 待域名）
 
 - 用户已认领 Tailscale 设备，并明确批准 Funnel 承载 Coder 登录、API、网页终端及开发流量。实际 HTTPS 网址和操作统一见 [服务器运行说明](server_docker.md#访问)。目标为成员无需 SSH 隧道或 Tailscale 客户端，公网可用性仍待下述验证。
 - 已经本地中转、官方 SHA-256 校验，将 Tailscale `1.104.1` AMD64 安装到数据盘；独立 userspace 用户服务已启动，属于现有项目资源限额。Funnel 持久代理 Coder 回环端口，HTTPS 覆盖配置已生效，个人模板保持 Docker 内部 agent 连接。
 - 已通过 HTTPS 验证四位成员登录、Secure Cookie、工作区在线及跨成员访问拒绝；WebSocket 终端在 `qhy/dev` 成功执行命令并确认个人分支。仅重建了 Coder 控制面，四个成员工作区、管理员原型和数据库的容器身份均未改变。证据保存在本地 `.local/remote/public-access/verification.json` 及远程 `.local/public-access/containers-after.json`。
-- 本机已接入 Tailscale，前述检查走现有网络，不能作为公网 Funnel 验证。首次开启超过约 10 分钟后，Google／Cloudflare 公共 DNS 仍无该域名记录，服务器普通 DNS 也无法解析；已核对 Funnel 能力、HTTPS 权限、持久配置及 `Hostinfo.IngressEnabled=true` 上报，并重载专用接入服务。当前公网发布阻塞，需记录生效后执行非 tailnet 验证，也未进行各成员所在地网络及多人并发评测。入口依赖 Tailscale Funnel 中继和带宽限制；当前用于开发交互，大型科研数据在服务器内部处理。
+- 本机已接入 Tailscale，前述检查不能作为公网 Funnel 验证。2026-10-18 后续复查发现公共 DNS 回答不一致，部分返回两个公网 IP，部分无 A 记录；服务器强制访问这两个公网 IP 均返回登录页 200 且证书验证通过，本机绕过 DNS 和代理环境变量后，curl 与 Python/OpenSSL 均在 TLS 握手阶段失败。尚未确定是网络路径还是中继差异，不将相似社区报告当作已确认根因。公网成员登录、终端和多人开发未验收，大型科研数据仍在服务器内部处理。
+- 用户已选择尝试 Cloudflare Tunnel＋固定域名，目前没有域名。已将官方 `cloudflared 2026.10.1` Linux AMD64 经本地中转安装到数据盘，双端 SHA-256 一致；准备了未启动、未启用的独立用户服务及 Token 文件接入方式。Shell、systemd 服务和实际二进制 CLI 参数检查通过；Coder 健康检查正常，控制面、数据库及成员容器身份保持不变。服务器 7844 端点返回了 Cloudflare Origin CA 证书，普通 curl 校验未通过；这不等于已建立认证隧道。准备证据位于 `.local/remote/cloudflare/preparation.json`；完整隧道、域名与公网业务验证待账号、域名及 Token 就绪。所需材料、操作、资源限额和回退见 [Cloudflare 接入说明](cloudflare_tunnel.md)。
 
 ## 成员与代码隔离
 
