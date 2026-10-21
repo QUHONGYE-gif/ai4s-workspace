@@ -1,0 +1,556 @@
+{
+  "status": "completed",
+  "started_utc": "2026-10-21T14:50:04.750285+00:00",
+  "stages": [
+    {
+      "name": "environment",
+      "argv": [
+        "bash",
+        "-c",
+        "date -Is; hostname; uname -a; ldd --version; nvidia-smi; df -h / /mnt; free -h; lscpu"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:50:04.750558+00:00",
+      "end_utc": "2026-10-21T14:50:04.973817+00:00",
+      "wall_seconds": 0.22227825224399567,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/environment.log",
+        "bytes": 5843,
+        "sha256": "3f3e9847fc1878e42f1e0a6218536b805a8a8f0f32b52eca10a911c63eb257e5"
+      }
+    },
+    {
+      "name": "design-createdb",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "createdb",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/query.fasta",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/query"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:50:06.055007+00:00",
+      "end_utc": "2026-10-21T14:50:06.069296+00:00",
+      "wall_seconds": 0.013988038524985313,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design-createdb.log",
+        "bytes": 882,
+        "sha256": "0d42c6eca37a594c05eed9d745f63f4a6614249999a52ac9b52c4317a7aa0709"
+      }
+    },
+    {
+      "name": "design-search",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "search",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/query",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/hits",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/tmp",
+        "--gpu",
+        "1",
+        "-e",
+        "0.001",
+        "--max-seqs",
+        "500",
+        "--threads",
+        "10",
+        "-a",
+        "1",
+        "--alignment-mode",
+        "3",
+        "--min-seq-id",
+        "0.3",
+        "-c",
+        "0.8",
+        "--cov-mode",
+        "2"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:50:06.069662+00:00",
+      "end_utc": "2026-10-21T14:50:06.580230+00:00",
+      "wall_seconds": 0.5103776399046183,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design-search.log",
+        "bytes": 7219,
+        "sha256": "296915518748011bac1b2453ad094b381177e9c78712775e10c58a57004c50da"
+      }
+    },
+    {
+      "name": "design-tsv",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "convertalis",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/query",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/hits",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/hits.tsv",
+        "--format-output",
+        "query,target,fident,alnlen,qcov,tcov,evalue,bits"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:50:06.580962+00:00",
+      "end_utc": "2026-10-21T14:50:06.660494+00:00",
+      "wall_seconds": 0.07918988727033138,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design-tsv.log",
+        "bytes": 959,
+        "sha256": "3407219236f9e110f835cc019e76682ef7d3ecb35c8068fba921f78f7f01a311"
+      }
+    },
+    {
+      "name": "design-msa",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "result2msa",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/query",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/hits",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/alignment",
+        "--msa-format-mode",
+        "5"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:50:06.661125+00:00",
+      "end_utc": "2026-10-21T14:50:06.739097+00:00",
+      "wall_seconds": 0.07761877402663231,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design-msa.log",
+        "bytes": 1237,
+        "sha256": "403f64329b45b7dbe64f1d70f4cb6aeba799db3b0cfb91deb4597a377f8f11eb"
+      }
+    },
+    {
+      "name": "design-unpack",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "unpackdb",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/alignment",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/a3m",
+        "--unpack-name-mode",
+        "1",
+        "--unpack-suffix",
+        ".a3m"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:50:06.739822+00:00",
+      "end_utc": "2026-10-21T14:50:06.744221+00:00",
+      "wall_seconds": 0.00392184779047966,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design-unpack.log",
+        "bytes": 567,
+        "sha256": "17388bc5145505b7508d4027dd7db4f087c09beb3428b40074bbb6fc193a1664"
+      }
+    },
+    {
+      "name": "design-boltz",
+      "argv": [
+        "/root/miniconda3/envs/myconda/bin/boltz",
+        "predict",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/input.yaml",
+        "--out_dir",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design/boltz",
+        "--cache",
+        "/root/ai4s-trial/cache/boltz",
+        "--model",
+        "boltz2",
+        "--accelerator",
+        "gpu",
+        "--devices",
+        "1",
+        "--output_format",
+        "pdb",
+        "--no_kernels",
+        "--num_workers",
+        "0",
+        "--seed",
+        "42",
+        "--recycling_steps",
+        "3",
+        "--sampling_steps",
+        "200",
+        "--diffusion_samples",
+        "1"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:50:06.746195+00:00",
+      "end_utc": "2026-10-21T14:50:43.049379+00:00",
+      "wall_seconds": 36.3027279227972,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/design-boltz.log",
+        "bytes": 2416,
+        "sha256": "84b7557cf77e4ec6bc7a9e8fb023eb7817e802ad587de200e08422f17c492b94"
+      }
+    },
+    {
+      "name": "positive-createdb",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "createdb",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/query.fasta",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/query"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:50:43.055960+00:00",
+      "end_utc": "2026-10-21T14:50:43.069674+00:00",
+      "wall_seconds": 0.01243186742067337,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive-createdb.log",
+        "bytes": 885,
+        "sha256": "4d078bc8f6e905f5c98a5b2ddaca001188f94fc4e6c8fd3d167bceb9dce598c1"
+      }
+    },
+    {
+      "name": "positive-search",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "search",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/query",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/hits",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/tmp",
+        "--gpu",
+        "1",
+        "-e",
+        "0.001",
+        "--max-seqs",
+        "500",
+        "--threads",
+        "10",
+        "-a",
+        "1",
+        "--alignment-mode",
+        "3",
+        "--min-seq-id",
+        "0.3",
+        "-c",
+        "0.8",
+        "--cov-mode",
+        "2"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:50:43.071356+00:00",
+      "end_utc": "2026-10-21T14:50:43.542266+00:00",
+      "wall_seconds": 0.46956391260027885,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive-search.log",
+        "bytes": 7241,
+        "sha256": "27e6be6829304456fdb9aa75044980f8a9c5a3fc85f76a9029fdb257fb531da7"
+      }
+    },
+    {
+      "name": "positive-tsv",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "convertalis",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/query",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/hits",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/hits.tsv",
+        "--format-output",
+        "query,target,fident,alnlen,qcov,tcov,evalue,bits"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:50:43.543178+00:00",
+      "end_utc": "2026-10-21T14:50:43.624506+00:00",
+      "wall_seconds": 0.08078103139996529,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive-tsv.log",
+        "bytes": 965,
+        "sha256": "4d201247f95d0daf670c102e7cf4020f9bbb547293829f725525f4c7be9968e5"
+      }
+    },
+    {
+      "name": "positive-msa",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "result2msa",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/query",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/hits",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/alignment",
+        "--msa-format-mode",
+        "5"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:50:43.625534+00:00",
+      "end_utc": "2026-10-21T14:50:43.715736+00:00",
+      "wall_seconds": 0.08924145996570587,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive-msa.log",
+        "bytes": 1243,
+        "sha256": "1e6a1d1f09d1662950ef8f4832a35ebeef47b92d7382dbf7d4e7de5bd8a4fbdc"
+      }
+    },
+    {
+      "name": "positive-unpack",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "unpackdb",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/alignment",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/a3m",
+        "--unpack-name-mode",
+        "1",
+        "--unpack-suffix",
+        ".a3m"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:50:43.717810+00:00",
+      "end_utc": "2026-10-21T14:50:43.723536+00:00",
+      "wall_seconds": 0.004193844273686409,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive-unpack.log",
+        "bytes": 573,
+        "sha256": "aa0f465031e7362f6b975852ddfcb73a89f5eecfcf9251f0dc15efbc4f09aff8"
+      }
+    },
+    {
+      "name": "positive-boltz",
+      "argv": [
+        "/root/miniconda3/envs/myconda/bin/boltz",
+        "predict",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/input.yaml",
+        "--out_dir",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/boltz",
+        "--cache",
+        "/root/ai4s-trial/cache/boltz",
+        "--model",
+        "boltz2",
+        "--accelerator",
+        "gpu",
+        "--devices",
+        "1",
+        "--output_format",
+        "pdb",
+        "--no_kernels",
+        "--num_workers",
+        "0",
+        "--seed",
+        "42",
+        "--recycling_steps",
+        "3",
+        "--sampling_steps",
+        "200",
+        "--diffusion_samples",
+        "1"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:50:43.742540+00:00",
+      "end_utc": "2026-10-21T14:51:18.245325+00:00",
+      "wall_seconds": 34.50118989497423,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive-boltz.log",
+        "bytes": 2323,
+        "sha256": "bbaf3d4bc512554a92ebf406b3bde665d3765c0d2ae9350e2c2cc35f6e4b2e93"
+      }
+    }
+  ],
+  "branches": {
+    "design": {
+      "aligned_records": 1,
+      "candidate_hits": 0,
+      "retained_unique_sequences": 0,
+      "records": 1,
+      "query_length": 80,
+      "hits": 0,
+      "used_by_boltz": false,
+      "filtered_sha256": "b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb",
+      "query": "SLLKLLLEEKLKEEKLIEEAKKRIKELLETTKDKEELIEKLEEIAEELEKEPVLEELKELVEERIEDLKAGKEKEYEIKL",
+      "checks": {
+        "prediction_count": 1,
+        "sequence_matches_query": true,
+        "length": 80,
+        "confidence": {
+          "confidence_score": 0.8671682476997375,
+          "ptm": 0.7490227222442627,
+          "iptm": 0.0,
+          "ligand_iptm": 0.0,
+          "protein_iptm": 0.0,
+          "complex_plddt": 0.8967046737670898,
+          "complex_iplddt": 0.8967046737670898,
+          "complex_pde": 0.763861894607544,
+          "complex_ipde": 0.0,
+          "chains_ptm": {
+            "0": 0.7490227222442627
+          },
+          "pair_chains_iptm": {
+            "0": {
+              "0": 0.7490227222442627
+            }
+          }
+        }
+      }
+    },
+    "positive": {
+      "aligned_records": 499,
+      "candidate_hits": 498,
+      "retained_unique_sequences": 466,
+      "records": 467,
+      "query_length": 142,
+      "hits": 498,
+      "used_by_boltz": true,
+      "filtered_sha256": "ae724d3749f39d2dfbfc612330d8c8bb059d894d8818d78f1ead425e467b4d59",
+      "query": "MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR",
+      "checks": {
+        "prediction_count": 1,
+        "sequence_matches_query": true,
+        "length": 142,
+        "confidence": {
+          "confidence_score": 0.922421395778656,
+          "ptm": 0.8999794125556946,
+          "iptm": 0.0,
+          "ligand_iptm": 0.0,
+          "protein_iptm": 0.0,
+          "complex_plddt": 0.9280318021774292,
+          "complex_iplddt": 0.9280318021774292,
+          "complex_pde": 0.46216630935668945,
+          "complex_ipde": 0.0,
+          "chains_ptm": {
+            "0": 0.8999794125556946
+          },
+          "pair_chains_iptm": {
+            "0": {
+              "0": 0.8999794125556946
+            }
+          }
+        }
+      }
+    }
+  },
+  "runner": {
+    "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/run_audited_b.py",
+    "bytes": 4630,
+    "sha256": "e8eaa3b8ee9e5a4f4f9c813d7b979fa41ae1ea190ffccdc86d5bb8f0316de5dc"
+  },
+  "helper": {
+    "path": "/root/ai4s-trial/protein_design_pipeline.py",
+    "bytes": 22339,
+    "sha256": "f59cbe99eb26ba64716a7089d3b6081c9b9fcef050cb8c57f38047edb3e58cc7"
+  },
+  "notes": [
+    "Initial successful interactive search log overwritten by accidental duplicate attempt; initial result and tmp retained. Audited run uses exclusive logs and new prefixes.",
+    "CPU sensitivity 7 versus GPU maximum; no speedup claim."
+  ],
+  "inputs": [
+    {
+      "path": "/root/ai4s-trial/db/uniprot_sprot.fasta.gz",
+      "bytes": 93801562,
+      "sha256": "a9c3496aa727e61d25d9e1291c9ba28d2c2ad19c0e26569dc083d53ec4169536"
+    },
+    {
+      "path": "/root/ai4s-trial/db/uniprot_sprot.fasta",
+      "bytes": 288201213,
+      "sha256": "1372f18e218d761027616bf17479bcf450b30314fc0a8095fcb0e97e85d6ecf9"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R003b-pipeline/inputs/design.fasta",
+      "bytes": 89,
+      "sha256": "b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb"
+    },
+    {
+      "path": "/root/ai4s-trial/inputs/positive_control.fasta",
+      "bytes": 163,
+      "sha256": "9f28ee2461cfee4c04e56bb447316d0ad23687d15f3da13aaae5946de4f0273a"
+    },
+    {
+      "path": "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+      "bytes": 117398776,
+      "sha256": "f46fc772abad7417e7ae1bf0f219883fcfc4fa3cdc2ab4117fa6f8bd7e0e9c11"
+    }
+  ],
+  "databases": [
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base",
+      "bytes": 210169339,
+      "sha256": "fa1e73f7a733274ff80abac0cf661e149a8f848e56d41cf0ea16aae0c0a0b77b"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base.dbtype",
+      "bytes": 4,
+      "sha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base.index",
+      "bytes": 11640442,
+      "sha256": "1373fc908fbdf7a4c51e2ea7239e01765f94169fd4da4dba17b2f129147443f1"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base.lookup",
+      "bytes": 9124554,
+      "sha256": "19cdd048e330f5dadafaa3da37f9b901d7e387f55f119ca0a330f35d6ef6a4bc"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base.source",
+      "bytes": 22,
+      "sha256": "f9cab6fe690a534362ee23f4dd0798eee2199361c317d8bd129c83d6e776eb35"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base_h",
+      "bytes": 75411973,
+      "sha256": "963cb32bc09c3b22686944310ab8618a9d05f1e8a331733415bd8ec45f0ae85f"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base_h.dbtype",
+      "bytes": 4,
+      "sha256": "42f4aeb81c1ef81f771f3de8abca9dcf66901c575530e7672e4b1146474ae650"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base_h.index",
+      "bytes": 11237571,
+      "sha256": "198d2f0722ab0f078decb087a6e0c360cb6efb68bbe1d3e645d672a57a32c378"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu",
+      "bytes": 209881292,
+      "sha256": "c046ef5110fc574d4845370941c6f9e6120be75c93897868c373a47d3d4c3310"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu.dbtype",
+      "bytes": 4,
+      "sha256": "c9c7e8c63836a93f6d8c04598b6503d2863a2df7b86366157178234175704dcc"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu.index",
+      "bytes": 11380815,
+      "sha256": "5cd1d3a09594946b4cfc6da48d80363eace0d2b165dba61797e93b606d900995"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu.lookup",
+      "bytes": 11892184,
+      "sha256": "4fc18756882d833cee0c4e1b996ca58ccd02c12b8c09dcb0a5da817af08861e3"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu.source",
+      "bytes": 22,
+      "sha256": "f9cab6fe690a534362ee23f4dd0798eee2199361c317d8bd129c83d6e776eb35"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu_h",
+      "bytes": 75411973,
+      "sha256": "b12ad6033e799fb8986d8fdc01110cd0c64c32492cb9e3b296f50d263a88b746"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu_h.dbtype",
+      "bytes": 4,
+      "sha256": "42f4aeb81c1ef81f771f3de8abca9dcf66901c575530e7672e4b1146474ae650"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu_h.index",
+      "bytes": 11232831,
+      "sha256": "e2682176bb73bf63b874211c700b2a60f3b4e21bd791a5caccb73c2b4564b406"
+    }
+  ],
+  "ended_utc": "2026-10-21T14:51:18.251531+00:00"
+}

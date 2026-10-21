@@ -1,0 +1,35 @@
+{
+  "cpu_positive_hits": 498,
+  "gpu_positive_hits": 498,
+  "shared_target_ids": 487,
+  "only_cpu": [
+    "P02053",
+    "P02081",
+    "P24292",
+    "P68065",
+    "P68194",
+    "P68232",
+    "P68234",
+    "P68256",
+    "P68257",
+    "P68258",
+    "Q28221"
+  ],
+  "only_gpu": [
+    "P02020",
+    "P02042",
+    "P02050",
+    "P02089",
+    "P02093",
+    "P02102",
+    "P06642",
+    "P67823",
+    "P67824",
+    "P86391",
+    "Q7M2Y5"
+  ],
+  "same_target_set": false,
+  "cpu_filtered_sha256": "cea3f0e6059f98662c25ce1a06adc5c2512e912ffe0fba056c009ed02ac2807d",
+  "gpu_filtered_sha256": "ae724d3749f39d2dfbfc612330d8c8bb059d894d8818d78f1ead425e467b4d59",
+  "note": "CPU -s 7 and GPU maximum sensitivity; one query each, not a speed benchmark."
+}

@@ -1,0 +1,11 @@
+{
+  "aligned_records": 1,
+  "candidate_hits": 0,
+  "retained_unique_sequences": 0,
+  "records": 1,
+  "query_length": 80,
+  "hits": 0,
+  "used_by_boltz": false,
+  "filtered_sha256": "b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb",
+  "query": "SLLKLLLEEKLKEEKLIEEAKKRIKELLETTKDKEELIEKLEEIAEELEKEPVLEELKELVEERIEDLKAGKEKEYEIKL"
+}

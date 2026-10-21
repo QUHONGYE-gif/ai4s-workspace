@@ -9,6 +9,8 @@
 - 已验证登录 API、Coder SSH、仓库读写、用户目录与共享卷写入；停止并启动工作区后文件仍保留，检查临时文件已清理。
 - 模板及 provider 版本已固定；本地 provider 镜像已按官方注册表 SHA-256 校验。初始化入口可重复执行并保留已有账户和数据；详细证据见 `.local/initialization.json` 及运行说明中的日志索引。
 - 陈铠洲在独立租用的 RTX 4090 上完成 RFdiffusion → ProteinMPNN → Swiss-Prot 搜索 → Boltz-2 的单链无条件设计封装与真实运行；首次手工流程、天然蛋白 MSA 对照及封装验证分别见 [R001](../experiments/R001-protein-design-smoke/record.md)、[R002](../experiments/R002-swissprot-msa/record.md)、[R003](../experiments/R003-pipeline/record.md)。设计序列在本轮搜索条件下无命中，采用单序列预测；不表示功能或实验有效性已验证。
+- MMseqs2 GPU 分支 [R004](../experiments/R004-mmseqs-gpu/record.md) 已在恢复的矩池云 RTX 4090 实例完成：Swiss-Prot padded 建库、设计与 P69905 的 GPU 搜索、TSV／A3M 导出与筛选、两条 Boltz 预测及文件检查。设计 0 命中；阳性 498 命中、最终 A3M 467 条；CPU 对照为 464 条，结果不等价。完整中间文件、临时库和失败记录已建清单及持久卷归档；完整包与小型证据包均已回传校验（201 个普通文件、5 个符号链接），无正式加速比或 MSA 效果结论。
+- 流程脚本已增加 GPU 后端、padded 建库和来源检查，9 个本地确定性测试通过。R004 实跑使用独立审计脚本，未直接验收新增 GPU `build-db/run` 封装入口；实际代码身份和运行边界见 R004。官方参数及配置用法见 [流程说明](protein_pipeline.md#44-使用-gpu-版-mmseqs2-搜索)。
 - 已整理两份团队协作材料：[流程跑通记录与使用说明](protein_pipeline.md)、[复用与加速讨论稿](protein_reuse.md)。代码、配置、测试及小型原始证据选集随个人 `dev-ckz` 分支交付；复用方案待陈铠洲与曲鸿烨讨论确认，尚无加速比结论。
 
 ## 服务器部署（已完成）
@@ -33,6 +35,6 @@
 
 ## 最近下一步
 
-先阅读 [流程说明](protein_pipeline.md)，结合 R001/R002/R003 的真实文件理解每一步输入、参数和中间产物；使用 [复用与加速材料](protein_reuse.md) 与曲鸿烨讨论产物身份及首个复用对象。租用实例与团队 Coder 环境分别记录；团队 GPU 部署仍待资源具备。当前封装完成后不自动扩展业务网页、缓存策略或功能设计实验。
+与陈铠洲一起审阅 [CPU/GPU 两分支记录](../experiments/R004-mmseqs-gpu/record.md)，确认团队交接材料；完整归档后续上传团队共享存储并补充统一访问链接。新增 GPU 封装入口如需团队采用，再独立验收，不将自定义审计脚本成功当作入口验收。租用实例与团队 Coder 的环境分别维护。
 
 相关文档：[用户原文](vision.md) · [设计草案](research_plan.md) · [项目规则](../AGENTS.md) · [仓库入口](../README.md)。

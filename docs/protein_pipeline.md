@@ -13,6 +13,7 @@
 | 理解参数与中间产物 | 本文第 3、5、6 节；保留扩散轨迹、序列概率、MSA 与预测置信度 | 各运行记录及 `evidence/` |
 | 封装 pipeline 并真实验证 | 已完成，包含 MSA 无命中处理和产物检查 | [运行脚本](../scripts/protein_design_pipeline.py)、[配置](../configs/protein_design.matpool.json)、[R003](../experiments/R003-pipeline/record.md) |
 | 与曲鸿烨共同梳理复用与加速 | 已形成讨论材料，**待双方讨论确认**；没有测得加速比 | [复用与加速协作讨论稿](protein_reuse.md) |
+| 补充 GPU 版 MMseqs2 搜索路径 | GPU 独立分支已完成建库、两种查询、MSA 与 Boltz 预测；新增 pipeline GPU 入口仍待单独验收 | [R004 实验及附件](../experiments/R004-mmseqs-gpu/record.md)；本文第 4.4 节；官方参数说明见 [MMseqs2 GPU 搜索文档](https://github.com/soedinglab/MMseqs2/wiki#gpu-accelerated-search) |
 
 两次新设计序列在本次 Swiss-Prot 库和各自搜索条件下均无命中，因而其 Boltz 预测实际使用 `msa: empty`。天然蛋白对照验证的是“有 MSA 的文件连接和预测路径”。**本次没有验证目标功能、结合能力或实验稳定性，也没有证明 MSA 带来效果提升。**
 
@@ -24,6 +25,7 @@
 | [R002](../experiments/R002-swissprot-msa/record.md) | R001 设计序列与天然人血红蛋白 α 链 P69905，各自搜索同一库 | 设计 0 命中；天然对照 500 命中，A3M 501 条记录，并完成 Boltz 预测 | 500 为搜索设置上限；没有同一对象有/无 MSA 的效果对照 |
 | [R003b](../experiments/R003-pipeline/record.md) | 用封装生成另一条 80 aa 设计，固定各模型种子 | 全流程约 **112.45 秒**；设计 0 命中；结构序列与设计完全一致；`confidence_score` 0.8672 | 已部署环境下的单次墙钟耗时，含预检和模型初始化；不含安装、下载及首次建库；本轮未算 RMSD |
 | [R003 阳性补查](../experiments/R003-pipeline/record.md#msa-有命中分支的补充检查) | P69905 使用 R003 更严格的搜索及筛选条件 | 498 候选；去重后 464 条 A3M 记录，含查询；Boltz 解析成功 | 仅 CPU 搜索、筛选与解析，未对这个新 A3M 重跑 GPU 预测 |
+| [R004 GPU 分支](../experiments/R004-mmseqs-gpu/record.md) | 复用 R003b 设计序列；P69905 作阳性对照 | 设计 0 命中并完成单序列预测；阳性 498 命中、467 条筛选 A3M，带 MSA 的 Boltz 预测成功 | 从序列处续接；未重跑上游；CPU/GPU 灵敏度与结果不同，不报告正式加速比 |
 
 R003 不是 R001 的重复结构，也没有沿用 R001 的 RMSD。R003 的搜索增加了显式一致性、覆盖度筛选及去重，与 R002 原搜索条件不同。
 
@@ -133,6 +135,68 @@ python scripts/protein_design_pipeline.py run \
 python -m unittest discover -s tests -p 'test_protein_design_pipeline.py' -v
 ```
 
+### 4.4 使用 GPU 版 MMseqs2 搜索
+
+这条路径替换的是 MSA 搜索步骤，前后 RFdiffusion、ProteinMPNN 和 Boltz 不变。MMseqs2 官方 GPU 构建支持蛋白质序列搜索；GPU搜索需要独立的 GPU 二进制和经 `makepaddedseqdb` 转换的目标库。GPU 搜索本身通过 `--gpu 1` 开启，后续 `convertalis`、`result2msa`、`unpackdb` 仍由 MMseqs2 执行，当前记录不把这些导出步骤描述为 GPU 加速。
+
+**官方要求**：预编译 GPU 包要求 Linux glibc ≥ 2.29、NVIDIA Driver ≥ 525.60.13；无需单独安装 CUDA Toolkit。GPU搜索支持 Turing，但官方称 Ampere 或更新架构可达到完整速度。GPU 后端固定在最高灵敏度，CPU 路径的 `-s 7` 不用于 GPU 搜索；其余 E 值、候选数和覆盖度筛选仍按配置工作。见 [官方安装与 GPU 搜索说明](https://github.com/soedinglab/MMseqs2/wiki)。
+
+以下操作在**实际 GPU Linux 执行环境**进行。先检查资源并确认获准使用的 GPU：
+
+```bash
+nvidia-smi
+ldd --version | head -n 1
+```
+
+获取官方 GPU 预编译包后，解压到数据根目录的独立位置（不要覆盖 CPU 版）：
+
+```bash
+mkdir -p "$AI4S_ROOT/tools/mmseqs-gpu"
+# 将官方 mmseqs-linux-gpu.tar.gz 放在当前目录后：
+tar -xzf mmseqs-linux-gpu.tar.gz -C "$AI4S_ROOT/tools/mmseqs-gpu" --strip-components=1
+"$AI4S_ROOT/tools/mmseqs-gpu/bin/mmseqs" version
+```
+
+先复制实际配置并改 GPU 后端、数据库前缀和 GPU 二进制版本。`version` 输出必须逐字填入配置；保留独立副本，CPU 配置和已有数据库不动：
+
+```bash
+python - "$AI4S_ROOT/pipeline-config.json" "$AI4S_ROOT/pipeline-config-gpu.json" \
+  "$AI4S_ROOT/tools/mmseqs-gpu/bin/mmseqs" <<'PY'
+import json, subprocess, sys
+from pathlib import Path
+source, target, binary = map(Path, sys.argv[1:])
+c = json.loads(source.read_text())
+c["msa"]["backend"] = "gpu"
+c["msa"]["database"] = str(Path(c["root"]) / "db/swissprot-gpu")
+c["msa"]["mmseqs_version"] = subprocess.check_output([str(binary), "version"], text=True).strip()
+target.write_text(json.dumps(c, indent=2) + "\n")
+PY
+```
+
+在 GPU 配置下调用既有 `build-db`，从同一份 Swiss-Prot FASTA 生成普通 MMseqs2 数据库，再生成 GPU padded 数据库。构建耗时和存储由数据库大小决定；构建结果与 FASTA 哈希、二进制版本及 SHA-256、建库命令一并写入 `.source.json`。该步骤不会改写 FASTA、CPU 库或已有运行：
+
+```bash
+python scripts/protein_design_pipeline.py build-db \
+  --config "$AI4S_ROOT/pipeline-config-gpu.json" \
+  --fasta-gz "$AI4S_ROOT/db/uniprot_sprot.fasta.gz"
+```
+
+建库后核查 provenance、设备可见性及 dry-run，再用**新运行目录**启动完整 pipeline：
+
+```bash
+cat "$AI4S_ROOT/db/swissprot-gpu.source.json"
+python scripts/protein_design_pipeline.py run \
+  --config "$AI4S_ROOT/pipeline-config-gpu.json" \
+  --out "$AI4S_ROOT/runs/team-design-gpu-001" --dry-run
+python scripts/protein_design_pipeline.py run \
+  --config "$AI4S_ROOT/pipeline-config-gpu.json" \
+  --out "$AI4S_ROOT/runs/team-design-gpu-001"
+```
+
+GPU `run` 会在 manifest 中保存实际调用参数，搜索命令带 `--gpu 1` 且不传 CPU 灵敏度参数；也会校验运行二进制与 padded 库哈希。数据库需要通过此配置的 `build-db` 生成；`register-db` 不接受 GPU 库，以免把来源不明的 padded 文件登记成已验证来源。单次 Swiss-Prot 查询不要求常驻 `gpuserver` 或预建 `createindex`。
+
+**验证状态与比较办法**：[R004](../experiments/R004-mmseqs-gpu/record.md) 已用独立审计脚本完成真实 GPU 搜索和两条下游 Boltz 分支，保留每步耗时、参数、文件清单与失败记录。上述新增 GPU `build-db/run` 封装入口通过本地命令构造与建库边界测试，未直接完成端到端验收；不要混淆两者。显存峰值、正式性能对照仍未测量。要比较 CPU 与 GPU，使用相同查询序列、同一 FASTA/数据库快照及相同筛选阈值，分别保存运行记录；检查命中数、候选标识、最终 A3M 和 Boltz 输入。CPU 与 GPU 的搜索/排序结果不可预先假定完全相同，性能提升也须实测后再报告。
+
 ## 5. 哪些参数要固定，哪些可以改
 
 以下是 R003 的演示配置，不是各类蛋白设计的最优设置。对照时，应固定未研究的因素并记录改变项。
@@ -187,7 +251,7 @@ python -m unittest discover -s tests -p 'test_protein_design_pipeline.py' -v
 
 仓库随附的是**小型原始证据选集**，各 `evidence/index.json` 记录源归档内路径、大小和哈希；原文件逐字节复制，未改写为示意结果。R003 原始 `manifest.json` 含当时执行路径，它用于审计历史，不是团队成员应使用的部署路径，也不表示清单中全部 67 个文件都已进 Git。
 
-完整运行归档和环境恢复材料已由陈铠洲保管，并备份至租用平台持久卷；**尚未上传团队共享存储，也没有可供所有成员自助下载的统一链接**。归档名称、校验和与不包含的内容见 [R001](../experiments/R001-protein-design-smoke/record.md#产物保存)、[R002](../experiments/R002-swissprot-msa/record.md#归档与共享状态)、[R003](../experiments/R003-pipeline/record.md#产物与备份) 及 [环境说明](environment.md#矩池云临时-gpu-试运行2026-10-21)。后续确定团队存储位置后补充共享链接。
+完整运行归档和环境恢复材料已由陈铠洲保管，并备份至租用平台持久卷；**尚未上传团队共享存储，也没有可供所有成员自助下载的统一链接**。归档名称、校验和与不包含的内容见 [R001](../experiments/R001-protein-design-smoke/record.md#产物保存)、[R002](../experiments/R002-swissprot-msa/record.md#归档与共享状态)、[R003](../experiments/R003-pipeline/record.md#产物与备份) 、[R004](../experiments/R004-mmseqs-gpu/record.md#归档与共享状态) 及 [环境说明](environment.md#矩池云临时-gpu-试运行2026-10-21)。后续确定团队存储位置后补充共享链接。
 
 接手时先用仓库附件核对各阶段的数据含义，再按执行环境修改配置并准备模型/数据。复用策略、缓存身份和首次对照方案需与曲鸿烨讨论，见 [协作讨论稿](protein_reuse.md)。靶标、motif、多聚体、多候选筛选、功能/湿实验与工作台模型接入均尚未完成。
 

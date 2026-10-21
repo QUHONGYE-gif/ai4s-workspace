@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "sequences": [
+    {
+      "protein": {
+        "id": "A",
+        "sequence": "MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR",
+        "msa": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/filtered.a3m"
+      }
+    }
+  ]
+}

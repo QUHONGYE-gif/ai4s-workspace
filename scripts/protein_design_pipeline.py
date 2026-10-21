@@ -172,6 +172,8 @@ def load_config(path):
     if c["mpnn_temperature"] <= 0 or not re.fullmatch(r"\d+", c["gpu"]):
         raise ValueError("Positive temperature and one GPU index are required")
     m = c["msa"]
+    if m.get("backend", "cpu") not in ("cpu", "gpu"):
+        raise ValueError("msa.backend must be cpu or gpu")
     if m["mode"] not in ("empty", "swissprot"):
         raise ValueError("msa.mode must be empty or swissprot")
     if m["mode"] == "swissprot":
@@ -232,29 +234,63 @@ def build_database(args, c):
     prefix.parent.mkdir(parents=True, exist_ok=True)
     if list(prefix.parent.glob(prefix.name + "*")):
         raise FileExistsError("Database prefix already exists; choose a new prefix")
+    backend = c["msa"].get("backend", "cpu")
+    binary = mmseqs_binary(c, backend)
+    base_prefix = (prefix.parent / ".mmseqs-build-source" / prefix.name
+                   if backend == "gpu" else prefix)
+    if backend == "gpu" and list(base_prefix.parent.glob(base_prefix.name + "*")):
+        raise FileExistsError(f"Database staging prefix already exists: {base_prefix}")
+    base_prefix.parent.mkdir(parents=True, exist_ok=True)
     fasta = prefix.with_suffix(".fasta")
     with gzip.open(args.fasta_gz, "rb") as source, fasta.open("xb") as dest:
         shutil.copyfileobj(source, dest)
-    binary = Path(c["root"]) / "tools/mmseqs/bin/mmseqs"
     with prefix.with_suffix(".build.log").open("w") as log:
-        subprocess.run([str(binary), "createdb", str(fasta), str(prefix)], check=True,
+        subprocess.run([str(binary), "createdb", str(fasta), str(base_prefix)], check=True,
                        stdout=log, stderr=subprocess.STDOUT)
+        commands = [[str(binary), "createdb", str(fasta), str(base_prefix)]]
+        if backend == "gpu":
+            subprocess.run([str(binary), "makepaddedseqdb", str(base_prefix), str(prefix)],
+                           check=True, stdout=log, stderr=subprocess.STDOUT)
+            commands.append([str(binary), "makepaddedseqdb", str(base_prefix), str(prefix)])
     version = subprocess.check_output([str(binary), "version"], text=True).strip()
     write_json(str(prefix) + ".source.json", {
         "status": "completed", "created": now(), "source": str(Path(args.fasta_gz).resolve()),
         "source_sha256": sha256(args.fasta_gz), "fasta_sha256": sha256(fasta),
         "mmseqs_version": version, "mmseqs_sha256": sha256(binary),
-        "command": [str(binary), "createdb", str(fasta), str(prefix)],
+        "backend": backend, "commands": commands,
+        "base_database": str(base_prefix) if backend == "gpu" else None,
+        "base_database_files": mmseqs_snapshot(base_prefix) if backend == "gpu" else None,
         "database": str(prefix), "database_files": mmseqs_snapshot(prefix),
     })
     print(f"Database ready: {prefix}")
+
+
+def mmseqs_binary(c, backend):
+    suffix = "-gpu" if backend == "gpu" else ""
+    return Path(c["root"]) / f"tools/mmseqs{suffix}/bin/mmseqs"
+
+
+def mmseqs_search_args(query, database, result, tmp, m):
+    args = ["search", query, database, result, tmp]
+    if m.get("backend", "cpu") == "gpu":
+        # MMseqs2 GPU search runs at maximum sensitivity; -s is not applicable.
+        args += ["--gpu", 1]
+    else:
+        args += ["-s", m["sensitivity"]]
+    args += ["-e", m["evalue"], "--max-seqs", m["max_sequences"],
+             "--threads", m["threads"], "-a", 1, "--alignment-mode", 3,
+             "--min-seq-id", m["min_identity"], "-c", m["query_coverage"], "--cov-mode", 2]
+    return args
 
 
 def register_database(args, c):
     """Record an already-built database when its source and tool version are known."""
     prefix = Path(c["msa"]["database"])
     fasta_gz = Path(args.fasta_gz)
-    binary = Path(c["root"]) / "tools/mmseqs/bin/mmseqs"
+    backend = c["msa"].get("backend", "cpu")
+    if backend == "gpu":
+        raise ValueError("GPU padded databases must be built with build-db; register-db cannot verify their construction")
+    binary = mmseqs_binary(c, backend)
     version = subprocess.check_output([str(binary), "version"], text=True).strip()
     if version != c["msa"]["mmseqs_version"]:
         raise ValueError("Installed MMseqs2 version differs from the configured version")
@@ -350,19 +386,23 @@ def run_pipeline(args, c):
             if not provenance.exists() or not Path(str(database) + ".dbtype").exists():
                 raise ValueError("Run register-db or build-db first; database provenance is required")
             shutil.copy2(provenance, out / "msa/database.source.json")
-            mmseqs = root / "tools/mmseqs/bin/mmseqs"
+            backend = m.get("backend", "cpu")
+            mmseqs = mmseqs_binary(c, backend)
             db_info = json.loads(provenance.read_text())
             if (sha256(mmseqs) != db_info["mmseqs_sha256"]
                     or db_info["mmseqs_version"] != m["mmseqs_version"]
+                    or db_info.get("backend", "cpu") != backend
                     or mmseqs_snapshot(database) != db_info["database_files"]):
                 raise ValueError("MMseqs2 binary or database differs from its recorded provenance")
+            if backend == "gpu" and not db_info.get("base_database_files"):
+                raise ValueError("GPU padded database lacks recorded source database provenance")
+            if backend == "gpu" and mmseqs_snapshot(db_info["base_database"]) != db_info["base_database_files"]:
+                raise ValueError("MMseqs2 source database differs from its recorded provenance")
             def mm(name, *params):
                 run.command(name, [mmseqs, *params], out, env)
             mm("msa-createdb", "createdb", query, out / "msa/query")
-            mm("msa-search", "search", out / "msa/query", database, out / "msa/hits", out / "msa/tmp",
-               "-s", m["sensitivity"], "-e", m["evalue"], "--max-seqs", m["max_sequences"],
-               "--threads", m["threads"], "-a", 1, "--alignment-mode", 3,
-               "--min-seq-id", m["min_identity"], "-c", m["query_coverage"], "--cov-mode", 2)
+            mm("msa-search", *mmseqs_search_args(out / "msa/query", database,
+               out / "msa/hits", out / "msa/tmp", m))
             mm("msa-tsv", "convertalis", out / "msa/query", database, out / "msa/hits", out / "msa/hits.tsv",
                "--format-output", "query,target,fident,alnlen,qcov,tcov,evalue,bits")
             mm("msa-export", "result2msa", out / "msa/query", database, out / "msa/hits", out / "msa/alignment", "--msa-format-mode", 5)
@@ -375,7 +415,9 @@ def run_pipeline(args, c):
             msa_info.update(**filter_stats, records=records,
                             search_hits=len((out / "msa/hits.tsv").read_text().splitlines()),
                             min_identity=m["min_identity"], query_coverage=m["query_coverage"],
-                            evalue=m["evalue"], database_source_sha256=sha256(provenance))
+                            evalue=m["evalue"], backend=backend,
+                            search_sensitivity="maximum (GPU backend; -s not applicable)" if backend == "gpu" else m["sensitivity"],
+                            database_source_sha256=sha256(provenance))
             if records > 1:
                 msa_path = str(filtered_a3m)
                 msa_info["used_by_boltz"] = True

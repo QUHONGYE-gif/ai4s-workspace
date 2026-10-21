@@ -1,0 +1,13 @@
+environment 0 0.2375484425574541
+design-createdb 0 0.013539515435695648
+design-search 0 0.5119591932743788
+design-tsv 0 0.07667526230216026
+design-msa 0 0.08988974988460541
+design-unpack 0 0.0037491675466299057
+design-boltz 0 38.98588585853577
+FINAL failed files 105
+Traceback (most recent call last):
+  File "/root/ai4s-trial/runs/R004-mmseqs-gpu/run_audited.py", line 37, in <module>
+    pdbs=list((b/'boltz/predictions').rglob('*.pdb')); assert len(pdbs)==1; assert pdb_sequence(pdbs[0])==s
+                                                              ^^^^^^^^^^^^
+AssertionError

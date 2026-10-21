@@ -1,0 +1,23 @@
+createdb /root/ai4s-trial/db/uniprot_sprot.fasta /root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base 
+
+MMseqs Version:                    	fcf516aba34be4569b3eb5bda2b9db9e26a8f278
+Database type                      	0
+Shuffle input database             	true
+Createdb mode                      	0
+Write lookup file                  	1
+Offset of numeric ids              	0
+Threads                            	10
+Compressed                         	0
+Mask residues                      	0
+Mask residues probability          	0.9
+Mask lower case residues           	0
+Mask lower letter repeating N times	0
+Use GPU                            	0
+Verbosity                          	3
+
+Converting sequences
+[=========================================================
+Time for merging to swissprot_base_h: 0h 0m 0s 71ms
+Time for merging to swissprot_base: 0h 0m 0s 127ms
+Database type: Aminoacid
+Time for processing: 0h 0m 1s 647ms

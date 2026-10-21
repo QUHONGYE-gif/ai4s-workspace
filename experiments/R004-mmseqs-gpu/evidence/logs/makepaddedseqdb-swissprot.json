@@ -1,0 +1,15 @@
+{
+  "name": "makepaddedseqdb-swissprot",
+  "argv": [
+    "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+    "makepaddedseqdb",
+    "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base",
+    "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu"
+  ],
+  "start_utc": "2026-10-21T13:15:17.439376+00:00",
+  "end_utc": "2026-10-21T13:15:22.784813+00:00",
+  "wall_seconds": 5.34545080550015,
+  "exit_code": 0,
+  "log": "/root/ai4s-trial/runs/R004-mmseqs-gpu/logs/makepaddedseqdb-swissprot.log",
+  "log_sha256": "7b50e8a95d8dce3150839fbc1698651b39b4990429c459bfc2a38efdf6d38d7f"
+}

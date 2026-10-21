@@ -24,6 +24,7 @@
 | [蛋白质设计试运行 R001](experiments/R001-protein-design-smoke/record.md) | 查看 RFdiffusion → ProteinMPNN → Boltz 的运行身份、命令与中间产物 |
 | [Swiss-Prot MSA 试运行 R002](experiments/R002-swissprot-msa/record.md) | 查看 MMseqs2 搜索、A3M、Boltz 对照和设计序列无命中的实际结果 |
 | [封装验证 R003](experiments/R003-pipeline/record.md) | 查看真实封装运行、失败修正与备份证据 |
+| [MMseqs2 GPU 分支 R004](experiments/R004-mmseqs-gpu/record.md) | 查看 GPU 搜索、MSA、Boltz 分支结果与完整产物记录 |
 
 文档以相对 Markdown 链接相互引用，并提供返回入口。方案、阶段任务、实际状态和运行环境各自维护
 
@@ -47,7 +48,8 @@
 ├── experiments/
 │   ├── R001-protein-design-smoke/record.md
 │   ├── R002-swissprot-msa/record.md
-│   └── R003-pipeline/record.md
+│   ├── R003-pipeline/record.md
+│   └── R004-mmseqs-gpu/record.md
 └── docs/
     ├── vision.md
     ├── research_plan.md

@@ -1,0 +1,29 @@
+result2msa /root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/query /root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu /root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/hits /root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/alignment --msa-format-mode 5 
+
+MMseqs Version:           	fcf516aba34be4569b3eb5bda2b9db9e26a8f278
+Substitution matrix       	aa:blosum62.out,nucl:nucleotide.out
+Gap open cost             	aa:11,nucl:5
+Gap extension cost        	aa:1,nucl:2
+Allow deletions           	false
+Compositional bias        	1
+Compositional bias scale  	1
+MSA format mode           	5
+Summary prefix            	cl
+Skip query                	false
+Filter MSA                	0
+Use filter only at N seqs 	0
+Maximum seq. id. threshold	0.9
+Minimum seq. id.          	0.0
+Minimum score per column  	-20
+Minimum coverage          	0
+Select N most diverse seqs	1000
+Preload mode              	0
+Threads                   	10
+Compressed                	0
+Verbosity                 	3
+
+Query database size: 1 type: Aminoacid
+Target database size: 575748 type: Aminoacid
+[=================================================================] 1 0s 2ms
+Time for merging to alignment: 0h 0m 0s 0ms
+Time for processing: 0h 0m 0s 85ms
