@@ -1,0 +1,54 @@
+{
+  "note": "Selected original files, byte-identical to the preserved archives; not a complete run archive. See the run record for archive identity.",
+  "files": [
+    {
+      "file": "manifest.json",
+      "source_in_archive": "runs/R003b-pipeline/manifest.json",
+      "bytes": 24977,
+      "sha256": "70932c08cdce71cc66762b60f3794c43a9ad4b1e1d401e5fe0adb52f767d532b",
+      "archive": "ai4s-pipeline-20261021.tar.gz"
+    },
+    {
+      "file": "checks.json",
+      "source_in_archive": "runs/R003b-pipeline/checks.json",
+      "bytes": 1042,
+      "sha256": "c407ec8209195e18d4fced419a9e2d75f92a4a239d27272e0b68a721019b2707",
+      "archive": "ai4s-pipeline-20261021.tar.gz"
+    },
+    {
+      "file": "design.fasta",
+      "source_in_archive": "runs/R003b-pipeline/inputs/design.fasta",
+      "bytes": 89,
+      "sha256": "b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb",
+      "archive": "ai4s-pipeline-20261021.tar.gz"
+    },
+    {
+      "file": "msa-summary.json",
+      "source_in_archive": "runs/R003b-pipeline/msa/summary.json",
+      "bytes": 434,
+      "sha256": "cd719d99d2349fe1e17cf7768f695cc0a7b066e32e41be80b3725325324090b1",
+      "archive": "ai4s-pipeline-20261021.tar.gz"
+    },
+    {
+      "file": "positive-checks.json",
+      "source_in_archive": "runs/R003-positive-msa-b/checks.json",
+      "bytes": 370,
+      "sha256": "ea17d3e6fb23d73b3394202fecec414c812e157dfc0e3eaeaee9a06727f3908f",
+      "archive": "ai4s-msa-positive-check-20261021.tar.gz"
+    },
+    {
+      "file": "positive.filtered.a3m",
+      "source_in_archive": "runs/R003-positive-msa-b/filtered.a3m",
+      "bytes": 70942,
+      "sha256": "cea3f0e6059f98662c25ce1a06adc5c2512e912ffe0fba056c009ed02ac2807d",
+      "archive": "ai4s-msa-positive-check-20261021.tar.gz"
+    },
+    {
+      "file": "rfd.log",
+      "source_in_archive": "runs/R003b-pipeline/logs/rfd.log",
+      "bytes": 13409,
+      "sha256": "f369565a84dc07321323e5d2a1e0ef0f3badb9dc7590eac7a19dc55a068dccf0",
+      "archive": "ai4s-pipeline-20261021.tar.gz"
+    }
+  ]
+}

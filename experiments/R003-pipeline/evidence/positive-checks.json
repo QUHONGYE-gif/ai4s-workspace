@@ -1,0 +1,11 @@
+{
+  "aligned_records": 499,
+  "candidate_hits": 498,
+  "retained_unique_sequences": 463,
+  "validated_records": 464,
+  "status": "completed",
+  "boltz_a3m_parser_accepted": true,
+  "sequence_length": 142,
+  "filtered_sha256": "cea3f0e6059f98662c25ce1a06adc5c2512e912ffe0fba056c009ed02ac2807d",
+  "note": "CPU-only positive input check, not a new structure prediction"
+}

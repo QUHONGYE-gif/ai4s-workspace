@@ -50,7 +50,31 @@ Coder 控制面通过 Docker socket 创建工作区；已核对 Docker Desktop V
 
 ## 本项目环境与同步位置
 
-蛋白质生成工具的依赖、模型权重、科学数据库和工作台业务前后端环境尚未检查或建立。服务器已有 Cellist 环境仅作为已有资源记录，不表示它适用于本项目；准备阶段核查实际兼容性后，再补充本项目环境路径与用途。
+下述团队科研服务器与个人 Coder 工作区尚未建立蛋白质生成模型环境。服务器已有 Cellist 环境仅作为已有资源记录，不表示它适用于本项目。单独租用实例的试运行环境见本节末尾；其成功不代表团队环境已经配置。
+
+### 个人 Coder 工作区核验（2026-10-21）
+
+个人 `ckz/dev` 工作区的远程命令与仓库读写已验证。工作区为 Linux x86_64，仓库位于容器用户目录；联网曾使用个人电脑反向代理隧道，依赖该电脑和隧道在线，不是团队常驻网络服务。核验时没有可用 GPU，未检测到已安装的 Conda；共享数据卷剩余约 2.0 GiB。这是 2026-10-21 当时状态，后续资源应重新检查，不能认为该工作区已具备完整蛋白质模型环境。远程控制使用 Coder CLI；容器内试装的 Codex CLI 已按要求移除。
+
+### 矩池云临时 GPU 试运行（2026-10-21）
+
+陈铠洲单独租用 Linux x86_64、RTX 4090（24564 MiB，驱动 565.77）实例完成 R001/R002/R003。该实例与 `lab-gpu`、团队 Coder 工作区是不同执行环境。
+
+| 项目 | 当时的实际配置及边界 |
+| --- | --- |
+| 计算与存储 | 单张 4090；实例盘初始约 300 GB；`/mnt` 持久卷容量 5 GB |
+| 数据根目录 | `/root/ai4s-trial`，仅为此次租用实例的执行路径，不是团队统一目录 |
+| RFdiffusion／ProteinMPNN | Conda `rfd4090`，Python 3.10.22，PyTorch 2.0.1+cu118；完整版本、源码提交和兼容修复见 [R001](../experiments/R001-protein-design-smoke/record.md#执行身份) |
+| Boltz | 镜像环境 `myconda`，Python 3.11.13、Boltz 2.2.1、PyTorch 2.6.0+cu124；关闭可选 kernels |
+| 代码入口 | [控制脚本](../scripts/protein_design_pipeline.py) 与 [实际配置](../configs/protein_design.matpool.json)；路径调整方法见 [团队使用说明](protein_pipeline.md#4-团队如何使用代码) |
+| 运行证据 | [R001](../experiments/R001-protein-design-smoke/record.md)、[R002](../experiments/R002-swissprot-msa/record.md)、[R003](../experiments/R003-pipeline/record.md) 维护各自归档身份；Git 提供小型附件选集 |
+| 完整归档 | 陈铠洲保管，已备份至平台持久卷；尚未上传团队共享存储，暂无统一下载链接 |
+
+租用平台持久卷备份目录为 `/mnt/ai4s-trial-20261021/`，R001 另有 `/mnt/ai4s-trial-20261021.tar.gz`。这是原账户下的备份位置，不代表其他成员可直接访问。平台[持久卷说明](https://www.matpool.com/supports/doc-quick-start)称 `/mnt` 映射同区域个人网盘，释放实例后网盘保留；本次另校验了回传副本，不单独依赖临时实例。
+
+关机准备另保存 `ai4s-recovery-20261021.tar.gz`：38,067,041 字节，358 个条目，SHA-256 `5123f78c6d243037f0679002cd5e828156f572d5d7d3c9842660c5e522f378e9`。原实例、持久卷和回传副本校验一致。它包含 RFdiffusion／ProteinMPNN 源码、SE3-Transformer 相关代码、已有 schedules、安装日志、输入、控制脚本及两个 Conda 环境的 `env export`、`list --explicit`；Git 提交信息另存。**这不是整机镜像或可直接解压运行的 Conda 环境。**
+
+原始模型权重、Boltz 分子资料、可重建的解压数据库和整个 Conda 安装目录未纳入恢复包。恢复时需重新安装依赖、下载并校验权重/资料、重建搜索库，再做兼容性验证。已使用权重哈希在 [R003 原始清单](../experiments/R003-pipeline/evidence/manifest.json)；Boltz 亲和力权重未用于本次结构预测。尚未替团队部署 GPU 环境，也未代替用户关闭或释放租用实例。
 
 本轮已创建的服务器位置与核验结果：
 

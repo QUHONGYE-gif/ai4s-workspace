@@ -1,0 +1,784 @@
+{
+  "status": "completed",
+  "started": "2026-10-21T10:09:36.993742+00:00",
+  "config": {
+    "root": "/root/ai4s-trial",
+    "rfd_commit": "86507b6538f51fce57b5a72477165f03999ed7ae",
+    "mpnn_commit": "8907e6671bfbfc92303b5f79c4b5e6ce47cdef57",
+    "boltz_version": "2.2.1",
+    "rfd_torch": "2.0.1+cu118",
+    "boltz_torch": "2.6.0+cu124",
+    "rfd_dgl": "1.0.2+cu118",
+    "conda": "/root/miniconda3/bin/conda",
+    "rfd_env": "/root/miniconda3/envs/rfd4090",
+    "boltz_env": "/root/miniconda3/envs/myconda",
+    "gpu": "0",
+    "length": 80,
+    "rfd_seed": 42,
+    "rfd_steps": 50,
+    "mpnn_seed": 42,
+    "mpnn_model": "v_48_020",
+    "mpnn_temperature": 0.1,
+    "msa": {
+      "mode": "swissprot",
+      "database": "/root/ai4s-trial/db/swissprot",
+      "mmseqs_version": "fcf516aba34be4569b3eb5bda2b9db9e26a8f278",
+      "sensitivity": 7.0,
+      "evalue": 0.001,
+      "query_coverage": 0.8,
+      "min_identity": 0.3,
+      "max_sequences": 500,
+      "threads": 10
+    },
+    "boltz_seed": 42,
+    "boltz_recycling_steps": 3,
+    "boltz_sampling_steps": 200,
+    "boltz_diffusion_samples": 1
+  },
+  "commands": [
+    {
+      "name": "gpu",
+      "argv": [
+        "nvidia-smi"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "started": "2026-10-21T10:09:36.995027+00:00",
+      "log": "logs/gpu.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:09:37.142514+00:00",
+      "seconds": 0.147
+    },
+    {
+      "name": "rfd_env-gpu",
+      "argv": [
+        "/root/miniconda3/bin/conda",
+        "run",
+        "--no-capture-output",
+        "-p",
+        "/root/miniconda3/envs/rfd4090",
+        "python",
+        "-c",
+        "import torch; print(torch.__version__, torch.version.cuda); assert torch.cuda.is_available(); print(torch.cuda.get_device_name(0))"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "started": "2026-10-21T10:09:37.143010+00:00",
+      "log": "logs/rfd_env-gpu.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:09:39.770487+00:00",
+      "seconds": 2.627
+    },
+    {
+      "name": "rfd_env-freeze",
+      "argv": [
+        "/root/miniconda3/bin/conda",
+        "run",
+        "--no-capture-output",
+        "-p",
+        "/root/miniconda3/envs/rfd4090",
+        "python",
+        "-m",
+        "pip",
+        "freeze"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "started": "2026-10-21T10:09:39.771139+00:00",
+      "log": "logs/rfd_env-freeze.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:09:40.748789+00:00",
+      "seconds": 0.977
+    },
+    {
+      "name": "rfd_env-versions",
+      "argv": [
+        "/root/miniconda3/bin/conda",
+        "run",
+        "--no-capture-output",
+        "-p",
+        "/root/miniconda3/envs/rfd4090",
+        "python",
+        "-c",
+        "import importlib.metadata as m; expected={'torch': '2.0.1+cu118', 'dgl': '1.0.2+cu118'}; actual={k:m.version(k) for k in expected}; print(actual); assert actual==expected, (actual, expected)"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "started": "2026-10-21T10:09:40.749350+00:00",
+      "log": "logs/rfd_env-versions.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:09:41.403891+00:00",
+      "seconds": 0.654
+    },
+    {
+      "name": "boltz_env-gpu",
+      "argv": [
+        "/root/miniconda3/bin/conda",
+        "run",
+        "--no-capture-output",
+        "-p",
+        "/root/miniconda3/envs/myconda",
+        "python",
+        "-c",
+        "import torch; print(torch.__version__, torch.version.cuda); assert torch.cuda.is_available(); print(torch.cuda.get_device_name(0))"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "started": "2026-10-21T10:09:41.404333+00:00",
+      "log": "logs/boltz_env-gpu.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:09:44.249789+00:00",
+      "seconds": 2.845
+    },
+    {
+      "name": "boltz_env-freeze",
+      "argv": [
+        "/root/miniconda3/bin/conda",
+        "run",
+        "--no-capture-output",
+        "-p",
+        "/root/miniconda3/envs/myconda",
+        "python",
+        "-m",
+        "pip",
+        "freeze"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "started": "2026-10-21T10:09:44.250864+00:00",
+      "log": "logs/boltz_env-freeze.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:09:45.182779+00:00",
+      "seconds": 0.931
+    },
+    {
+      "name": "boltz_env-versions",
+      "argv": [
+        "/root/miniconda3/bin/conda",
+        "run",
+        "--no-capture-output",
+        "-p",
+        "/root/miniconda3/envs/myconda",
+        "python",
+        "-c",
+        "import importlib.metadata as m; expected={'torch': '2.6.0+cu124', 'boltz': '2.2.1'}; actual={k:m.version(k) for k in expected}; print(actual); assert actual==expected, (actual, expected)"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "started": "2026-10-21T10:09:45.183461+00:00",
+      "log": "logs/boltz_env-versions.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:09:45.846039+00:00",
+      "seconds": 0.662
+    },
+    {
+      "name": "RFdiffusion-git",
+      "argv": [
+        "git",
+        "log",
+        "-1",
+        "--format=%H"
+      ],
+      "cwd": "/root/ai4s-trial/src/RFdiffusion",
+      "started": "2026-10-21T10:09:45.846788+00:00",
+      "log": "logs/RFdiffusion-git.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:09:45.849422+00:00",
+      "seconds": 0.002
+    },
+    {
+      "name": "RFdiffusion-status",
+      "argv": [
+        "git",
+        "status",
+        "--porcelain"
+      ],
+      "cwd": "/root/ai4s-trial/src/RFdiffusion",
+      "started": "2026-10-21T10:09:45.849932+00:00",
+      "log": "logs/RFdiffusion-status.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:09:45.853750+00:00",
+      "seconds": 0.003
+    },
+    {
+      "name": "RFdiffusion-patch",
+      "argv": [
+        "git",
+        "diff",
+        "HEAD",
+        "--binary"
+      ],
+      "cwd": "/root/ai4s-trial/src/RFdiffusion",
+      "started": "2026-10-21T10:09:45.854420+00:00",
+      "log": "logs/RFdiffusion-patch.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:09:45.857432+00:00",
+      "seconds": 0.002
+    },
+    {
+      "name": "ProteinMPNN-git",
+      "argv": [
+        "git",
+        "log",
+        "-1",
+        "--format=%H"
+      ],
+      "cwd": "/root/ai4s-trial/src/ProteinMPNN",
+      "started": "2026-10-21T10:09:45.858171+00:00",
+      "log": "logs/ProteinMPNN-git.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:09:45.860757+00:00",
+      "seconds": 0.002
+    },
+    {
+      "name": "ProteinMPNN-status",
+      "argv": [
+        "git",
+        "status",
+        "--porcelain"
+      ],
+      "cwd": "/root/ai4s-trial/src/ProteinMPNN",
+      "started": "2026-10-21T10:09:45.861397+00:00",
+      "log": "logs/ProteinMPNN-status.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:09:46.182114+00:00",
+      "seconds": 0.32
+    },
+    {
+      "name": "ProteinMPNN-patch",
+      "argv": [
+        "git",
+        "diff",
+        "HEAD",
+        "--binary"
+      ],
+      "cwd": "/root/ai4s-trial/src/ProteinMPNN",
+      "started": "2026-10-21T10:09:46.183145+00:00",
+      "log": "logs/ProteinMPNN-patch.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:09:46.187289+00:00",
+      "seconds": 0.003
+    },
+    {
+      "name": "rfd",
+      "argv": [
+        "/root/miniconda3/bin/conda",
+        "run",
+        "--no-capture-output",
+        "-p",
+        "/root/miniconda3/envs/rfd4090",
+        "python",
+        "scripts/run_inference.py",
+        "contigmap.contigs=[80-80]",
+        "inference.output_prefix=/root/ai4s-trial/runs/R003b-pipeline/rfd/design",
+        "inference.num_designs=1",
+        "inference.model_directory_path=/root/ai4s-trial/src/RFdiffusion/models",
+        "inference.deterministic=True",
+        "inference.design_startnum=42",
+        "diffuser.T=50",
+        "inference.write_trajectory=True"
+      ],
+      "cwd": "/root/ai4s-trial/src/RFdiffusion",
+      "started": "2026-10-21T10:09:49.323988+00:00",
+      "log": "logs/rfd.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:10:27.578872+00:00",
+      "seconds": 38.255
+    },
+    {
+      "name": "mpnn",
+      "argv": [
+        "/root/miniconda3/bin/conda",
+        "run",
+        "--no-capture-output",
+        "-p",
+        "/root/miniconda3/envs/rfd4090",
+        "python",
+        "protein_mpnn_run.py",
+        "--pdb_path",
+        "/root/ai4s-trial/runs/R003b-pipeline/rfd/design_42.pdb",
+        "--out_folder",
+        "/root/ai4s-trial/runs/R003b-pipeline/mpnn",
+        "--num_seq_per_target",
+        "1",
+        "--batch_size",
+        "1",
+        "--sampling_temp",
+        "0.1",
+        "--seed",
+        "42",
+        "--model_name",
+        "v_48_020",
+        "--backbone_noise",
+        "0.0",
+        "--save_score",
+        "1",
+        "--save_probs",
+        "1"
+      ],
+      "cwd": "/root/ai4s-trial/src/ProteinMPNN",
+      "started": "2026-10-21T10:10:27.580287+00:00",
+      "log": "logs/mpnn.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:10:31.052361+00:00",
+      "seconds": 3.472
+    },
+    {
+      "name": "msa-createdb",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs/bin/mmseqs",
+        "createdb",
+        "/root/ai4s-trial/runs/R003b-pipeline/inputs/design.fasta",
+        "/root/ai4s-trial/runs/R003b-pipeline/msa/query"
+      ],
+      "cwd": "/root/ai4s-trial/runs/R003b-pipeline",
+      "started": "2026-10-21T10:10:31.484181+00:00",
+      "log": "logs/msa-createdb.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:10:31.499821+00:00",
+      "seconds": 0.015
+    },
+    {
+      "name": "msa-search",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs/bin/mmseqs",
+        "search",
+        "/root/ai4s-trial/runs/R003b-pipeline/msa/query",
+        "/root/ai4s-trial/db/swissprot",
+        "/root/ai4s-trial/runs/R003b-pipeline/msa/hits",
+        "/root/ai4s-trial/runs/R003b-pipeline/msa/tmp",
+        "-s",
+        "7.0",
+        "-e",
+        "0.001",
+        "--max-seqs",
+        "500",
+        "--threads",
+        "10",
+        "-a",
+        "1",
+        "--alignment-mode",
+        "3",
+        "--min-seq-id",
+        "0.3",
+        "-c",
+        "0.8",
+        "--cov-mode",
+        "2"
+      ],
+      "cwd": "/root/ai4s-trial/runs/R003b-pipeline",
+      "started": "2026-10-21T10:10:31.500663+00:00",
+      "log": "logs/msa-search.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:10:42.535861+00:00",
+      "seconds": 11.035
+    },
+    {
+      "name": "msa-tsv",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs/bin/mmseqs",
+        "convertalis",
+        "/root/ai4s-trial/runs/R003b-pipeline/msa/query",
+        "/root/ai4s-trial/db/swissprot",
+        "/root/ai4s-trial/runs/R003b-pipeline/msa/hits",
+        "/root/ai4s-trial/runs/R003b-pipeline/msa/hits.tsv",
+        "--format-output",
+        "query,target,fident,alnlen,qcov,tcov,evalue,bits"
+      ],
+      "cwd": "/root/ai4s-trial/runs/R003b-pipeline",
+      "started": "2026-10-21T10:10:42.536918+00:00",
+      "log": "logs/msa-tsv.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:10:42.612572+00:00",
+      "seconds": 0.075
+    },
+    {
+      "name": "msa-export",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs/bin/mmseqs",
+        "result2msa",
+        "/root/ai4s-trial/runs/R003b-pipeline/msa/query",
+        "/root/ai4s-trial/db/swissprot",
+        "/root/ai4s-trial/runs/R003b-pipeline/msa/hits",
+        "/root/ai4s-trial/runs/R003b-pipeline/msa/alignment",
+        "--msa-format-mode",
+        "5"
+      ],
+      "cwd": "/root/ai4s-trial/runs/R003b-pipeline",
+      "started": "2026-10-21T10:10:42.613616+00:00",
+      "log": "logs/msa-export.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:10:42.702408+00:00",
+      "seconds": 0.088
+    },
+    {
+      "name": "msa-unpack",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs/bin/mmseqs",
+        "unpackdb",
+        "/root/ai4s-trial/runs/R003b-pipeline/msa/alignment",
+        "/root/ai4s-trial/runs/R003b-pipeline/msa/a3m",
+        "--unpack-name-mode",
+        "1",
+        "--unpack-suffix",
+        ".a3m"
+      ],
+      "cwd": "/root/ai4s-trial/runs/R003b-pipeline",
+      "started": "2026-10-21T10:10:42.703554+00:00",
+      "log": "logs/msa-unpack.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:10:42.706790+00:00",
+      "seconds": 0.002
+    },
+    {
+      "name": "boltz",
+      "argv": [
+        "/root/miniconda3/bin/conda",
+        "run",
+        "--no-capture-output",
+        "-p",
+        "/root/miniconda3/envs/myconda",
+        "boltz",
+        "predict",
+        "/root/ai4s-trial/runs/R003b-pipeline/inputs/design.yaml",
+        "--out_dir",
+        "/root/ai4s-trial/runs/R003b-pipeline/boltz",
+        "--cache",
+        "/root/ai4s-trial/cache/boltz",
+        "--model",
+        "boltz2",
+        "--accelerator",
+        "gpu",
+        "--devices",
+        "1",
+        "--output_format",
+        "pdb",
+        "--no_kernels",
+        "--num_workers",
+        "0",
+        "--seed",
+        "42",
+        "--recycling_steps",
+        "3",
+        "--sampling_steps",
+        "200",
+        "--diffusion_samples",
+        "1"
+      ],
+      "cwd": "/root/ai4s-trial/runs/R003b-pipeline",
+      "started": "2026-10-21T10:10:42.708723+00:00",
+      "log": "logs/boltz.log",
+      "status": "completed",
+      "returncode": 0,
+      "ended": "2026-10-21T10:11:29.430134+00:00",
+      "seconds": 46.721
+    }
+  ],
+  "scope": "one unconditional monomer; no function validation",
+  "execution_env": {
+    "CUDA_VISIBLE_DEVICES": "0",
+    "DGLBACKEND": "pytorch",
+    "OMP_NUM_THREADS": "10",
+    "rfd_env": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "DGLBACKEND": "pytorch",
+      "OMP_NUM_THREADS": "10",
+      "LD_LIBRARY_PATH": "/root/miniconda3/envs/rfd4090/lib::/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64/:/usr/lib/x86_64-linux-gnu"
+    },
+    "boltz_env": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "DGLBACKEND": "pytorch",
+      "OMP_NUM_THREADS": "10",
+      "LD_LIBRARY_PATH": ":/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64/:/usr/lib/x86_64-linux-gnu"
+    }
+  },
+  "weights": {
+    "/root/ai4s-trial/src/RFdiffusion/models/Base_ckpt.pt": "0fcf7d7c32b4848030aca3a051e6768de194616f96ba6c38186351a33bfc6eca",
+    "/root/ai4s-trial/src/ProteinMPNN/vanilla_model_weights/v_48_020.pt": "c9cb4a671d79604111231f8dbfc7c590e06f1197453b7a6854ac6661a642f5bd",
+    "/root/ai4s-trial/cache/boltz/boltz2_conf.ckpt": "090e82ac8c92f5e943fa1b39e7410a44027bea7243c0bbb3caa67a77fc1428e1"
+  },
+  "ended": "2026-10-21T10:11:29.444997+00:00",
+  "files": {
+    "boltz/boltz_results_design/lightning_logs/version_0/hparams.yaml": {
+      "bytes": 4149,
+      "sha256": "aa3d2e88c0335a622bd000e439e5bddc0795c33ee918e1b937b65013ecc8d3d7"
+    },
+    "boltz/boltz_results_design/predictions/design/confidence_design_model_0.json": {
+      "bytes": 442,
+      "sha256": "36eaf60cce94715dcbb261daf2abdb304b3e662d9090c0ee958d09e67901960f"
+    },
+    "boltz/boltz_results_design/predictions/design/design_model_0.pdb": {
+      "bytes": 54593,
+      "sha256": "6d833da44195aa14b4d02d8bb8d8e97bbc28162a2e5dc3bb6448c7542870695a"
+    },
+    "boltz/boltz_results_design/predictions/design/pae_design_model_0.npz": {
+      "bytes": 23141,
+      "sha256": "b75e3829a8ad75592c41c3b034173e301b8628ec4c2d372c5e978afd1dee60c4"
+    },
+    "boltz/boltz_results_design/predictions/design/pde_design_model_0.npz": {
+      "bytes": 18972,
+      "sha256": "808e9475540e7df76e5690a3a7f5ad34d8c7fc4cefaeb522bd9e0379afec7f34"
+    },
+    "boltz/boltz_results_design/predictions/design/plddt_design_model_0.npz": {
+      "bytes": 530,
+      "sha256": "229dd36023a041e7e20557cb4b4217e9240d991af44c05e25e2aedeb5514cb29"
+    },
+    "boltz/boltz_results_design/processed/constraints/design.npz": {
+      "bytes": 1555,
+      "sha256": "90f1b164c19548180d50476833736feb96766273dc45e5db7ea28f8570138834"
+    },
+    "boltz/boltz_results_design/processed/mols/design.pkl": {
+      "bytes": 5,
+      "sha256": "926248e52d1fa532c317e37da24ed652ae64110f8219cb5e061668bd3091f048"
+    },
+    "boltz/boltz_results_design/processed/records/design.json": {
+      "bytes": 482,
+      "sha256": "56b194dfc562ab374ac2956322848f7f1d11af3dd460e98402568810f463e041"
+    },
+    "boltz/boltz_results_design/processed/structures/design.npz": {
+      "bytes": 3611,
+      "sha256": "4a959f83561d1a382badeafd3a55c73f7c060a313c877f85c157d576330b4bf1"
+    },
+    "checks.json": {
+      "bytes": 1042,
+      "sha256": "c407ec8209195e18d4fced419a9e2d75f92a4a239d27272e0b68a721019b2707"
+    },
+    "config.json": {
+      "bytes": 958,
+      "sha256": "b1fee819288a119790de1a7d5bd884bcf3f3e2f7901734a13847f1a9673965f2"
+    },
+    "inputs/design.fasta": {
+      "bytes": 89,
+      "sha256": "b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb"
+    },
+    "inputs/design.yaml": {
+      "bytes": 226,
+      "sha256": "38c1e76684734c06d3d1a570c80d22a98fb7ff3de512e267930e6e10edf606ed"
+    },
+    "logs/ProteinMPNN-git.log": {
+      "bytes": 41,
+      "sha256": "16f79bc571ea5dcc87738bd70c9913ffa864a82a5bd23c29ff376223c2f6828a"
+    },
+    "logs/ProteinMPNN-patch.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "logs/ProteinMPNN-status.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "logs/RFdiffusion-git.log": {
+      "bytes": 41,
+      "sha256": "0eb4332e85bda8a1e4a2e52cd7ab598c6b3bd6b619ce7a115d1680b77616ad3e"
+    },
+    "logs/RFdiffusion-patch.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "logs/RFdiffusion-status.log": {
+      "bytes": 12,
+      "sha256": "5090feeb73723e3c25c58aa359b3eef9a657d472e452b28d8fbf0db712bbc5c0"
+    },
+    "logs/boltz.log": {
+      "bytes": 2416,
+      "sha256": "59cc34806b244a3c0b77d63981189b821ff51856b902b5e6da0f16707eb6cac3"
+    },
+    "logs/boltz_env-freeze.log": {
+      "bytes": 2283,
+      "sha256": "5923a4906626c04e259e26e82a85193def2f88c1d0fe60f519beeb35d1dd89ab"
+    },
+    "logs/boltz_env-gpu.log": {
+      "bytes": 41,
+      "sha256": "96d7cd41bc16b93f1348e4b094047803132d027829a85f48bb8b0ecb11f4c8e2"
+    },
+    "logs/boltz_env-versions.log": {
+      "bytes": 43,
+      "sha256": "8d9e62a919f63f1ca07d30d178509701a8f45fa4e489e0b7d06b7a57248c49c3"
+    },
+    "logs/gpu.log": {
+      "bytes": 1778,
+      "sha256": "7c56beb53eebb439d674d9bc4986fa52a923b4a1b37cb168bc6c84ff093c6b68"
+    },
+    "logs/mpnn.log": {
+      "bytes": 869,
+      "sha256": "155a09fcbc402fcdc21732a8f3f93af1771ead5c04db91054bea0422c5ce04fd"
+    },
+    "logs/msa-createdb.log": {
+      "bytes": 858,
+      "sha256": "47fc53f1a5e457610adee29d08ed2ebafc4ffd3ecc18e3d9ee00c3044748a1ef"
+    },
+    "logs/msa-export.log": {
+      "bytes": 1170,
+      "sha256": "b339410a471e012ca8d50474e884cac9711c298037c3ad7b889e665e144a604c"
+    },
+    "logs/msa-search.log": {
+      "bytes": 8447,
+      "sha256": "ed9aec5331ee699c61c528763c6845c824b8a6d6dca725988a4b08dce2a61695"
+    },
+    "logs/msa-tsv.log": {
+      "bytes": 892,
+      "sha256": "a05469b05abc73160cd57d93c3a84f53acbb143d3c34fbbed57037778fc0b514"
+    },
+    "logs/msa-unpack.log": {
+      "bytes": 525,
+      "sha256": "565708d6ef63969012406429fd201f9303cff02a98e79168ecf05ba36758d9b7"
+    },
+    "logs/rfd.log": {
+      "bytes": 13409,
+      "sha256": "f369565a84dc07321323e5d2a1e0ef0f3badb9dc7590eac7a19dc55a068dccf0"
+    },
+    "logs/rfd_env-freeze.log": {
+      "bytes": 925,
+      "sha256": "8675b40c959f900c8665ed1294e63986d99c68fc469edd50982c0509d1a75062"
+    },
+    "logs/rfd_env-gpu.log": {
+      "bytes": 166,
+      "sha256": "7c68df766e1d1e3e02aaf55b7e0931eb4d5346c1fddcb6dc2ff0fc28d8f90c60"
+    },
+    "logs/rfd_env-versions.log": {
+      "bytes": 172,
+      "sha256": "197eaaf0a5d051fcf063204f7346b27543fde500eac8dd7ddbb19f4d763cc6b6"
+    },
+    "mpnn/probs/design_42.npz": {
+      "bytes": 15326,
+      "sha256": "f46f3930411d51d4f438969884c6972c7cd25da0d25d41e5a3a4b16976a0835b"
+    },
+    "mpnn/scores/design_42.npz": {
+      "bytes": 528,
+      "sha256": "8e7e7761cee74ad437476e99cf4d0d4f50f67d5a04016667e526746d064f4c24"
+    },
+    "mpnn/seqs/design_42.fa": {
+      "bytes": 402,
+      "sha256": "3f166bd44be319196671c7e09fcdf688f8a3869796dbce24d7cb62535d400004"
+    },
+    "msa/a3m/0.a3m": {
+      "bytes": 89,
+      "sha256": "b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb"
+    },
+    "msa/alignment": {
+      "bytes": 90,
+      "sha256": "8c99c74a1fef286308ac685a1f7e2d237eb62098f1ff883dafbb2911f1bf76ad"
+    },
+    "msa/alignment.dbtype": {
+      "bytes": 4,
+      "sha256": "cb30e91817239109ffd0a5870046e128f04619da80c7624d921162fdfe514f76"
+    },
+    "msa/alignment.index": {
+      "bytes": 7,
+      "sha256": "1eda31e40c527de881afb72cc720fd415b802ef762ff47c05c79495edac6a2c3"
+    },
+    "msa/database.source.json": {
+      "bytes": 1672,
+      "sha256": "4c2a0673d7dc40d847e3c7182edb0aefed7c4bec91ef91d41dd1aa8ed4c5aad1"
+    },
+    "msa/design.filtered.a3m": {
+      "bytes": 89,
+      "sha256": "b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb"
+    },
+    "msa/hits": {
+      "bytes": 1,
+      "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+    },
+    "msa/hits.dbtype": {
+      "bytes": 4,
+      "sha256": "2594b6a92ebfb1c3312deb7d01c015fb95e9fbe9bd7bc6b527af07813ec7b910"
+    },
+    "msa/hits.index": {
+      "bytes": 6,
+      "sha256": "77f2bf63a33e80566057a01fcbee2fadd85fd349ed26ca760071ba574f50e2d6"
+    },
+    "msa/hits.tsv": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "msa/query": {
+      "bytes": 82,
+      "sha256": "1909c6a36bf57dc9ab63304efacac38f697f43d41bb983a3da097c27d7e1fc04"
+    },
+    "msa/query.dbtype": {
+      "bytes": 4,
+      "sha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+    },
+    "msa/query.index": {
+      "bytes": 7,
+      "sha256": "f80f43fa6241c89064e9ac48a2ff98b2ea3239929a4c2e8544d4a620704d6a08"
+    },
+    "msa/query.lookup": {
+      "bytes": 11,
+      "sha256": "5e84aa47d7d89d3f59b1275d12f54d58068f020195bb6c13eb405a70a474fa5a"
+    },
+    "msa/query.source": {
+      "bytes": 15,
+      "sha256": "f1fcbad445e19d96bf8b50fb338d173db763cd902fe9284354736dd82686f399"
+    },
+    "msa/query_h": {
+      "bytes": 8,
+      "sha256": "fd625df8789956a5c26d155213fe43fa0f8e8ce644e3f6e3f9c681e540e8f91d"
+    },
+    "msa/query_h.dbtype": {
+      "bytes": 4,
+      "sha256": "42f4aeb81c1ef81f771f3de8abca9dcf66901c575530e7672e4b1146474ae650"
+    },
+    "msa/query_h.index": {
+      "bytes": 6,
+      "sha256": "ab282650b8d52e62aef79619fadc332ad953b5050f626e85de2d0fed228be3c6"
+    },
+    "msa/summary.json": {
+      "bytes": 434,
+      "sha256": "cd719d99d2349fe1e17cf7768f695cc0a7b066e32e41be80b3725325324090b1"
+    },
+    "msa/tmp/1230424257458180060/blastp.sh": {
+      "bytes": 5698,
+      "sha256": "e6319a08d708f4c97862c888583705d8205602a4c1ef1671f8ccf3535d7d5b1e"
+    },
+    "msa/tmp/1230424257458180060/pref_0": {
+      "bytes": 1110,
+      "sha256": "e05d76b34233a8b1ee2bec51c980910a2b082c8895cf8411c08ef5bde7841c46"
+    },
+    "msa/tmp/1230424257458180060/pref_0.dbtype": {
+      "bytes": 4,
+      "sha256": "e8613f5a5bc9f9feeda32a8e7c80b69dd4878e47b6a91723fb15eb84236b6a2b"
+    },
+    "msa/tmp/1230424257458180060/pref_0.index": {
+      "bytes": 9,
+      "sha256": "71c4a8933884e495d10ebd3827466acc8865177d9029ef0b4a88e9003ea72d3b"
+    },
+    "pipeline.py": {
+      "bytes": 22339,
+      "sha256": "f59cbe99eb26ba64716a7089d3b6081c9b9fcef050cb8c57f38047edb3e58cc7"
+    },
+    "rfd/backbone.pdb": {
+      "bytes": 21440,
+      "sha256": "29d73b17a84471519e91af4ac1100045b17b71254c42757752fdde8808a62d54"
+    },
+    "rfd/design_42.pdb": {
+      "bytes": 21440,
+      "sha256": "29d73b17a84471519e91af4ac1100045b17b71254c42757752fdde8808a62d54"
+    },
+    "rfd/design_42.trb": {
+      "bytes": 19270,
+      "sha256": "5879c8f1c11f7728a8ef78407aed8473c68f746c320101c182235cb7f77c3a88"
+    },
+    "rfd/traj/design_42_Xt-1_traj.pdb": {
+      "bytes": 809710,
+      "sha256": "5de6f88007ef170ad60182c92a666ede0c0ef11d1a6f1d33baf28c66b99c1dca"
+    },
+    "rfd/traj/design_42_pX0_traj.pdb": {
+      "bytes": 1072350,
+      "sha256": "f2055931eef93b7746c3fec52ebe54cd1fe641c373ee2c8f87a54bc481b41e53"
+    }
+  }
+}

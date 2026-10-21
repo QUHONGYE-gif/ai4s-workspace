@@ -1,0 +1,47 @@
+{
+  "note": "Selected original files, byte-identical to the preserved archives; not a complete run archive. See the run record for archive identity.",
+  "files": [
+    {
+      "file": "queries.fasta",
+      "source_in_archive": "inputs/msa_queries.fasta",
+      "bytes": 261,
+      "sha256": "890af5310b9aa6ee8680aa57ff63e99f0aea52836235a07860cde6b2e6f6c232",
+      "archive": "ai4s-msa-20261021.tar.gz"
+    },
+    {
+      "file": "designed.a3m",
+      "source_in_archive": "results/msa/0.a3m",
+      "bytes": 98,
+      "sha256": "970fe34da6802b4f36334a90dda0a2939471f76fde7e08ef5c07617441d9776c",
+      "archive": "ai4s-msa-20261021.tar.gz"
+    },
+    {
+      "file": "positive.a3m",
+      "source_in_archive": "results/msa/1.a3m",
+      "bytes": 76655,
+      "sha256": "49f99ff85eb00a42a131f59002df04bed43734197eecb13de788d1c249e0376d",
+      "archive": "ai4s-msa-20261021.tar.gz"
+    },
+    {
+      "file": "hits.tsv",
+      "source_in_archive": "results/msa_hits.tsv",
+      "bytes": 29997,
+      "sha256": "c7adff35f2b4e451a8b57fcb89b0df069704244e807e887eaf4306807fbb7fb6",
+      "archive": "ai4s-msa-20261021.tar.gz"
+    },
+    {
+      "file": "boltz-positive.log",
+      "source_in_archive": "logs/boltz-msa-control.log",
+      "bytes": 2308,
+      "sha256": "d05e2399796e71f276080f06f0b4143bbd8c9574193a546737a575dc85d31b2f",
+      "archive": "ai4s-msa-20261021.tar.gz"
+    },
+    {
+      "file": "confidence.json",
+      "source_in_archive": "results/boltz-msa-control/boltz_results_hba_with_msa/predictions/hba_with_msa/confidence_hba_with_msa_model_0.json",
+      "bytes": 443,
+      "sha256": "04b0011b816de47c1ec899aa58faef1388bb474bb3db7cba19b99c0d118f86ad",
+      "archive": "ai4s-msa-20261021.tar.gz"
+    }
+  ]
+}

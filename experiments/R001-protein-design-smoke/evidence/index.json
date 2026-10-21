@@ -1,0 +1,33 @@
+{
+  "note": "Selected original files, byte-identical to the preserved archives; not a complete run archive. See the run record for archive identity.",
+  "files": [
+    {
+      "file": "backbone.pdb",
+      "source_in_archive": "results/rfd/mono80_0.pdb",
+      "bytes": 21440,
+      "sha256": "a3f91cb1398f1985a1ecdd79a816dd6f6b23ff8c00e8bfd7f466660aa481d65f",
+      "archive": "ai4s-trial-20261021.tar.gz"
+    },
+    {
+      "file": "sequence.fa",
+      "source_in_archive": "results/mpnn/seqs/mono80_0.fa",
+      "bytes": 401,
+      "sha256": "1bce1211c5bf2b03334069ae282ab000a55d200c6713d9dce7714b25e446f1ac",
+      "archive": "ai4s-trial-20261021.tar.gz"
+    },
+    {
+      "file": "prediction.pdb",
+      "source_in_archive": "results/boltz/boltz_results_mono80/predictions/mono80/mono80_model_0.pdb",
+      "bytes": 55565,
+      "sha256": "8fe8a2855c9605cc56c70b5080d2d382169ba4de8e86a4118581976ac6ceed3c",
+      "archive": "ai4s-trial-20261021.tar.gz"
+    },
+    {
+      "file": "confidence.json",
+      "source_in_archive": "results/boltz/boltz_results_mono80/predictions/mono80/confidence_mono80_model_0.json",
+      "bytes": 444,
+      "sha256": "bc4537f3b26aac4d1e0371e5b6ff69bbac75b8e5a14bca0ee1591fdb5f0fc5e6",
+      "archive": "ai4s-trial-20261021.tar.gz"
+    }
+  ]
+}

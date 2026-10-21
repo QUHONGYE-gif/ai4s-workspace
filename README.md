@@ -19,6 +19,11 @@
 | [CI/CD 接入计划](docs/cicd.md) | 后续自动检查与部署的入口、前提和边界 |
 | [团队协作约定](docs/collaboration.md) | 个人 Coder 工作区、开发分支及会议后的合并流程 |
 | [配置来源](docs/workflow_sources.md) | 维护工作规则时核对来源与配置调整 |
+| [蛋白质设计流程跑通记录与使用说明](docs/protein_pipeline.md) | 团队协作主文档：完成情况、实测结果、运行命令、参数和中间产物 |
+| [产物复用与加速协作讨论稿](docs/protein_reuse.md) | 团队协作主文档：已有缓存、复用条件、待共同确认的评测候选 |
+| [蛋白质设计试运行 R001](experiments/R001-protein-design-smoke/record.md) | 查看 RFdiffusion → ProteinMPNN → Boltz 的运行身份、命令与中间产物 |
+| [Swiss-Prot MSA 试运行 R002](experiments/R002-swissprot-msa/record.md) | 查看 MMseqs2 搜索、A3M、Boltz 对照和设计序列无命中的实际结果 |
+| [封装验证 R003](experiments/R003-pipeline/record.md) | 查看真实封装运行、失败修正与备份证据 |
 
 文档以相对 Markdown 链接相互引用，并提供返回入口。方案、阶段任务、实际状态和运行环境各自维护
 
@@ -36,13 +41,21 @@
 ├── compose.server.yaml
 ├── docker/workspace/Dockerfile
 ├── coder/               # 工作区模板与 Terraform 镜像配置
-├── scripts/             # 初始化与 provider 下载入口
+├── scripts/             # 开发底座与蛋白质设计 pipeline 入口
+├── configs/protein_design.matpool.json
+├── tests/test_protein_design_pipeline.py
+├── experiments/
+│   ├── R001-protein-design-smoke/record.md
+│   ├── R002-swissprot-msa/record.md
+│   └── R003-pipeline/record.md
 └── docs/
     ├── vision.md
     ├── research_plan.md
     ├── implementation_plan.md
     ├── status.md
     ├── environment.md
+    ├── protein_pipeline.md
+    ├── protein_reuse.md
     ├── local_docker.md
     ├── server_docker.md
     ├── cicd.md
@@ -50,4 +63,4 @@
     └── workflow_sources.md
 ```
 
-业务代码、专项研究与实验目录在实际工作需要时建立，约定见 [项目规则](AGENTS.md)。本地开发底座命令见 [运行说明](docs/local_docker.md)。`.gitignore` 排除常见缓存、凭据、数据目录和模型权重；大型产物位置见 [环境说明](docs/environment.md)。
+业务代码与专项研究目录在实际工作需要时建立，约定见 [项目规则](AGENTS.md)。本地开发底座命令见 [运行说明](docs/local_docker.md)。`.gitignore` 排除常见缓存、凭据、数据目录和模型权重；大型产物位置见 [环境说明](docs/environment.md)。
