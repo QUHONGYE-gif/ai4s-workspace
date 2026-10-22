@@ -16,7 +16,7 @@
 | 资源 | RTX 4090，24564 MiB，驱动 565.77；glibc 2.35；根盘约 300 GB，检查时剩余约 267 GB；持久卷 5 GB |
 | 执行根目录 | `/root/ai4s-trial`；R004 目录为其 `runs/R004-mmseqs-gpu/`。仅为历史执行位置，不是团队访问地址 |
 | GPU MMseqs2 | 版本 `fcf516aba34be4569b3eb5bda2b9db9e26a8f278`；二进制 SHA-256 `f46fc772abad7417e7ae1bf0f219883fcfc4fa3cdc2ab4117fa6f8bd7e0e9c11` |
-| 软件来源 | 官方 `https://mmseqs.com/latest/mmseqs-linux-gpu.tar.gz`，下载包记录 SHA-256 `4e3ce8a250b042ff35d51ce94e79fdfd29c36d6af8ec28c6514f20281eef80a57`；`latest` 会更新，实际二进制以本轮重新计算的哈希锁定 |
+| 软件来源 | 官方 `https://mmseqs.com/latest/mmseqs-linux-gpu.tar.gz`，下载包记录 SHA-256 `4e3ce8a250b42ff35d51ce94e79fdfd29c36d6af8ec28c6514f20281eef80a57`；`latest` 会更新，实际二进制以本轮重新计算的哈希锁定 |
 | Swiss-Prot | 575,748 条序列；压缩 FASTA 93,801,562 字节、SHA-256 `a9c3496aa727e61d25d9e1291c9ba28d2c2ad19c0e26569dc083d53ec4169536`；解压 FASTA 288,201,213 字节、SHA-256 `1372f18e218d761027616bf17479bcf450b30314fc0a8095fcb0e97e85d6ecf9`。来源解释见 [R002](../R002-swissprot-msa/record.md#执行身份与数据) |
 | 设计查询 | 80 aa；FASTA SHA-256 `b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb`，与 R003b 附件一致 |
 | 阳性查询 | P69905，142 aa；源 FASTA SHA-256 `9f28ee2461cfee4c04e56bb447316d0ad23687d15f3da13aaae5946de4f0273a` |

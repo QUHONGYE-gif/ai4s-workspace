@@ -19,12 +19,12 @@
 | [CI/CD 接入计划](docs/cicd.md) | 后续自动检查与部署的入口、前提和边界 |
 | [团队协作约定](docs/collaboration.md) | 个人 Coder 工作区、开发分支及会议后的合并流程 |
 | [配置来源](docs/workflow_sources.md) | 维护工作规则时核对来源与配置调整 |
-| [蛋白质设计流程跑通记录与使用说明](docs/protein_pipeline.md) | 团队协作主文档一：材料导航、CPU/GPU 分支、实测结果、命令、产物及接手条件 |
-| [产物复用与加速协作讨论稿](docs/protein_reuse.md) | 团队协作主文档二：已有缓存、复用条件、证据入口及待共同确认的评测候选 |
-| [蛋白质设计试运行 R001](experiments/R001-protein-design-smoke/record.md) | 查看 RFdiffusion → ProteinMPNN → Boltz 的运行身份、命令与中间产物 |
-| [Swiss-Prot MSA 试运行 R002](experiments/R002-swissprot-msa/record.md) | 查看 MMseqs2 搜索、A3M、Boltz 对照和设计序列无命中的实际结果 |
-| [封装验证 R003](experiments/R003-pipeline/record.md) | 查看真实封装运行、失败修正与备份证据 |
-| [MMseqs2 GPU 分支 R004](experiments/R004-mmseqs-gpu/record.md) | 查看 GPU 搜索、MSA、Boltz 分支结果与完整产物记录 |
+| [蛋白质设计流程跑通记录与使用说明](docs/protein_pipeline.md) | 团队协作主文档一：直接整合 R001–R004 过程、环境、参数、结果、失败、产物、命令与归档，不要求先读各轮记录 |
+| [产物复用与加速协作讨论稿](docs/protein_reuse.md) | 团队协作主文档二：直接说明四轮实验的复用证据、机制、失效条件、成本与待讨论事项 |
+| [蛋白质设计试运行 R001](experiments/R001-protein-design-smoke/record.md) | 原始运行记录，供核对 R001 底层证据；团队阅读以两份协作文档为准 |
+| [Swiss-Prot MSA 试运行 R002](experiments/R002-swissprot-msa/record.md) | 原始运行记录，供核对 R002 底层证据；团队阅读以两份协作文档为准 |
+| [封装验证 R003](experiments/R003-pipeline/record.md) | 原始运行记录，供核对 R003 底层证据；团队阅读以两份协作文档为准 |
+| [MMseqs2 GPU 分支 R004](experiments/R004-mmseqs-gpu/record.md) | 原始运行记录，供核对 R004 底层证据；团队阅读以两份协作文档为准 |
 
 文档以相对 Markdown 链接相互引用，并提供返回入口。方案、阶段任务、实际状态和运行环境各自维护
 
