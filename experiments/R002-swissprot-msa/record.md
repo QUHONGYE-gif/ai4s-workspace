@@ -30,7 +30,7 @@ Swiss-Prot 压缩源 SHA-256：`a9c3496aa727e61d25d9e1291c9ba28d2c2ad19c0e26569d
 
 ## 关键命令
 
-以下为当时租用实例的历史执行命令；路径只用于说明运行身份。新环境使用 [封装入口](../../docs/protein_pipeline.md#4-团队如何使用代码) 并调整配置。
+以下为当时租用实例的历史执行命令；路径只用于说明运行身份。新环境使用 [封装入口](../../docs/protein_pipeline.md#a1-已验证-cpu-封装的使用方式) 并调整配置。
 
 ```bash
 cd /root/ai4s-trial

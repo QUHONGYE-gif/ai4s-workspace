@@ -72,6 +72,6 @@ Boltz 置信度 `confidence_score=0.8671682477`、`ptm=0.7490227222`、`complex_
 
 仓库提供 [原始运行清单](evidence/manifest.json)、[输出检查](evidence/checks.json)、[设计 FASTA](evidence/design.fasta)、[MSA 摘要](evidence/msa-summary.json)、[RFdiffusion 日志](evidence/rfd.log) 及上节阳性补查文件；[附件索引](evidence/index.json) 记录归档内来源、大小及哈希。清单中的绝对路径属于历史执行环境，不是协作访问地址；Git 仅保存附件选集，未包含清单列出的所有产物。
 
-安装源码审阅归档 `audit.tar.gz` 的 SHA-256 为 `0765e3c81e8cad51a764122b1763418829852cde2b12a4347d66352cca6fa18a`，用于核查缓存机制，未作为自有模型代码提交。可公开核查的固定版本源码入口见 [复用讨论稿](../../docs/protein_reuse.md#3-模型已经有哪些缓存或跳过机制)。
+安装源码审阅归档 `audit.tar.gz` 的 SHA-256 为 `0765e3c81e8cad51a764122b1763418829852cde2b12a4347d66352cca6fa18a`，用于核查缓存机制，未作为自有模型代码提交。可公开核查的固定版本源码入口见 [复用讨论稿](../../docs/protein_reuse.md#4-工具自身已有的缓存与跳过机制)。
 
 相关文档：[流程说明](../../docs/protein_pipeline.md) · [复用草稿](../../docs/protein_reuse.md) · [环境说明](../../docs/environment.md) · [当前状态](../../docs/status.md) · [仓库入口](../../README.md)。

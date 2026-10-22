@@ -66,7 +66,7 @@ Coder 控制面通过 Docker socket 创建工作区；已核对 Docker Desktop V
 | 数据根目录 | `/root/ai4s-trial`，仅为此次租用实例的执行路径，不是团队统一目录 |
 | RFdiffusion／ProteinMPNN | Conda `rfd4090`，Python 3.10.22，PyTorch 2.0.1+cu118；完整版本、源码提交和兼容修复见 [R001](../experiments/R001-protein-design-smoke/record.md#执行身份) |
 | Boltz | 镜像环境 `myconda`，Python 3.11.13、Boltz 2.2.1、PyTorch 2.6.0+cu124；关闭可选 kernels |
-| 代码入口 | [控制脚本](../scripts/protein_design_pipeline.py) 与 [实际配置](../configs/protein_design.matpool.json)；路径调整方法见 [团队使用说明](protein_pipeline.md#4-团队如何使用代码) |
+| 代码入口 | [控制脚本](../scripts/protein_design_pipeline.py) 与 [实际配置](../configs/protein_design.matpool.json)；路径调整方法见 [团队使用说明](protein_pipeline.md#a1-已验证-cpu-封装的使用方式) |
 | 运行证据 | [R001](../experiments/R001-protein-design-smoke/record.md)、[R002](../experiments/R002-swissprot-msa/record.md)、[R003](../experiments/R003-pipeline/record.md) 维护各自归档身份；Git 提供小型附件选集 |
 | 完整归档 | 陈铠洲保管，已备份至平台持久卷；尚未上传团队共享存储，暂无统一下载链接 |
 

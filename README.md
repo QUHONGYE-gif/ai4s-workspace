@@ -19,8 +19,8 @@
 | [CI/CD 接入计划](docs/cicd.md) | 后续自动检查与部署的入口、前提和边界 |
 | [团队协作约定](docs/collaboration.md) | 个人 Coder 工作区、开发分支及会议后的合并流程 |
 | [配置来源](docs/workflow_sources.md) | 维护工作规则时核对来源与配置调整 |
-| [蛋白质设计流程跑通记录与使用说明](docs/protein_pipeline.md) | 团队协作主文档一：直接整合 R001–R004 过程、环境、参数、结果、失败、产物、命令与归档，不要求先读各轮记录 |
-| [产物复用与加速协作讨论稿](docs/protein_reuse.md) | 团队协作主文档二：直接说明四轮实验的复用证据、机制、失效条件、成本与待讨论事项 |
+| [蛋白质设计全流程实验报告](docs/protein_pipeline.md) | 面向初学队友的独立报告：按科学阶段解释原理、环境、过程、参数、产物与结果，附封装命令与交接明细 |
+| [蛋白质设计中间产物与复用加速分析](docs/protein_reuse.md) | 独立讨论报告：解释实际产物、复用条件、已有缓存、实测成本与待共同确认的问题 |
 | [蛋白质设计试运行 R001](experiments/R001-protein-design-smoke/record.md) | 原始运行记录，供核对 R001 底层证据；团队阅读以两份协作文档为准 |
 | [Swiss-Prot MSA 试运行 R002](experiments/R002-swissprot-msa/record.md) | 原始运行记录，供核对 R002 底层证据；团队阅读以两份协作文档为准 |
 | [封装验证 R003](experiments/R003-pipeline/record.md) | 原始运行记录，供核对 R003 底层证据；团队阅读以两份协作文档为准 |
