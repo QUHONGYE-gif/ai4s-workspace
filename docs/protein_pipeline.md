@@ -1,6 +1,23 @@
 # 蛋白质设计流程跑通记录与使用说明
 
-整理：陈铠洲；更新：2026-10-21。本文用于团队了解已完成工作、检查中间产物和接手运行。代码与附件位于个人开发分支 **[`dev-ckz`](https://github.com/QUHONGYE-gif/ai4s-workspace/tree/dev-ckz)**，尚未经团队会议批准合入 `main`。产物复用的协作讨论另见 [第二份文档](protein_reuse.md)。
+整理：陈铠洲；更新：2026-10-22。本文用于团队了解已完成工作、检查中间产物和接手运行。代码与附件位于个人开发分支 **[`dev-ckz`](https://github.com/QUHONGYE-gif/ai4s-workspace/tree/dev-ckz)**，尚未经团队会议批准合入 `main`。产物复用的协作讨论另见 [第二份文档](protein_reuse.md)。
+
+## 阅读入口与现有材料
+
+团队主文档保留两份：**本文说明做了什么、如何运行和如何查证；[复用讨论稿](protein_reuse.md)说明哪些产物可复用、依据和待共同确认的问题。** 四份实验记录保留运行细节与失败历史，不合并抹去 CPU/GPU 分支，也不要求队友先读完全部日志。
+
+| 材料 | 现有文件与内容 | 何时阅读 |
+| --- | --- | --- |
+| 实验总览与操作 | 本文第 1–7 节 | 初次接手先看第 1–3、7 节；实际部署再看第 4–6 节 |
+| 复用与加速讨论 | [protein_reuse.md](protein_reuse.md) | 与曲鸿烨讨论可复用对象、失效条件及评测安排 |
+| 首次设计证据 | [R001 record.md](../experiments/R001-protein-design-smoke/record.md)、[4 项原始附件索引](../experiments/R001-protein-design-smoke/evidence/index.json)、图表与 PyMOL 脚本 | 查看骨架、序列、预测、叠合及首次部署 |
+| CPU MSA 初次验证 | [R002 record.md](../experiments/R002-swissprot-msa/record.md)、[6 项原始附件索引](../experiments/R002-swissprot-msa/evidence/index.json) | 查看库快照、原始搜索条件、设计无命中与天然阳性完整预测 |
+| CPU 封装验收 | [R003 record.md](../experiments/R003-pipeline/record.md)、[7 项原始附件索引](../experiments/R003-pipeline/evidence/index.json) | 查看实际封装运行、manifest、检查结果及严格筛选后的阳性解析 |
+| GPU 分支补齐 | [R004 record.md](../experiments/R004-mmseqs-gpu/record.md)、[48 项原始附件索引](../experiments/R004-mmseqs-gpu/evidence/index.json)、[完整文件清单](../experiments/R004-mmseqs-gpu/evidence/inventory-final.json)、[回传校验](../experiments/R004-mmseqs-gpu/archive-verification.json) | 查看 padded 库、两种查询、两条 Boltz 预测、CPU/GPU 差异和失败修正 |
+| 可复用代码与配置 | [控制脚本](../scripts/protein_design_pipeline.py)、[配置样例](../configs/protein_design.matpool.json)、[边界检查](../tests/test_protein_design_pipeline.py) | 接手运行和修改参数；验收范围见第 1、4 节 |
+| 部署与恢复资料 | [环境说明](environment.md#矩池云临时-gpu-试运行2026-10-21)、[关机前复核](environment.md#租用实例关机前复核2026-10-22) | 查询环境导出、源码修复、备份及未回传材料；不将个人备份位置作为团队入口 |
+
+四份 `evidence/index.json` 共索引 **65 项原始附件**；这个数字不含记录正文、图表及索引自身，也不表示所有中间文件都在 Git。完整产物依靠运行清单与归档追溯，访问方式见第 7 节。
 
 ## 1. 本次完成了什么
 
@@ -11,7 +28,7 @@
 | 部署模型和虚拟环境、真实生成结构 | 已完成；前两步与 Boltz 分用两个 Conda 环境 | [R001 环境与运行记录](../experiments/R001-protein-design-smoke/record.md) |
 | 构建简化 MSA 搜索库 | 已用 Swiss-Prot 建库，天然蛋白阳性对照的 MSA 已接入 Boltz 并完成预测 | [R002 记录及附件](../experiments/R002-swissprot-msa/record.md) |
 | 理解参数与中间产物 | 本文第 3、5、6 节；保留扩散轨迹、序列概率、MSA 与预测置信度 | 各运行记录及 `evidence/` |
-| 封装 pipeline 并真实验证 | 已完成，包含 MSA 无命中处理和产物检查 | [运行脚本](../scripts/protein_design_pipeline.py)、[配置](../configs/protein_design.matpool.json)、[R003](../experiments/R003-pipeline/record.md) |
+| 封装 pipeline 并真实验证 | CPU MSA 后端的完整封装已实跑，包含无命中处理和产物检查；新增 GPU 入口状态见下行 | [运行脚本](../scripts/protein_design_pipeline.py)、[配置](../configs/protein_design.matpool.json)、[R003](../experiments/R003-pipeline/record.md) |
 | 与曲鸿烨共同梳理复用与加速 | 已形成讨论材料，**待双方讨论确认**；没有测得加速比 | [复用与加速协作讨论稿](protein_reuse.md) |
 | 补充 GPU 版 MMseqs2 搜索路径 | GPU 独立分支已完成建库、两种查询、MSA 与 Boltz 预测；新增 pipeline GPU 入口仍待单独验收 | [R004 实验及附件](../experiments/R004-mmseqs-gpu/record.md)；本文第 4.4 节；官方参数说明见 [MMseqs2 GPU 搜索文档](https://github.com/soedinglab/MMseqs2/wiki#gpu-accelerated-search) |
 
@@ -39,8 +56,10 @@ R003 不是 R001 的重复结构，也没有沿用 R001 的 RMSD。R003 的搜�
 flowchart LR
     A[长度与设计条件] --> B[RFdiffusion 骨架 PDB]
     B --> C[ProteinMPNN 设计序列 FASTA]
-    C --> D[MMseqs2 搜索 Swiss-Prot]
-    D --> E{有合格候选?}
+    C --> D1[CPU MMseqs2 搜索：R003]
+    C --> D2[GPU MMseqs2 搜索：R004]
+    D1 --> E{有合格候选?}
+    D2 --> E
     E -->|有| F[筛选去重 A3M]
     E -->|无| G[msa: empty]
     C --> H[Boltz 输入 YAML]
@@ -48,6 +67,10 @@ flowchart LR
     G --> H
     H --> I[预测结构与置信度]
 ```
+
+两条分支从**同一条 R003b 设计序列**开始比较搜索路径。R004 复用了上游 FASTA，没有重新生成骨架和序列；它先从同一 Swiss-Prot FASTA 建独立普通库与 padded 库。这里“CPU/GPU 分支”指 MMseqs2 搜索后端，**CPU 分支中的 RFdiffusion 和 Boltz 仍使用 GPU**。实际运行不是整条流程只用 CPU。
+
+另以天然蛋白 P69905 验证有命中的路径，它不是 ProteinMPNN 的设计结果。R002 对原始 CPU A3M 完成预测；R003 严格筛选后的 CPU A3M 仅验证解析；R004 的 GPU A3M 完成预测。三者不能当作同一条件的重复实验。
 
 **RFdiffusion：生成主链空间形状。** 本例只指定长度，不指定功能或结合靶标。骨架 PDB 中的甘氨酸是占位残基，不能当成最终设计序列。`.trb` 保存实际配置和映射等元数据，轨迹 PDB 保存逐步扩散坐标，用于理解中间过程。
 
@@ -66,7 +89,7 @@ flowchart LR
 | [scripts/protein_design_pipeline.py](../scripts/protein_design_pipeline.py) | 标准库控制脚本，调用已经部署的官方模型和 MMseqs2；提供 `run`、`build-db`、`register-db` |
 | [configs/protein_design.matpool.json](../configs/protein_design.matpool.json) | R003 实际配置；固定源码和主要包版本，**其中路径是原租用环境路径，换环境必须调整** |
 | [tests/test_protein_design_pipeline.py](../tests/test_protein_design_pipeline.py) | 无需 GPU 的数据连接边界检查 |
-| [experiments/](../experiments/R003-pipeline/record.md) | R001/R002/R003 详细记录、小型原始附件和图表 |
+| [experiments/](../experiments/) | R001–R004 详细记录、小型原始附件和图表；逐项入口见文首 |
 
 脚本没有重写模型，也不是一键安装器。真实执行要求 Linux x86_64、已授权的 GPU、足够的数据盘空间、已安装的模型源码/依赖/权重、Boltz 数据资料和 MMseqs2。运行环境与存储边界由 [环境说明](environment.md#矩池云临时-gpu-试运行2026-10-21) 维护；版本和兼容修复见 [R001](../experiments/R001-protein-design-smoke/record.md#执行身份)。本次只证明该小案例能在单张 24 GB 4090 上运行，未测显存峰值，不将 24 GB 写成所有任务的最低要求。团队 Coder 尚不能视为已部署好的 GPU 环境。
 
@@ -212,7 +235,7 @@ GPU `run` 会在 manifest 中保存实际调用参数，搜索命令带 `--gpu 1
 | `mpnn_seed`／`mpnn_temperature` | 42／0.1 | 控制随机采样及多样性；MPNN 的 seed=0 表示另选随机种子 |
 | MPNN 数量／batch／backbone noise | 1／1／0 | 当前仅验证一条序列；多候选选择尚未封装 |
 | `msa.mode` | `swissprot` | 先搜索，无合格候选则 `empty`；显式设 `empty` 可跳过搜索 |
-| 灵敏度／E 值 | 7.0／0.001 | 影响搜索召回和耗时；E 值不是同源概率 |
+| CPU 灵敏度／E 值 | 7.0／0.001 | GPU 不传 `-s 7`，采用最高灵敏度；E 值不是同源概率 |
 | 查询覆盖／最低一致性 | 0.8／0.3 | `--cov-mode 2`；限制局部短片段与低一致性命中，不是同源关系的通用判据 |
 | 搜索回溯／一致性计算 | `-a 1 --alignment-mode 3` | 保留比对及显式一致性；R002 原 TSV 的 `fident` 是估计值 |
 | 候选上限／CPU 线程 | 500／10 | 限制候选和并行度；达到上限不等于库中只有这些命中 |
@@ -225,7 +248,7 @@ GPU `run` 会在 manifest 中保存实际调用参数，搜索命令带 `--gpu 1
 
 ## 6. 一次运行有哪些产物
 
-以下路径相对本次 `--out`；R001/R002 手工运行布局略有不同，详见各记录。
+以下路径相对统一封装的 `--out`，已由 R003 CPU 搜索路径验证。R001/R002 手工运行及 R004 独立审计脚本布局不同；R004 的完整产物分类和逐文件大小、哈希、链接目标见 [专用索引](../experiments/R004-mmseqs-gpu/record.md#中间产物与记录索引)。不能用本表路径推断所有历史运行的实际布局。
 
 | 相对路径 | 内容与用途 |
 | --- | --- |
@@ -251,7 +274,17 @@ GPU `run` 会在 manifest 中保存实际调用参数，搜索命令带 `--gpu 1
 
 仓库随附的是**小型原始证据选集**，各 `evidence/index.json` 记录源归档内路径、大小和哈希；原文件逐字节复制，未改写为示意结果。R003 原始 `manifest.json` 含当时执行路径，它用于审计历史，不是团队成员应使用的部署路径，也不表示清单中全部 67 个文件都已进 Git。
 
-完整运行归档和环境恢复材料已由陈铠洲保管，并备份至租用平台持久卷；**尚未上传团队共享存储，也没有可供所有成员自助下载的统一链接**。归档名称、校验和与不包含的内容见 [R001](../experiments/R001-protein-design-smoke/record.md#产物保存)、[R002](../experiments/R002-swissprot-msa/record.md#归档与共享状态)、[R003](../experiments/R003-pipeline/record.md#产物与备份) 、[R004](../experiments/R004-mmseqs-gpu/record.md#归档与共享状态) 及 [环境说明](environment.md#矩池云临时-gpu-试运行2026-10-21)。后续确定团队存储位置后补充共享链接。
+正式运行归档和环境恢复包已回传核验，由陈铠洲保管，并备份至租用平台持久卷；**尚未上传团队共享存储，也没有可供所有成员自助下载的统一链接**。归档名称、校验和与不包含的内容见 [R001](../experiments/R001-protein-design-smoke/record.md#产物保存)、[R002](../experiments/R002-swissprot-msa/record.md#归档与共享状态)、[R003](../experiments/R003-pipeline/record.md#产物与备份)、[R004](../experiments/R004-mmseqs-gpu/record.md#归档与共享状态) 及 [环境说明](environment.md#矩池云临时-gpu-试运行2026-10-21)。另有两份收尾补充包尚未回传，具体内容、校验和与保留要求统一见 [关机前复核](environment.md#租用实例关机前复核2026-10-22)；不能据此宣称服务器全部材料已在本地。
+
+| 队友需要做什么 | 当前可用材料／接手条件 |
+| --- | --- |
+| 理解流程、复核结果或展示结构 | 直接查看 `dev-ckz` 中本文、四份记录和附件，无需租 GPU |
+| 复核所有 GPU 中间文件 | 先看 R004 完整清单与校验记录；实际取文件需向保管者获取完整归档，不能仅下载 Git 选集 |
+| 重新部署并运行 | 按第 4 节准备 Linux GPU 环境、固定数据与版本、修改配置；恢复包不等于可直接运行的完整环境 |
+| 采用统一 GPU 封装入口 | 需要独立端到端验收；已有 R004 审计脚本运行不能代替这一项 |
+| 讨论复用与加速 | 按第二份文档核对证据、选择对象和对照方案；当前没有已确认的共同研究方案或加速比 |
+
+后续团队共享位置确定后，在归档记录中补充统一访问链接；不以个人 Mac 路径或原实例绝对路径代替共享地址。文档、代码如需合入 `main`，按 [团队协作约定](collaboration.md) 汇总并经会议通过。
 
 接手时先用仓库附件核对各阶段的数据含义，再按执行环境修改配置并准备模型/数据。复用策略、缓存身份和首次对照方案需与曲鸿烨讨论，见 [协作讨论稿](protein_reuse.md)。靶标、motif、多聚体、多候选筛选、功能/湿实验与工作台模型接入均尚未完成。
 

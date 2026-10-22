@@ -19,8 +19,8 @@
 | [CI/CD 接入计划](docs/cicd.md) | 后续自动检查与部署的入口、前提和边界 |
 | [团队协作约定](docs/collaboration.md) | 个人 Coder 工作区、开发分支及会议后的合并流程 |
 | [配置来源](docs/workflow_sources.md) | 维护工作规则时核对来源与配置调整 |
-| [蛋白质设计流程跑通记录与使用说明](docs/protein_pipeline.md) | 团队协作主文档：完成情况、实测结果、运行命令、参数和中间产物 |
-| [产物复用与加速协作讨论稿](docs/protein_reuse.md) | 团队协作主文档：已有缓存、复用条件、待共同确认的评测候选 |
+| [蛋白质设计流程跑通记录与使用说明](docs/protein_pipeline.md) | 团队协作主文档一：材料导航、CPU/GPU 分支、实测结果、命令、产物及接手条件 |
+| [产物复用与加速协作讨论稿](docs/protein_reuse.md) | 团队协作主文档二：已有缓存、复用条件、证据入口及待共同确认的评测候选 |
 | [蛋白质设计试运行 R001](experiments/R001-protein-design-smoke/record.md) | 查看 RFdiffusion → ProteinMPNN → Boltz 的运行身份、命令与中间产物 |
 | [Swiss-Prot MSA 试运行 R002](experiments/R002-swissprot-msa/record.md) | 查看 MMseqs2 搜索、A3M、Boltz 对照和设计序列无命中的实际结果 |
 | [封装验证 R003](experiments/R003-pipeline/record.md) | 查看真实封装运行、失败修正与备份证据 |
