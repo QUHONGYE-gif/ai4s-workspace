@@ -1,0 +1,14 @@
+>sp_demo_A 短肽示例：含小写与 gap
+mktay-ial
+>sp_demo_B 中等长度
+MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQ
+>sp_demo_C 含非法字符（数字 1），会被剔除
+ACDEFG1HIK
+>sp_demo_D 小写全长
+acdefghiklmnpqrstvwy
+>sp_demo_E
+M
+>sp_demo_F 柔性连接子
+GGGGSGGGGSGGGGSGGGGSGGGGS
+>sp_demo_G 四肽
+GGGS

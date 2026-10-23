@@ -19,6 +19,7 @@
 | [CI/CD 接入计划](docs/cicd.md) | 后续自动检查与部署的入口、前提和边界 |
 | [团队协作约定](docs/collaboration.md) | 个人 Coder 工作区、开发分支及会议后的合并流程 |
 | [配置来源](docs/workflow_sources.md) | 维护工作规则时核对来源与配置调整 |
+| [存储层原型说明](src/storage/README.md) | 运行复用验证原型，查看命令行与数据落地位置 |
 
 文档以相对 Markdown 链接相互引用，并提供返回入口。方案、阶段任务、实际状态和运行环境各自维护
 
@@ -37,6 +38,8 @@
 ├── docker/workspace/Dockerfile
 ├── coder/               # 工作区模板与 Terraform 镜像配置
 ├── scripts/             # 初始化与 provider 下载入口
+├── src/
+│   └── storage/         # 存储层验证原型：内容寻址对象存储 + SQLite 元数据
 └── docs/
     ├── vision.md
     ├── research_plan.md
@@ -50,4 +53,4 @@
     └── workflow_sources.md
 ```
 
-业务代码、专项研究与实验目录在实际工作需要时建立，约定见 [项目规则](AGENTS.md)。本地开发底座命令见 [运行说明](docs/local_docker.md)。`.gitignore` 排除常见缓存、凭据、数据目录和模型权重；大型产物位置见 [环境说明](docs/environment.md)。
+业务代码按需放入 `src/`，专项研究与实验目录在实际工作需要时建立，约定见 [项目规则](AGENTS.md)。本地开发底座命令见 [运行说明](docs/local_docker.md)。`.gitignore` 排除常见缓存、凭据、数据目录和模型权重；大型产物位置见 [环境说明](docs/environment.md)。

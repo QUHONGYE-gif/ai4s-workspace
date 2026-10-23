@@ -26,6 +26,10 @@ venv/
 *.pth
 *.safetensors
 
+# Local run artifacts of the storage prototype
+.demo/
+src/storage/reports/
+
 # Local third-party reading copies; origins and pinned commits in references/README.md
 /references/code/
 /references/papers/*.pdf
