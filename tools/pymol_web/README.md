@@ -28,7 +28,7 @@ AI4S大创项目 | 计算生物学可视化工具模块
 cd ~/ai4s-workspace
 
 # 拉取最新分支代码
-git pull origin dev-wlh
+git pull origin dev-wyh
 
 # 进入pymol-web目录
 cd pymol-web
