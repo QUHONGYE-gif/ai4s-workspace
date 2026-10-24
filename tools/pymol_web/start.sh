@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+export DISPLAY="${DISPLAY:-:0}"
+export LIBGL_ALWAYS_SOFTWARE="${LIBGL_ALWAYS_SOFTWARE:-1}"
+export QT_X11_NO_MITSHM="${QT_X11_NO_MITSHM:-1}"
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
+export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
+export LP_NUM_THREADS="${LP_NUM_THREADS:-1}"
+VNC_PORT="${VNC_PORT:-5900}"
+NOVNC_PORT="${NOVNC_PORT:-6080}"
+NOVNC_HOST="${NOVNC_HOST:-127.0.0.1}"
+
 service_pids=()
 cleanup() {
     trap - EXIT TERM INT
@@ -44,7 +54,7 @@ service_pids+=("$!")
 x11vnc -display "$DISPLAY" -localhost -rfbport "$VNC_PORT" \
     -forever -shared -nopw -noxdamage -quiet &
 service_pids+=("$!")
-websockify --web=/usr/share/novnc "0.0.0.0:$NOVNC_PORT" "127.0.0.1:$VNC_PORT" &
+websockify --web=/usr/share/novnc "$NOVNC_HOST:$NOVNC_PORT" "127.0.0.1:$VNC_PORT" &
 service_pids+=("$!")
 
 # Closing PyMOL or losing any service ends the container and cleans up peers.

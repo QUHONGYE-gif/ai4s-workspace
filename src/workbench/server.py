@@ -9,16 +9,19 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
 from urllib.parse import urlsplit
+from xmlrpc.client import Error as PyMOLError
 
 from .storage import ConflictError, SnapshotStore
+from .pymol import PyMOLSession
 
 ROOT = Path(__file__).resolve().parents[2]
 MAX_BODY = 2 * 1024 * 1024
 
 
 class DemoHandler(SimpleHTTPRequestHandler):
-    def __init__(self, *args, store, fixtures, directory, **kwargs):
+    def __init__(self, *args, store, fixtures, directory, pymol, **kwargs):
         self.store = store
+        self.pymol = pymol
         self.fixtures = fixtures
         self.frontend = Path(directory).resolve()
         super().__init__(*args, directory=str(self.frontend), **kwargs)
@@ -40,6 +43,11 @@ class DemoHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         path = urlsplit(self.path).path
         try:
+            if path == "/api/tools/pymol":
+                try:
+                    return self.reply(200, self.pymol.status())
+                except (OSError, PyMOLError):
+                    return self.reply(503, {"error": "PyMOL 会话未启动或暂不可用"})
             if path == "/api/health":
                 return self.reply(
                     200, {"status": "ok", "mode": "simulation", "state_version": 1}
@@ -107,6 +115,35 @@ class DemoHandler(SimpleHTTPRequestHandler):
                 500, {"error": "Snapshot could not be saved; export browser changes"}
             )
 
+    def do_POST(self):
+        path = urlsplit(self.path).path
+        if path not in ("/api/tools/pymol/load", "/api/tools/pymol/style"):
+            return self.reply(404, {"error": "Unknown API endpoint"})
+        if self.headers.get_content_type() != "application/json":
+            return self.reply(415, {"error": "Content-Type must be application/json"})
+        try:
+            length = int(self.headers.get("Content-Length", "-1"))
+            if length < 0:
+                return self.reply(411, {"error": "Content-Length is required"})
+            if length > MAX_BODY:
+                self.close_connection = True
+                return self.reply(413, {"error": "请选择不超过 1 MiB 的结构文件"})
+            payload = json.loads(self.rfile.read(length))
+            if not isinstance(payload, dict):
+                raise ValueError("Request must be an object")
+            if path.endswith("/load"):
+                result = self.pymol.load(
+                    payload.get("filename"), payload.get("content"),
+                    payload.get("style", "cartoon")
+                )
+            else:
+                result = self.pymol.set_style(payload.get("style"))
+            return self.reply(200, result)
+        except (ValueError, UnicodeDecodeError) as error:
+            return self.reply(400, {"error": str(error)})
+        except (OSError, PyMOLError):
+            return self.reply(503, {"error": "PyMOL 无法加载结构，请检查会话和文件内容"})
+
     def list_directory(self, path):
         self.send_error(HTTPStatus.NOT_FOUND)
         return None
@@ -122,7 +159,8 @@ def create_server(host="127.0.0.1", port=3000, data_dir=None):
     )
     store = SnapshotStore(Path(data_dir) if data_dir else ROOT / ".local/workbench-api")
     handler = partial(
-        DemoHandler, store=store, fixtures=fixtures, directory=ROOT / "web/demo"
+        DemoHandler, store=store, fixtures=fixtures, directory=ROOT / "web/demo",
+        pymol=PyMOLSession(store.directory.parent / "pymol-inputs")
     )
     return ThreadingHTTPServer((host, port), handler)
 

@@ -1,48 +1,43 @@
-# PyMOL 网页容器
+# PyMOL 接入现有工作台
 
-容器运行 Ubuntu 开源版 PyMOL，通过 Xvfb、Fluxbox、x11vnc 和 noVNC 提供结构查看界面，使用软件 OpenGL 渲染，无需 GPU。软件来源为 [Ubuntu PyMOL 包](https://packages.ubuntu.com/jammy/pymol)、[开源 PyMOL](https://github.com/schrodinger/pymol-open-source) 和 [noVNC](https://github.com/novnc/noVNC)；各组件遵循自己的许可证。
+PyMOL 桌面嵌入已有工作台的“常用工具 → PyMOL”页面。它与工作台运行在**同一个个人 Coder 容器**，共用原 3000 端口与“开发预览”；不新增容器、Coder 应用或模板资源。
 
-## 构建与访问
+在页面选择真实 `.pdb`、`.cif` 或 `.mmcif` 文件（最大 1 MiB），点击“加载到 PyMOL”。左侧可旋转、缩放和选择原子；右侧可切换卡通、球棍、线框和表面。工作流目录仍为模拟数据，不会冒充真实结构文件。同工作区的浏览器共用一个 PyMOL 会话，重新加载只替换网页管理的 `browser_structure` 对象。
 
-在已安装并运行 Docker 的电脑或获准使用的 Docker 宿主机上，从仓库根目录执行：
+## 安装与启动
 
-```bash
-docker build -t ai4s-pymol-web tools/pymol_web
-mkdir -p .local/pymol-data
-docker run --rm --name ai4s-pymol-web \
-  -p 127.0.0.1:16080:6080 \
-  --mount type=bind,src="$(pwd)/.local/pymol-data",dst=/data,readonly \
-  ai4s-pymol-web
-```
-
-打开 [本机 noVNC](http://127.0.0.1:16080/vnc.html?autoconnect=true&resize=scale)。把 PDB/CIF 放入 `.local/pymol-data`，在 PyMOL 的 File → Open 中从 `/data` 加载；也可以在镜像名后传 `/data/example.pdb`，启动时直接打开。
-
-输入目录默认只读。保存结果时，另挂载当前容器用户（UID 1000）可写的输出目录并在 PyMOL 中选该路径；未挂载目录中的文件随 `--rm` 容器退出而消失。镜像以普通用户运行，原始结构文件不修改。
-
-容器中的原始 VNC 只监听回环地址。此用法依靠 Docker **宿主机的回环绑定**限制网页访问，无独立网页登录；保留命令中的 `127.0.0.1`，不直接发布到公网或不可信网络。关闭 PyMOL 会结束容器；也可执行 `docker stop ai4s-pymol-web`。
-
-默认从 Ubuntu 官方源安装。源不可达时可在构建命令中传 `--build-arg UBUNTU_MIRROR=<可用的同架构Ubuntu镜像地址>`；amd64 对应 `ubuntu`，arm64 对应 `ubuntu-ports`。该选项也替换安全更新源，须选择及时同步的可信镜像，APT 签名校验保持启用。
-
-## 远程使用与 Coder 边界
-
-在获准的远程 Docker 宿主机启动同一命令后，在个人电脑做 SSH 转发：
+在现有 Debian 13 个人容器内安装系统包，不需要 Docker socket 或重新构建镜像：
 
 ```bash
-ssh -N -L 16080:127.0.0.1:16080 <你的Docker宿主机>
+apt-get update
+apt-get install -y --no-install-recommends \
+  pymol xvfb x11-utils x11vnc novnc websockify fluxbox \
+  fonts-dejavu-core libgl1-mesa-dri nginx-light
 ```
 
-浏览器仍访问本机地址。无需把 5900 或 6080 发布到公网。
+服务器下载慢时，在本地中转同版本 Debian 的官方索引及依赖包，由容器内 APT 校验签名并安装；不混用 Ubuntu 包，也不关闭签名校验。中转完成后删除临时下载副本。
 
-当前个人 Coder 工作区不提供 Docker socket，不能直接照此构建嵌套容器；其开发预览目前只代理容器内 3000 端口。这份工具不会自动出现在 Coder 预览或工作台工具会话中。团队接入需由管理员另行安排，此 PR 不改变 Coder 权限和部署配置。
-
-## 检查与排错
+先结束本人原有工作台服务，再从仓库根目录启动：
 
 ```bash
-docker logs ai4s-pymol-web
-docker exec ai4s-pymol-web xdpyinfo -display :0
-docker exec ai4s-pymol-web python3 -c "from pymol import cmd; print(cmd.get_version())"
+bash tools/pymol_web/start-workspace.sh
 ```
 
-先确认网页可打开，再确认 PyMOL 桌面实际显示并能加载结构。端口已占用时只改宿主机端口 `16080`；挂载输入为空时检查 Docker 所在电脑的目录。启动脚本等待 X 显示就绪，任何服务退出都会清理其余进程，错误保留在容器日志中。
+保持进程运行，打开原“开发预览”，进入已有 PyMOL 页面。关闭 PyMOL 不会停止工作台；需要重新打开工具时，结束本人这次启动的服务并重新执行上面的命令。后台运行时可沿用原运行目录的 `server.log`；启动器把自身 PID 写入 `server.pid`。
+
+## 文件与进程分工
+
+- `start.sh`：启动 Xvfb、Fluxbox、PyMOL、x11vnc 与 websockify，退出时清理自己启动的进程。
+- `start-workspace.sh`：启动原 Python 服务（内部 3001）、PyMOL 与路径代理。
+- `workspace-nginx.conf`：原 3000 端口代理工作台，`/tools/pymol/` 代理桌面与 WebSocket。
+- `src/workbench/pymol.py`：通过 PyMOL 内置的回环 XML-RPC 接口加载文件、切换显示方式；不向浏览器开放任意命令。
+
+VNC、noVNC、XML-RPC 和工作台内部端口均只监听容器回环地址；访问权限沿用 Coder 原个人预览。上传文件保存在原服务数据目录旁的 `pymol-inputs/`，以唯一名称保留，原模拟快照目录继续使用 `api-state/`。此接入只提供结构查看，不执行蛋白质生成或证明科学模型有效。
+
+代码和上传文件位于 home 持久卷；原地安装的系统依赖在容器**重建**后需要重新安装。工作区停止后服务进程也需重新启动。本实现不自动重建容器或改动模板。
+
+历史独立镜像的 `Dockerfile` 仍保留；本次接入不使用独立容器，也不重新构建该镜像。
+
+依据：[PyMOL 内置 RPC](https://github.com/schrodinger/pymol-open-source/blob/master/modules/pymol/rpc.py) · [noVNC 嵌入](https://github.com/novnc/noVNC/blob/master/docs/EMBEDDING.md) · [Nginx WebSocket 代理](https://nginx.org/en/docs/http/websocket.html)。
 
 返回：[仓库入口](../../README.md) · [蛋白质设计程序](../../docs/protein_pipeline.md)。

@@ -91,6 +91,23 @@ const DemoAPI = (() => {
     }
   }
   return {
+    async pymolStatus() {
+      return request('api/tools/pymol');
+    },
+    async loadStructure(file, style) {
+      return request('api/tools/pymol/load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, content: await file.text(), style }),
+      });
+    },
+    async setPymolStyle(style) {
+      return request('api/tools/pymol/style', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ style }),
+      });
+    },
     async bootstrap() {
       return (await request('api/demo/bootstrap')).fixtures;
     },

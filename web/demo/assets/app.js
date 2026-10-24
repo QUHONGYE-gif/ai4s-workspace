@@ -17,7 +17,7 @@
       name: 'PyMOL',
       initial: 'Py',
       subtitle: '分子结构工具入口',
-      description: '选择工作流中的结构结果，配置显示方式，预览工具会话入口。',
+      description: '加载真实 PDB 或 mmCIF 文件，在页面中查看并操作 PyMOL。',
       tags: ['结构结果', '会话入口'],
       color: 'green',
     },
@@ -2806,11 +2806,11 @@ ${esc(policyDraft.description)}</textarea
                   <div class="tool-emblem ${t.color === 'blue' ? 'blue' : ''}">${t.initial}</div>
                   <div class="entry-title">
                     <h2>${t.name}</h2>
-                    <span class="pill">模拟会话</span>
+                    <span class="pill">${id === 'pymol' ? '实时会话' : '模拟会话'}</span>
                   </div>
                   <p>${t.description}</p>
                   <div class="entry-bottom">
-                    <span>不启动真实软件</span
+                    <span>${id === 'pymol' ? '加载真实结构文件' : '不启动真实软件'}</span
                     ><button
                       class="btn primary"
                       data-tool="${id}"
@@ -2827,7 +2827,98 @@ ${esc(policyDraft.description)}</textarea
       </div>`
     );
   };
+  const pymolPage = function () {
+    const viewer = new URL('tools/pymol/vnc.html', document.baseURI);
+    const websocket = new URL('tools/pymol/websockify', document.baseURI);
+    viewer.search = new URLSearchParams({
+      autoconnect: 'true',
+      resize: 'scale',
+      host: viewer.hostname,
+      port: viewer.port || (viewer.protocol === 'https:' ? '443' : '80'),
+      encrypt: viewer.protocol === 'https:' ? 'true' : 'false',
+      path: websocket.pathname.replace(/^\//, ''),
+    });
+    return (
+      heading('PyMOL', '真实结构查看与交互',
+        '<button class="btn" id="tool-list-preserve">工具列表</button>') +
+      banner('此处连接真实 PyMOL。工作流目录仍使用模拟数据，请选择真实结构文件加载。') +
+      /* HTML */ `<div class="tool-layout">
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title">${icon('atom')} PyMOL 实时会话</div>
+            <span class="pill good">真实工具</span>
+          </div>
+          <iframe class="pymol-session" title="PyMOL 实时结构查看" src="${esc(viewer.href)}" allowfullscreen></iframe>
+          <div class="tool-foot">可直接在左侧 PyMOL 中旋转、缩放和选择原子。</div>
+        </section>
+        <aside class="panel">
+          <div class="panel-head"><div class="panel-title">结构文件</div></div>
+          <div class="tool-settings">
+            <label class="field"><span>选择本地结构文件</span>
+              <input id="pymol-file" type="file" accept=".pdb,.cif,.mmcif">
+              <small>PDB / mmCIF，最大 1 MiB。文件保存在个人工作区。</small>
+            </label>
+            <label class="field"><span>显示方式</span>
+              <select id="pymol-style" disabled>
+                <option value="cartoon">卡通</option>
+                <option value="sticks">球棍</option>
+                <option value="lines">线框</option>
+                <option value="surface">表面</option>
+              </select>
+            </label>
+            <div class="source-key" id="pymol-status" role="status">正在连接 PyMOL…</div>
+            <button class="btn primary" id="pymol-open" disabled>加载到 PyMOL</button>
+            <p class="small muted">本工作区的浏览器页面共用同一个 PyMOL 会话。</p>
+          </div>
+        </aside>
+      </div>`
+    );
+  };
+  const bindPymolControls = function () {
+    if (activeTool !== 'pymol') return;
+    const fileInput = $('#pymol-file');
+    const openButton = $('#pymol-open');
+    const styleInput = $('#pymol-style');
+    const status = $('#pymol-status');
+    const showStructure = (result) => {
+      status.textContent = result.atoms
+        ? `${result.filename} · ${result.atoms} 个原子`
+        : 'PyMOL 已就绪，请选择结构文件。';
+      styleInput.disabled = !result.atoms;
+    };
+    fileInput.onchange = () => {
+      openButton.disabled = !fileInput.files.length;
+    };
+    openButton.onclick = async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      if (file.size > 1024 * 1024) {
+        status.textContent = '请选择不超过 1 MiB 的结构文件。';
+        return;
+      }
+      openButton.disabled = true;
+      status.textContent = '正在加载结构…';
+      try {
+        showStructure(await DemoAPI.loadStructure(file, styleInput.value));
+      } catch (error) {
+        status.textContent = error.message;
+      } finally {
+        openButton.disabled = !fileInput.files.length;
+      }
+    };
+    styleInput.onchange = async () => {
+      try {
+        await DemoAPI.setPymolStyle(styleInput.value);
+      } catch (error) {
+        status.textContent = error.message;
+      }
+    };
+    DemoAPI.pymolStatus().then(showStructure).catch((error) => {
+      status.textContent = error.message;
+    });
+  };
   const toolSessionPage = function () {
+    if (activeTool === 'pymol') return pymolPage();
     const t = toolInfo[activeTool],
       sourceId = page.query.get('artifact') || '',
       a = artifactById(sourceId),
@@ -3105,8 +3196,8 @@ ${esc(policyDraft.description)}</textarea
         </p>
         <h3>当前模拟边界</h3>
         <p>
-          成员、共享权限、文件可读取性、成本及结构画布均为模拟。不会读取服务器路径、执行登记命令、调用
-          AI、启动 PyMOL／ChimeraX 或连接计算服务。下载仅为标记明确的模拟 JSON。
+          工作流、成员共享、成本和 ChimeraX 会话仍为模拟，不执行登记的模型命令或调用 AI。
+          PyMOL 页面提供真实结构查看，可加载本人选择的 PDB 或 mmCIF 文件。工作流下载仍为模拟 JSON。
         </p>
         <h3>保存与恢复</h3>
         <p>
@@ -3754,6 +3845,7 @@ ${esc(policyDraft.description)}</textarea
     $('#catalog-count').textContent = product.catalog.filter(visible).length;
     $('#run-count').textContent = product.experiments.filter((e) => !e.fixture).length;
     bind();
+    bindPymolControls();
     bindCreation();
     bindRegistration();
   };
