@@ -110,6 +110,21 @@ Coder 控制面通过 Docker socket 创建工作区；已核对 Docker Desktop V
 
 Coder CLI 转发语法依据 [官方端口转发说明](https://coder.com/docs/reference/cli/port-forward)，本项目实际命令见成员指南。此访问方式用于开发与体验检查，不代表独立正式业务入口或真实多人共享后端已完成。
 
+### PyMOL 结构查看
+
+2026-10-24 在 qhy 现有个人容器内原地安装并接入，未重新构建镜像或改变 Coder 模板。已有工作台的 PyMOL 页面直接嵌入真实桌面；工作流和共享目录本身仍为模拟。
+
+| 项目 | 实际配置 |
+| --- | --- |
+| 系统依赖 | Debian 13 官方 APT 包；PyMOL 3.1.0、noVNC 1.6.0、Nginx 1.26.3，使用软件 OpenGL |
+| 启动入口 | `bash tools/pymol_web/start-workspace.sh`，从个人仓库根目录运行 |
+| 访问入口 | 原 `qhy/dev` 的“开发预览”内 `#/tools/pymol`，未新增 Coder 应用 |
+| 内部连接 | 3000 路径代理原工作台 3001 与 noVNC 6080；VNC 5900、PyMOL RPC 9123；均只监听容器回环地址 |
+| 状态与上传 | 原 `api-state/` 沿用；上传结构保存在同级 `pymol-inputs/`，都位于 `/home/coder/.local/state/ai4s-workbench-demo/` |
+| 日志与进程 | 沿用同目录 `server.log`、`server.pid` 和 `deployment.json`，只管理本人应用子进程 |
+
+系统包通过本地中转官方索引和依赖，由容器内 APT 验证签名后安装；未改原 Debian 源配置。代码与上传文件在 home 卷中保留，容器被重建或替换后需要重新安装系统依赖，应用进程需手动启动；本次未增加自动重建或模板部署机制。安装命令和使用方式见 [PyMOL 说明](../tools/pymol_web/README.md)。
+
 ## HTTPS 中转位置
 
 成员入口为 [https://coder.my-rustdesk.xyz](https://coder.my-rustdesk.xyz)。用户确认根域名已备案、用途为成员个人开发；这不是平台备案审查结论。访问链路为：
