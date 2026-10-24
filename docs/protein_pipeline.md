@@ -27,12 +27,13 @@ cp configs/protein_design.example.json .local/protein-design.json
 
 ## 运行
 
-以下命令从仓库根目录执行。先查看计划；`--dry-run` 不调用模型、不检查 GPU／安装环境，也不创建运行目录。
+以下命令从仓库根目录执行；先将数据目录占位值改为实际位置。先查看计划；`--dry-run` 不调用模型、不检查 GPU／安装环境，也不创建运行目录。
 
 ```bash
+PROTEIN_DATA=/path/to/protein-data
 python scripts/protein_design_pipeline.py run \
   --config .local/protein-design.json \
-  --out /data1/qhy/protein-design/runs/design-001 --dry-run
+  --out "$PROTEIN_DATA/runs/design-001" --dry-run
 ```
 
 `msa.mode=swissprot` 时，先用本地可信的压缩 FASTA 建库；`msa.mmseqs_version` 须与已安装二进制的 `version` 输出一致，数据库前缀必须尚不存在：
@@ -40,10 +41,10 @@ python scripts/protein_design_pipeline.py run \
 ```bash
 python scripts/protein_design_pipeline.py build-db \
   --config .local/protein-design.json \
-  --fasta-gz /data1/qhy/protein-design/db/uniprot_sprot.fasta.gz
+  --fasta-gz "$PROTEIN_DATA/db/uniprot_sprot.fasta.gz"
 python scripts/protein_design_pipeline.py run \
   --config .local/protein-design.json \
-  --out /data1/qhy/protein-design/runs/design-001
+  --out "$PROTEIN_DATA/runs/design-001"
 ```
 
 原始 FASTA 保持不变，数据库旁的 `.source.json` 记录源文件、二进制和库文件身份。`register-db` 仅用于来源已知的 CPU 库登记，不能证明任意未知库对应所给 FASTA。`msa.mode=empty` 跳过搜索；搜索无有效候选时也明确使用单序列预测。
@@ -60,4 +61,4 @@ GPU 搜索需另装 `<root>/tools/mmseqs-gpu/bin/mmseqs`，将 `msa.backend` 改
 python -m unittest discover -s tests -p 'test_protein_design_pipeline.py' -v
 ```
 
-返回：[仓库入口](../README.md) · [结构查看容器](../tools/pymol_web/README.md)。
+返回：[仓库入口](../README.md) · [PyMOL 结构查看](../tools/pymol_web/README.md)。
