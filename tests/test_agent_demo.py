@@ -28,6 +28,18 @@ def workflow(client, template="protein"):
     return r.json()["draft"]
 
 
+def test_agent_assets_and_api_work_under_preview_prefix(tmp_path):
+    # The Coder proxy forwards the full /agent/ path, including static assets.
+    with TestClient(create_app(tmp_path, root_path="/agent")) as client:
+        page = client.get("/agent/")
+        assert page.status_code == 200
+        assert 'href="./assets/styles.css"' in page.text
+        assert client.get("/agent/assets/app.js").status_code == 200
+        assert client.head("/agent/").headers["content-length"] == page.headers["content-length"]
+        assert client.get("/agent/api/health").json()["adapter"] == "not_connected"
+        assert client.post("/agent/api/workflows", json={"template": "protein"}).status_code == 201
+
+
 def change(client, draft, operations, **overrides):
     body = {"expected_revision": draft["revision"], "operation_id": "op-test", "operations": operations, **overrides}
     return client.post(f"/api/workflows/{draft['id']}/changes", json=body)
