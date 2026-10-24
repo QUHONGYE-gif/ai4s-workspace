@@ -114,6 +114,15 @@ uv run python scripts/verify_agent_demo.py --live --output .local/agent-demo-liv
 
 同步 main 后，Agent 19 项（含预览子路径回归检查）、流程脚本 10 项、工作台 API 8 项共 **37 项确定性检查通过**；既有 6 项前端模拟检查与 API 客户端检查通过。实际启动联合服务检查了工作台入口、Agent 静态资源与 HEAD、同源创建和改参、持久化、跨站写入拒绝、真实历史 PDB 上传。首次整合暴露子路径静态资源定位问题，修正代理与内部服务的 `/agent/` 挂载前缀后复核通过。未再次调用付费 DeepSeek API，历史真实语言验收与本次部署检查分别判断。
 
+### 个人 Coder 部署验证（2026-10-25）
+
+已将代码同步到个人 Coder 的 `dev-ckz` 并启动后台联合服务，工作台原首页与 Agent 共用已有开发预览。部署所测代码基线为 [`47f6e74`](https://github.com/QUHONGYE-gif/ai4s-workspace/commit/47f6e747334f12f73e49845910becc0e945a20eb)，使用 Linux Python 3.12.15，按 `uv.lock` 安装项目专用 `.venv`，未安装科学模型或使用 GPU。
+
+- Coder 内上述 **37 项 Python 检查全部通过**；JavaScript 逻辑检查在本机执行，Coder 未安装 Node.js。
+- 已在真实 Coder 预览验证首页入口、三模型节点、返回链接、批量改参保存与刷新持久化。独立的「Coder 部署核验（非科学运行）」工作流将 ProteinMPNN 设为 16 条、温度 0.2、全部链和上游记录 0，保存为 r1；原示例保留。
+- 联合进程在后台运行；日志和 PID 位于用户状态目录的 `ai4s-workbench-demo/server.log`、`server.pid`。Agent 的 JSON 与私有设置仍在独立数据目录，停止工作区后需按第 1 节重新启动。
+- **目标环境尚未配置 DeepSeek API key，本轮没有在 Coder 重跑真实 LLM 验收。** 本机私有密钥和历史工作流没有随 Git 传入；在目标页面的「模型 API 设置」配置后才能使用对话与资料识别。历史真实 API 验收、本轮部署验证与科学执行分别判断；AiiDA 仍未接通。
+
 ### live-panel-skill 的实际使用范围（追加调整）
 
 初版仅查阅了该项目的说明，流程图自行实现，未执行其完整 skill 工作流。用户指出后，重新阅读 [SKILL.md](https://github.com/ythx-101/live-panel-skill/blob/main/SKILL.md)、[motion grammar](https://github.com/ythx-101/live-panel-skill/blob/main/references/motion-grammar.md) 和 [config schema](https://github.com/ythx-101/live-panel-skill/blob/main/references/config-schema.md)，对现有交互画布做视觉适配：
