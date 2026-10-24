@@ -2827,17 +2827,9 @@ ${esc(policyDraft.description)}</textarea
       </div>`
     );
   };
+  const pymolCommands = [];
   const pymolPage = function () {
-    const viewer = new URL('tools/pymol/vnc.html', document.baseURI);
-    const websocket = new URL('tools/pymol/websockify', document.baseURI);
-    viewer.search = new URLSearchParams({
-      autoconnect: 'true',
-      resize: 'scale',
-      host: viewer.hostname,
-      port: viewer.port || (viewer.protocol === 'https:' ? '443' : '80'),
-      encrypt: viewer.protocol === 'https:' ? 'true' : 'false',
-      path: websocket.pathname.replace(/^\//, ''),
-    });
+    const viewer = new URL('pymol.html', document.baseURI);
     return (
       heading('PyMOL', '真实结构查看与交互',
         '<button class="btn" id="tool-list-preserve">工具列表</button>') +
@@ -2846,10 +2838,31 @@ ${esc(policyDraft.description)}</textarea
         <section class="panel">
           <div class="panel-head">
             <div class="panel-title">${icon('atom')} PyMOL 实时会话</div>
-            <span class="pill good">真实工具</span>
+            <div class="pymol-view-actions">
+              <label class="pymol-mode">
+                <input id="pymol-full-ui" type="checkbox" role="switch" disabled>
+                <span>完整界面</span>
+              </label>
+              <span class="pill good">真实工具</span>
+            </div>
           </div>
           <iframe class="pymol-session" title="PyMOL 实时结构查看" src="${esc(viewer.href)}" allowfullscreen></iframe>
-          <div class="tool-foot">可直接在左侧 PyMOL 中旋转、缩放和选择原子。</div>
+          <div class="pymol-console">
+            <form id="pymol-command-form" class="pymol-command-form">
+              <label for="pymol-command">PyMOL&gt;</label>
+              <input id="pymol-command" type="text" maxlength="4096" autocomplete="off"
+                spellcheck="false" placeholder="例如：color cyan, all" disabled>
+              <button class="btn primary" id="pymol-execute" type="submit" disabled>执行</button>
+            </form>
+            <label class="pymol-history">
+              <span>命令历史</span>
+              <select id="pymol-history"><option value="">选择已执行的命令</option></select>
+            </label>
+            <details class="pymol-output" open>
+              <summary>执行输出</summary>
+              <pre id="pymol-output" role="log" aria-live="polite">命令在当前 PyMOL 会话执行，反馈与查询结果显示于此。</pre>
+            </details>
+          </div>
         </section>
         <aside class="panel">
           <div class="panel-head"><div class="panel-title">结构文件</div></div>
@@ -2880,11 +2893,86 @@ ${esc(policyDraft.description)}</textarea
     const openButton = $('#pymol-open');
     const styleInput = $('#pymol-style');
     const status = $('#pymol-status');
+    const fullUI = $('#pymol-full-ui');
+    const commandInput = $('#pymol-command');
+    const executeButton = $('#pymol-execute');
+    const history = $('#pymol-history');
+    const output = $('#pymol-output');
+    const refreshHistory = () => {
+      history.replaceChildren(new Option('选择已执行的命令', ''));
+      for (const command of [...pymolCommands].reverse()) {
+        history.add(new Option(command, command));
+      }
+    };
+    refreshHistory();
+    history.onchange = () => {
+      if (history.value) {
+        commandInput.value = history.value;
+        commandInput.focus();
+      }
+    };
+    let historyIndex = pymolCommands.length;
+    let commandDraft = '';
+    commandInput.onkeydown = (event) => {
+      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+      if (!pymolCommands.length) return;
+      event.preventDefault();
+      if (historyIndex === pymolCommands.length) commandDraft = commandInput.value;
+      const step = event.key === 'ArrowUp' ? -1 : 1;
+      historyIndex = Math.max(0, Math.min(pymolCommands.length, historyIndex + step));
+      commandInput.value = pymolCommands[historyIndex] ?? commandDraft;
+    };
+    fullUI.onchange = async () => {
+      fullUI.disabled = true;
+      try {
+        const result = await DemoAPI.setPymolMode(fullUI.checked);
+        fullUI.checked = result.full_ui;
+      } catch (error) {
+        fullUI.checked = !fullUI.checked;
+        status.textContent = error.message;
+      } finally {
+        fullUI.disabled = false;
+      }
+    };
+    $('#pymol-command-form').onsubmit = async (event) => {
+      event.preventDefault();
+      const command = commandInput.value.trim();
+      if (!command || executeButton.disabled) return;
+      executeButton.disabled = true;
+      commandInput.disabled = true;
+      pymolCommands.push(command);
+      if (pymolCommands.length > 50) pymolCommands.shift();
+      historyIndex = pymolCommands.length;
+      commandDraft = '';
+      refreshHistory();
+      output.textContent += `\n\nPyMOL> ${command}\n正在执行…`;
+      const pendingOutput = output.textContent;
+      const showOutput = (message) => {
+        output.textContent = pendingOutput.replace(/正在执行…$/, () => message).slice(-50000);
+        output.scrollTop = output.scrollHeight;
+      };
+      try {
+        const result = await DemoAPI.executePymol(command);
+        showOutput(result.output || '命令已执行（无文本输出）。');
+        commandInput.value = '';
+        showStructure(await DemoAPI.pymolStatus());
+      } catch (error) {
+        showOutput(error.message);
+      } finally {
+        executeButton.disabled = false;
+        commandInput.disabled = false;
+        commandInput.focus();
+      }
+    };
     const showStructure = (result) => {
       status.textContent = result.atoms
         ? `${result.filename} · ${result.atoms} 个原子`
         : 'PyMOL 已就绪，请选择结构文件。';
       styleInput.disabled = !result.atoms;
+      if (typeof result.full_ui === 'boolean') fullUI.checked = result.full_ui;
+      fullUI.disabled = false;
+      commandInput.disabled = false;
+      executeButton.disabled = false;
     };
     fileInput.onchange = () => {
       openButton.disabled = !fileInput.files.length;

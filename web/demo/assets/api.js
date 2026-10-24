@@ -108,6 +108,20 @@ const DemoAPI = (() => {
         body: JSON.stringify({ style }),
       });
     },
+    async setPymolMode(fullUI) {
+      return request('api/tools/pymol/mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_ui: fullUI }),
+      });
+    },
+    async executePymol(command) {
+      return request('api/tools/pymol/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command }),
+      });
+    },
     async bootstrap() {
       return (await request('api/demo/bootstrap')).fixtures;
     },

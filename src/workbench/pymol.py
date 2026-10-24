@@ -1,4 +1,4 @@
-"""Load browser-selected structures into the workspace's running PyMOL session."""
+"""Control the existing personal PyMOL session from the workbench."""
 
 from http.client import HTTPConnection
 from pathlib import Path
@@ -31,7 +31,12 @@ class PyMOLSession:
             pymol.ping()
             objects = pymol.getNames("objects")
             atoms = pymol.countAtoms(self.object_name) if self.object_name in objects else 0
-            return {"ready": True, "filename": self.filename, "atoms": atoms}
+            return {
+                "ready": True,
+                "filename": self.filename or "当前 PyMOL 结构",
+                "atoms": atoms,
+                **pymol.webGetMode(),
+            }
 
     def load(self, filename, content, style):
         if not isinstance(filename, str) or Path(filename).suffix.lower() not in {
@@ -70,3 +75,17 @@ class PyMOLSession:
             pymol.hide("everything", self.object_name)
             pymol.show(style, self.object_name)
             return {"style": style}
+
+    def set_mode(self, full_ui):
+        if not isinstance(full_ui, bool):
+            raise ValueError("界面模式必须为布尔值")
+        with self.lock, self.connect() as pymol:
+            return pymol.webSetMode(full_ui)
+
+    def execute(self, command):
+        if not isinstance(command, str) or not command.strip():
+            raise ValueError("请输入 PyMOL 命令")
+        if len(command) > 4096:
+            raise ValueError("单次命令不能超过 4096 个字符")
+        with self.lock, self.connect() as pymol:
+            return pymol.webExecute(command.strip())

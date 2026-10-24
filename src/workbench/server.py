@@ -117,7 +117,10 @@ class DemoHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
-        if path not in ("/api/tools/pymol/load", "/api/tools/pymol/style"):
+        if path not in (
+            "/api/tools/pymol/load", "/api/tools/pymol/style",
+            "/api/tools/pymol/mode", "/api/tools/pymol/command",
+        ):
             return self.reply(404, {"error": "Unknown API endpoint"})
         if self.headers.get_content_type() != "application/json":
             return self.reply(415, {"error": "Content-Type must be application/json"})
@@ -136,13 +139,17 @@ class DemoHandler(SimpleHTTPRequestHandler):
                     payload.get("filename"), payload.get("content"),
                     payload.get("style", "cartoon")
                 )
-            else:
+            elif path.endswith("/style"):
                 result = self.pymol.set_style(payload.get("style"))
+            elif path.endswith("/mode"):
+                result = self.pymol.set_mode(payload.get("full_ui"))
+            else:
+                result = self.pymol.execute(payload.get("command"))
             return self.reply(200, result)
         except (ValueError, UnicodeDecodeError) as error:
             return self.reply(400, {"error": str(error)})
         except (OSError, PyMOLError):
-            return self.reply(503, {"error": "PyMOL 无法加载结构，请检查会话和文件内容"})
+            return self.reply(503, {"error": "PyMOL 操作未返回，请检查会话；耗时命令可能仍在运行"})
 
     def list_directory(self, path):
         self.send_error(HTTPStatus.NOT_FOUND)
