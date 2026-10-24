@@ -47,7 +47,8 @@ fi
 
 fluxbox &
 service_pids+=("$!")
-pymol "$@" &
+# APT PyMOL must use Debian Python, not the workspace Python in /usr/local.
+PATH="/usr/bin:/bin:$PATH" pymol "$@" &
 service_pids+=("$!")
 
 # Raw VNC is container-local. Publish noVNC only on the host loopback interface.
