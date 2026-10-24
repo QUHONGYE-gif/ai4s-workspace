@@ -68,6 +68,9 @@ class WorkspaceInterface:
         return {"output": output}
 
 
+# Start the existing RPC implementation here: PyMOL processes -R after -r.
+if not getattr(rpc, "serv", None):
+    rpc.launch_XMLRPC(hostname="127.0.0.1", port=9123, nToTry=1)
 interface = cmd._call_in_gui_thread(WorkspaceInterface)
 rpc.serv.register_function(
     lambda full_ui: cmd._call_in_gui_thread(lambda: interface.set_mode(full_ui)),

@@ -24,7 +24,7 @@ workbench_pid=$!
 service_pids+=("$workbench_pid")
 
 PYMOL_RPCHOST=127.0.0.1 NOVNC_HOST=127.0.0.1 \
-    bash "$project_root/tools/pymol_web/start.sh" -R \
+    bash "$project_root/tools/pymol_web/start.sh" \
     -r "$project_root/tools/pymol_web/workspace.py" "$@" &
 service_pids+=("$!")
 
