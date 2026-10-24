@@ -4,7 +4,10 @@ umask 077
 repo="$HOME/ai4s-workspace"
 case "$AI4S_BRANCH" in
   dev-[a-z][a-z][a-z]) ;;
-  *) echo 'Use a member account named with three lowercase initials.' >&2; exit 1 ;;
+  *)
+    echo 'Use a member account named with three lowercase initials.' >&2
+    exit 1
+    ;;
 esac
 
 # Never switch, reset or overwrite an existing personal checkout on restart.

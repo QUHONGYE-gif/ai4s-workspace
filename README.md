@@ -1,63 +1,35 @@
-# 面向 AI4S 工作流的语义感知数据管理与计算—存储协同工作台
+# AI4S 工作台
 
-本项目探索科学中间结果的身份、依赖与复用，先以蛋白质生成工作流验证。Docker + Coder 开发底座已建立，日常开发使用服务器个人工作区；已接入可交互的模拟工作台网页，已拆出前端资源与模拟状态 API，真实科学流程及服务端执行仍处于规划阶段。实际进展以 [当前状态](docs/status.md) 为准。
+面向科学中间产物的身份、依赖、共享与复用，首个场景为蛋白质设计。
 
-代码仓库：[QUHONGYE-gif/ai4s-workspace](https://github.com/QUHONGYE-gif/ai4s-workspace)。本仓库保存可公开的代码、配置和说明；凭据、运行数据、镜像与缓存留在对应环境。
+当前包含工作台演示前后端、独立蛋白质设计程序及嵌入式 PyMOL。工作流执行、产物目录和复用策略仍为模拟；真实 PyMOL 结构查看已接入。能力边界见 [当前状态](docs/status.md)。
 
-## 从哪里开始
+## 开发入口
 
-- 工作台模拟网页：[前后端开发说明](web/README.md) · [页面源码](web/demo/index.html)；在个人容器启动与本机访问见 [体验说明](docs/collaboration.md#工作台模拟网页)。
-- 成员登录、开发、预览、提交 PR：[成员开发与协作](docs/collaboration.md)。
-- 管理员部署、开户、更新模板和排错：[部署与运维](docs/operations.md)。
-- 了解研究方向和下一步：[设计草案](docs/research_plan.md) → [实施计划](docs/implementation_plan.md) → [当前状态](docs/status.md)。
+- [工作台前后端](web/README.md)：文件职责、启动、API 与已有测试。
+- [PyMOL](tools/pymol_web/README.md)：在已有工作区启动结构查看、网页命令和完整界面。
+- [蛋白质设计](docs/protein_pipeline.md)：配置、运行与输出约定。
+- [成员协作](docs/collaboration.md)：个人工作区、预览与 PR 合并。
 
-## 核心文档分工
+## 文档分工
 
-| 文件 | 唯一维护内容 |
+| 文档 | 内容 |
 | --- | --- |
-| [项目规则](AGENTS.md) | Agent 工作方式、按需阅读、科研与执行边界 |
-| [用户原文](docs/vision.md) | 用户构想和明确要求的原始表述 |
-| [设计草案](docs/research_plan.md) | 范围、科学数据对象、复用含义和评价思路 |
-| [实施计划](docs/implementation_plan.md) | 阶段任务、产物、完成条件及后续 CI/CD 计划 |
-| [当前状态](docs/status.md) | 已完成内容、验证证据索引、限制和最近下一步 |
-| [环境说明](docs/environment.md) | 机器、版本、路径、持久卷、资源限额和中转位置 |
-| [成员开发与协作](docs/collaboration.md) | 成员使用、个人开发预览、分支与会议合并流程 |
-| [部署与运维](docs/operations.md) | 管理员部署、开户、种子与模板、HTTPS、排错和本地恢复操作 |
-| [配置来源](docs/workflow_sources.md) | 工作规则的参考来源与职责调整记录 |
+| [AGENTS.md](AGENTS.md) | 开发、执行与验证规则 |
+| [原始构想](docs/vision.md) | 用户提出的研究目标 |
+| [设计草案](docs/research_plan.md) | 产物、依赖、复用含义及评价思路 |
+| [实施计划](docs/implementation_plan.md) | 后续阶段与完成条件 |
+| [当前状态](docs/status.md) | 当前能力、限制与下一步 |
+| [运行要求](docs/environment.md) | 通用依赖和配置来源 |
+| [部署与运维](docs/operations.md) | 管理员操作入口及维护边界 |
 
-方案、计划、状态、环境和操作分别维护，通过相对链接引用；成员指南与管理员运维入口分开。
+## 代码位置
 
-## 当前文件结构
+- `web/demo/`：页面、交互、API 客户端与嵌入式查看器。
+- `src/workbench/`：HTTP API、模拟快照和 PyMOL 接口。
+- `scripts/`：应用、蛋白质流程和管理入口。
+- `tools/pymol_web/`：PyMOL 启动与路径代理。
+- `configs/`、`coder/`、`docker/`、`compose*.yaml`：配置、模板与镜像定义。
+- `tests/`：已有的输入边界、状态接口及前端逻辑检查。
 
-```text
-.
-├── AGENTS.md
-├── README.md
-├── .gitignore
-├── .env.example
-├── .env.server.example
-├── .github/pull_request_template.md
-├── compose.yaml
-├── compose.server.yaml
-├── compose.https.yaml
-├── docker/workspace/Dockerfile
-├── coder/               # 原型与个人工作区模板、Terraform 配置及锁文件
-├── configs/             # HTTPS 中转、SSH 限制与服务配置
-├── scripts/             # 初始化、成员管理、provider 下载及辅助入口
-├── web/                # 工作台 HTML、CSS、JS 与开发说明
-├── src/workbench/      # Python 模拟状态 API 与快照存储
-├── tests/              # 状态接口及模拟逻辑关键检查
-└── docs/
-    ├── vision.md
-    ├── research_plan.md
-    ├── implementation_plan.md
-    ├── status.md
-    ├── environment.md
-    ├── collaboration.md
-    ├── operations.md
-    └── workflow_sources.md
-```
-
-业务代码、专项研究和实验目录按实际需要建立，约定见 [项目规则](AGENTS.md)。配置文件及可执行入口索引见 [运维文档](docs/operations.md#配置入口)；大型产物和环境位置见 [环境说明](docs/environment.md)。`.gitignore` 排除凭据、缓存、数据目录和模型权重。
-
-仓库本地 Coder CLI 入口为 `./scripts/coder-cli.sh`，例如 `./scripts/coder-cli.sh whoami`；安装、版本和本机转发位置见 [环境说明](docs/environment.md#工作台模拟网页与本地-coder-cli)。
+凭据、模型、数据库、缓存和运行产物不提交到 Git。个人环境参数由实际部署配置提供。

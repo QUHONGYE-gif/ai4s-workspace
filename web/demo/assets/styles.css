@@ -2503,3 +2503,90 @@ svg {
     flex:1
   }
 }
+
+/* The remote desktop and frame share an aspect ratio: no cropped controls or bars. */
+.pymol-session {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 8 / 5;
+  border: 0;
+  background: #000;
+}
+.pymol-view-actions, .pymol-mode {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pymol-view-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.pymol-mode {
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pymol-mode input {
+  accent-color: var(--green);
+}
+.pymol-console {
+  padding: 16px 20px;
+  border-top: 1px solid var(--line);
+}
+.pymol-command-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pymol-command-form label {
+  font: 13px monospace;
+}
+.pymol-command-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: 13px monospace;
+}
+.pymol-history {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  font-size: 12px;
+}
+.pymol-history select {
+  flex: 1;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.pymol-output {
+  font-size: 12px;
+}
+.pymol-output summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.pymol-output pre {
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 12px;
+  background: #f5f6fa;
+  border-radius: 6px;
+  font: 12px/1.6 monospace;
+}
+@media (max-width: 600px) {
+  .pymol-command-form {
+    flex-wrap: wrap;
+  }
+  .pymol-command-form input {
+    flex-basis: 60%;
+  }
+}
