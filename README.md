@@ -7,6 +7,7 @@
 ## 从哪里开始
 
 - 工作台模拟网页：[前后端开发说明](web/README.md) · [页面源码](web/demo/index.html)；在个人容器启动与本机访问见 [体验说明](docs/collaboration.md#工作台模拟网页)。
+- 独立科学工具：[蛋白质设计程序](docs/protein_pipeline.md) · [PyMOL 网页容器](tools/pymol_web/README.md)。
 - 成员登录、开发、预览、提交 PR：[成员开发与协作](docs/collaboration.md)。
 - 管理员部署、开户、更新模板和排错：[部署与运维](docs/operations.md)。
 - 了解研究方向和下一步：[设计草案](docs/research_plan.md) → [实施计划](docs/implementation_plan.md) → [当前状态](docs/status.md)。
