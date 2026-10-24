@@ -195,16 +195,7 @@ docker --context desktop-linux compose down
 
 ## 验证与日志
 
-[集成检查](../scripts/check_local_docker.py) 会创建或使用 `prototype`，执行登录、Coder SSH、读写以及实际停止／启动后的持久化检查；仅写入并清理临时标记。检查期间不要在原型中运行其他任务，也不要把该脚本当作每次部署的在线健康探针：
-
-```bash
-# 科研服务器项目目录，已显式指定本项目 DOCKER_HOST
-python3 scripts/check_local_docker.py --server
-# 本地仓库，按需恢复后才运行
-DOCKER_CONTEXT=desktop-linux conda run --no-capture-output -n lab python scripts/check_local_docker.py
-```
-
-本地 `.local/initialization.json` 记录时间、工作区、检查项和源码哈希，`.local/bootstrap.log`、`.local/workspace-check.log` 保存输出，`.local/provider-manifest.json` 保存 provider 摘要，首次网络失败另存 `.local/bootstrap-network-failure.log`。服务器对应 `.local/` 还保存 `bootstrap.exit`、`verification.log`、`verification.exit`；历史 `ai4s-bootstrap`、`ai4s-verification` tmux 会话完成后已退出。回传路径见环境说明，各轮结果和私有证据索引只在状态文件维护。这些检查不代表蛋白质工作流或科研效果已验证。
+日常排错按目标读取 Coder 工作区状态、应用健康接口和对应服务日志。旧的原型停止／启动检查脚本已移除；初始化和实际执行记录仍保留在 `.local/`，各轮结果索引见 [当前状态](status.md)。Terraform provider 缓存摘要仍由 `.local/provider-manifest.json` 维护。
 
 依据：[Docker rootless](https://docs.docker.com/engine/security/rootless/) · [Coder Docker 部署](https://coder.com/docs/install/server/docker) · [固定版本 Compose](https://github.com/coder/coder/blob/release/2.38/compose.yaml) · [原型模板参考](https://github.com/coder/coder/blob/v2.38.0/examples/templates/docker/main.tf) · [Terraform filesystem mirror](https://developer.hashicorp.com/terraform/cli/config/config-file#provider-installation) · [Coder 用户 API](https://coder.com/docs/reference/api/users) · [启动脚本资源](https://registry.terraform.io/providers/coder/coder/2.19.0/docs/resources/script) · [Coder Nginx](https://coder.com/docs/tutorials/reverse-proxy-nginx) · [OpenSSH 转发](https://man.openbsd.org/ssh#R)。本地配置是 Docker Desktop Linux VM 适配，实际验证范围见状态。
 
