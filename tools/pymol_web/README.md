@@ -26,6 +26,8 @@ apt-get install -y --no-install-recommends \
 bash tools/pymol_web/start-workspace.sh
 ```
 
+从普通服务切换时，先按 [状态目录与启动切换](../../web/README.md#状态目录与启动切换) 核对快照目录并导出需要保留的页面记录。
+
 不需要重建容器或新增 Coder 入口。网络受限时可中转同发行版、同架构的官方依赖，保留 APT 签名校验，完成后清理缓存。
 
 ## 维护

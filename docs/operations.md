@@ -16,6 +16,19 @@
 
 脚本和示例中的地址、账号、路径及架构必须按目标环境核对；初始化和模板发布不是日常启动应用的步骤。
 
+## 管理员脚本依赖
+
+[provider 下载脚本](../scripts/cache_terraform_providers.py) 使用 `requests` 和 `urllib3`；初始化入口在准备 provider 缓存时也会调用它。普通工作台服务无需安装这些管理依赖。
+
+优先复用已有项目专用环境；尚无环境时，在仓库根目录准备：
+
+```bash
+python -m venv .local/admin-venv
+.local/admin-venv/bin/python -m pip install requests
+```
+
+`requests` 会安装其 `urllib3` 依赖。后续管理命令使用该环境的 Python，避免安装到系统或共享环境；例如使用 `.local/admin-venv/bin/python scripts/cache_terraform_providers.py`，并按目标平台选择脚本参数。该目录已被 Git 忽略，凭据和环境不提交。
+
 ## 成员开户与模板
 
 - 仅为已确认的成员开户。使用 `configure_members.py add`，参数和行为先查看 `--help`；凭据通过团队约定的私有方式交付。

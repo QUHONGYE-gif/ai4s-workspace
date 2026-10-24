@@ -7,10 +7,26 @@
 从仓库根目录启动演示前后端：
 
 ```bash
-python scripts/serve_workbench.py --host 127.0.0.1 --port 3000
+workbench_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/ai4s-workbench-demo/api-state"
+python scripts/serve_workbench.py --host 127.0.0.1 --port 3000 \
+  --data-dir "$workbench_state_dir"
 ```
 
 然后打开工作区已有“开发预览”。需要真实 PyMOL 时，改用 [联合启动器](../tools/pymol_web/README.md)，不同时启动两个占用 3000 端口的服务。
+
+## 状态目录与启动切换
+
+上述普通启动示例显式使用与 PyMOL 联合启动相同的状态目录，因此以后可在两种方式之间切换并继续读取同一份模拟快照。
+
+| 启动方式 | 状态目录 |
+| --- | --- |
+| 普通服务，不传 `--data-dir` | 仓库中的 `.local/workbench-api` |
+| 普通服务，使用上方示例 | 用户状态目录下的 `ai4s-workbench-demo/api-state` |
+| PyMOL 联合启动器 | 同上，具体运行目录见 [PyMOL 维护说明](../tools/pymol_web/README.md#维护) |
+
+以前未传 `--data-dir` 启动过的记录不会自动迁移；目录不同导致页面记录不同，不表示原文件已被删除。切换前先导出当前浏览器记录，并按原管理方式停止本人服务，再启动目标方式，避免同时占用 3000 端口。需要迁移时，通过页面显式导入或恢复，不直接覆盖或合并已有快照文件。
+
+继续使用同一预览地址和浏览器；不同浏览器或不同 origin 不会自动共用模拟快照命名空间。
 
 ## 修改哪里
 
