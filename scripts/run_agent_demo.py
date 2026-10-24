@@ -34,7 +34,7 @@ def main():
         thread.start()
         print(f"Workbench: http://{args.host}:{server.server_port}/ ; Agent: ./agent/", flush=True)
         try:
-            uvicorn.run(create_app(args.data_dir, root_path="/agent"), host="127.0.0.1", port=args.agent_port, workers=1)
+            uvicorn.run(create_app(args.data_dir), root_path="/agent", host="127.0.0.1", port=args.agent_port, workers=1)
         finally:
             server.shutdown()
             server.server_close()

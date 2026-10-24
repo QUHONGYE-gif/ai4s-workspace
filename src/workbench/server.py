@@ -184,7 +184,7 @@ class DemoHandler(SimpleHTTPRequestHandler):
         excluded = {"connection", "keep-alive", "transfer-encoding", "upgrade", "proxy-connection"}
         headers = {k: v for k, v in self.headers.items() if k.lower() not in excluded}
         try:
-            connection.request(self.command, self.path,
+            connection.request(self.command, self.path[len("/agent"):],
                                self.rfile.read(length) if length else None, headers)
             response = connection.getresponse()
             body = response.read()

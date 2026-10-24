@@ -22,7 +22,7 @@ from .settings import APISettings, ProviderSettings
 from .storage import Problem, Store
 
 
-def create_app(data_dir=None, *, gateway_factory=AgentGateway, root_path=""):
+def create_app(data_dir=None, *, gateway_factory=AgentGateway):
     load_dotenv(".local/agent-demo.env", override=False)
     store = Store(data_dir or os.environ.get("AI4S_DEMO_DATA", ".local/agent-demo"))
     service = WorkflowService(store)
@@ -40,7 +40,7 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway, root_path=""):
             yield
             fcntl.flock(lock, fcntl.LOCK_UN)
 
-    app = FastAPI(title="AI4S Workflow Demo", version="0.1.0", lifespan=lifespan, root_path=root_path)
+    app = FastAPI(title="AI4S Workflow Demo", version="0.1.0", lifespan=lifespan)
     app.state.service, app.state.gateway = service, gateway
 
     @app.middleware("http")

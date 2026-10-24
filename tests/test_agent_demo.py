@@ -29,8 +29,8 @@ def workflow(client, template="protein"):
 
 
 def test_agent_assets_and_api_work_under_preview_prefix(tmp_path):
-    # The Coder proxy forwards the full /agent/ path, including static assets.
-    with TestClient(create_app(tmp_path, root_path="/agent")) as client:
+    # Uvicorn restores the mount prefix stripped by the workbench proxy.
+    with TestClient(create_app(tmp_path), root_path="/agent") as client:
         page = client.get("/agent/")
         assert page.status_code == 200
         assert 'href="./assets/styles.css"' in page.text
