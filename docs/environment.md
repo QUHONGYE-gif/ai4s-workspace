@@ -32,6 +32,22 @@ Coder 控制面通过 Docker socket 创建工作区；已核对 Docker Desktop V
 
 已有镜像拉取通道出现 EOF。本轮经本机现有网络下载官方镜像，验证各层 SHA-256 后使用 `docker load` 导入；Coder 实际版本通过镜像内 CLI 核对，PostgreSQL 使用 Google 的 Docker Hub 公共缓存。容器和构建使用的本地代理只记录在 `.env`，未更改全局路由。Terraform provider 通过本机下载并校验后保存在项目镜像目录；模板可使用本地缓存安装。实际检查见 `.local/initialization.json`，日常操作见 [本地运行说明](local_docker.md)。
 
+## Agent 接入 Demo 开发验证（2026-10-24）
+
+本轮在当前 macOS Apple Silicon 仓库工作区的独立 `.venv` 验证业务 Demo，没有修改既有 Conda 科学模型环境，也没有部署到团队服务器。
+
+| 项目 | 已核实配置 |
+| --- | --- |
+| Python／依赖管理 | Python 3.12.13、uv 0.11.30；依赖身份由仓库 `uv.lock` 固定 |
+| Web 与参数校验 | FastAPI 0.162.0、Uvicorn 0.54.0、Pydantic 2.14.1 |
+| Agent | pydantic-ai-slim 2.61.0；DeepSeek 官方 API，`deepseek-flash`，非思考模式 |
+| 服务 | `scripts/run_agent_demo.py`；验证时监听 `127.0.0.1:3000`，单进程 |
+| 业务数据 | 默认仓库内 `.local/agent-demo/`，工作流、上传输入与私有 API 设置持久保存；全部忽略于 Git |
+| 密钥 | 用户通过页面私有设置；不回显、不进入导出；私有文件模式 0600 |
+| 执行边界 | CPU 业务服务；没有安装或运行 AiiDA，没有配置科学任务执行后端 |
+
+运行方法与验证结果维护在 [Demo 运行与验收](agent_demo_run.md)，不把这里的 API 连接成功描述为蛋白质模型部署成功。关闭业务服务后端口不再可用，数据目录仍保留。
+
 ## 服务器配置
 
 | 项目 | 信息 |
@@ -66,7 +82,7 @@ Coder 控制面通过 Docker socket 创建工作区；已核对 Docker Desktop V
 | 数据根目录 | `/root/ai4s-trial`，仅为此次租用实例的执行路径，不是团队统一目录 |
 | RFdiffusion／ProteinMPNN | Conda `rfd4090`，Python 3.10.22，PyTorch 2.0.1+cu118；完整版本、源码提交和兼容修复见 [R001](../experiments/R001-protein-design-smoke/record.md#执行身份) |
 | Boltz | 镜像环境 `myconda`，Python 3.11.13、Boltz 2.2.1、PyTorch 2.6.0+cu124；关闭可选 kernels |
-| 代码入口 | [控制脚本](../scripts/protein_design_pipeline.py) 与 [实际配置](../configs/protein_design.matpool.json)；路径调整方法见 [团队使用说明](protein_pipeline.md#a1-已验证-cpu-封装的使用方式) |
+| 代码入口 | [控制脚本](../scripts/protein_design_pipeline.py) 与 [实际配置](../configs/protein_design.matpool.json)；配置保留历史实例路径，换机器时需调整。实际封装命令见 [原始运行记录](../experiments/R003-pipeline/record.md#运行与失败保留) |
 | 运行证据 | [R001](../experiments/R001-protein-design-smoke/record.md)、[R002](../experiments/R002-swissprot-msa/record.md)、[R003](../experiments/R003-pipeline/record.md) 维护各自归档身份；Git 提供小型附件选集 |
 | 完整归档 | 陈铠洲保管，已备份至平台持久卷；尚未上传团队共享存储，暂无统一下载链接 |
 

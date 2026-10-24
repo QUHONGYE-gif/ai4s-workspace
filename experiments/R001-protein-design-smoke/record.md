@@ -61,7 +61,7 @@ pymol -cq experiments/R001-protein-design-smoke/visualize.pml
 
 ## 原始运行命令
 
-以下保留当时租用实例的执行路径以供审计，不是团队统一部署目录。新运行优先按 [流程说明](../../docs/protein_pipeline.md#a1-已验证-cpu-封装的使用方式) 调整配置并使用新输出目录。
+以下保留当时租用实例的执行路径以供审计，不是团队统一部署目录。新运行可参考 [后续封装运行的实际命令](../R003-pipeline/record.md#运行与失败保留)，调整配置并使用新输出目录。
 
 ```bash
 cd /root/ai4s-trial/src/RFdiffusion

@@ -1,0 +1,25 @@
+/* Visual rules adapted from live-panel light-pastel. Interactive server-backed
+   editor; the project's simulated timeline/template is deliberately not used.
+   https://github.com/ythx-101/live-panel-skill */
+.role-backbone{--role-color:#8266aa;--role-fill:#f7f2fb;--role-border:#cbbadf}
+.role-sequence{--role-color:#417d72;--role-fill:#eef7f3;--role-border:#a9cebf}
+.role-prediction{--role-color:#567caa;--role-fill:#eff5fc;--role-border:#b5cae5}
+.demo-node{width:198px;min-height:179px;border-color:var(--role-border);background:var(--role-fill);border-radius:12px;box-shadow:0 4px 12px #29284105}
+.demo-node.selected{border-color:var(--role-color);background:var(--role-fill);box-shadow:0 0 0 4px #8173c615}
+.demo-node:hover{border-color:var(--role-color)}
+.demo-node .step-index{display:flex;align-items:center;gap:7px;color:var(--role-color);font-size:10px}
+.role-marker,.legend-marker{width:6px;height:6px;display:inline-block;border-radius:2px;background:var(--role-color);flex-shrink:0}
+.demo-node .model-name{margin-top:10px;color:#32354a;font-size:15px}
+.demo-node .node-label{color:#626a7b;font-size:11px}
+.node-summary{display:block;font:11px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#50586e;margin-top:9px}
+.demo-node .pill{margin-top:10px;background:#ffffffbb;border:1px solid #ffffffd9;padding:3px 6px}
+.node-formats{display:flex;justify-content:space-between;gap:6px;margin-top:12px;padding-top:8px;border-top:1px solid var(--role-border);font:9px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;color:#626a7b}
+.node-port{border-color:var(--role-color);width:8px;height:8px;top:49%}
+.demo-pipeline{gap:64px;min-height:190px}
+.demo-graph{padding:20px 26px 17px;min-height:215px}
+.wire-label{font:9px ui-monospace,SFMono-Regular,Consolas,monospace;fill:#6c6385;paint-order:stroke;stroke:#f9f9fc;stroke-width:4px;stroke-linejoin:round}
+.panel-legend{display:flex;align-items:center;flex-wrap:wrap;gap:14px;padding:0 16px 10px;font-size:9px;color:#626a80;background:white}
+.panel-legend>span{display:flex;gap:5px;align-items:center}
+.panel-legend a{margin-left:auto;font-size:9px;color:#71668b}
+.workbench{grid-template-rows:minmax(320px,.8fr) minmax(410px,1.2fr)}
+@media(max-width:900px){.workbench{grid-template-rows:355px minmax(450px,auto) 560px}.panel-legend{padding-bottom:10px}.demo-pipeline{gap:58px}}

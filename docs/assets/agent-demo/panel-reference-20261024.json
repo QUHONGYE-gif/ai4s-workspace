@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-24",
+  "usage": "reference_adaptation_not_template_execution",
+  "sources": [
+    "https://github.com/ythx-101/live-panel-skill/blob/main/SKILL.md",
+    "https://github.com/ythx-101/live-panel-skill/blob/main/references/motion-grammar.md",
+    "https://github.com/ythx-101/live-panel-skill/blob/main/references/config-schema.md"
+  ],
+  "changes": [
+    "light-pastel role palette and legend",
+    "state-bound parameter/port summaries",
+    "labelled dependency wires",
+    "one-shot save feedback from real draft revisions"
+  ],
+  "backend_matches_prior_acceptance": true,
+  "new_provider_calls": 0,
+  "checks": {
+    "javascript_syntax": "passed",
+    "browser_console_errors": 0,
+    "desktop_css_width": 1600,
+    "desktop_document_width": 1600,
+    "legend_inside_panel": true,
+    "parameter_edit_and_undo": [
+      "16 sequences -> 17 sequences: form and node match",
+      "undo -> 16 sequences: form and node match"
+    ],
+    "narrow_css_width": 743,
+    "narrow_document_width": 743,
+    "narrow_legend_inside_panel": true
+  },
+  "files": {
+    "src/ai4s_demo/web/graph.js": "f93425cae6bafd6916a128e42c0be7d1a358d611f4267cc50daf6c3d36631e9d",
+    "src/ai4s_demo/web/panel.css": "4cbd76f7d37f8217ef7211ce9cee7f6fcc8a55ee6fdf1dec7169cef7c18806fb",
+    "src/ai4s_demo/web/index.html": "a224e137c4924e91c5fa202782bfd15c26ba2e5f1396c0683bcadb171a4b45b4",
+    "src/ai4s_demo/web/app.js": "a80f0dcc0c32e014afcdd0087505acb5788a1e25a53e1067a8bc726820042fbf"
+  },
+  "screenshot": "docs/assets/agent-demo/workbench-panel.jpg"
+}
