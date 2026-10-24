@@ -2,6 +2,8 @@
 
 整理：陈铠洲；更新：2026-10-22。本文用于团队了解已完成工作、检查中间产物和接手运行。代码与附件位于个人开发分支 **[`dev-ckz`](https://github.com/QUHONGYE-gif/ai4s-workspace/tree/dev-ckz)**，尚未经团队会议批准合入 `main`。产物复用的协作讨论另见 [第二份文档](protein_reuse.md)。
 
+开发同步说明（2026-10-25）：本分支已合入 main 的工作台代码及流程脚本重构。下文 R001–R004 是历史运行证据，不代表当前重构版本已完成 GPU 端到端验收；当前脚本保留 CPU/GPU 搜索与来源检查，并补充了命令启动失败记录。新环境优先复制 [通用配置](../configs/protein_design.example.json) 后填写实际路径；[原租用配置](../configs/protein_design.matpool.json) 仅用于核对历史配置。工作台接入状态见 [当前状态](status.md)。
+
 ## 阅读入口与现有材料
 
 团队只需阅读两份主文档：**本文完整说明 R001–R004 的实验目的、环境、步骤、参数、结果、失败修正、中间产物与交接状态；[复用讨论稿](protein_reuse.md)说明这些实验对产物复用和加速的启示、工具已有机制及待共同确认的问题。** 下列原始记录与附件链接用于追溯证据，不是理解本文的必读前提。历史运行身份继续保留，后续如需重跑则建立新的记录。
@@ -15,7 +17,7 @@
 | CPU 封装验收 | [R003 record.md](../experiments/R003-pipeline/record.md)、[7 项原始附件索引](../experiments/R003-pipeline/evidence/index.json) | 查看实际封装运行、manifest、检查结果及严格筛选后的阳性解析 |
 | GPU 分支补齐 | [R004 record.md](../experiments/R004-mmseqs-gpu/record.md)、[48 项原始附件索引](../experiments/R004-mmseqs-gpu/evidence/index.json)、[完整文件清单](../experiments/R004-mmseqs-gpu/evidence/inventory-final.json)、[回传校验](../experiments/R004-mmseqs-gpu/archive-verification.json) | 查看 padded 库、两种查询、两条 Boltz 预测、CPU/GPU 差异和失败修正 |
 | 可复用代码与配置 | [控制脚本](../scripts/protein_design_pipeline.py)、[配置样例](../configs/protein_design.matpool.json)、[边界检查](../tests/test_protein_design_pipeline.py) | 接手运行和修改参数；验收范围见第 1、4 节 |
-| 部署与恢复资料 | [环境说明](environment.md#矩池云临时-gpu-试运行2026-10-21)、[关机前复核](environment.md#租用实例关机前复核2026-10-22) | 查询环境导出、源码修复、备份及未回传材料；不将个人备份位置作为团队入口 |
+| 部署与恢复资料 | 本文第 2.1 节与第 7 节 | 查询环境导出、源码修复、备份及未回传材料；不将个人备份位置作为团队入口 |
 
 四份 `evidence/index.json` 共索引 **65 项原始附件**；这个数字不含记录正文、图表及索引自身，也不表示所有中间文件都在 Git。完整产物依靠运行清单与归档追溯，访问方式见第 7 节。README 仍列出 R001–R004 记录作为证据索引，但它们是可选的逐条核查材料；本次实验的面向团队叙述以本文和第二份协作文档为准。
 
@@ -245,7 +247,7 @@ flowchart LR
 | [tests/test_protein_design_pipeline.py](../tests/test_protein_design_pipeline.py) | 无需 GPU 的数据连接边界检查 |
 | [experiments/](../experiments/) | R001–R004 详细记录、小型原始附件和图表；逐项入口见文首 |
 
-脚本没有重写模型，也不是一键安装器。真实执行要求 Linux x86_64、已授权的 GPU、足够的数据盘空间、已安装的模型源码/依赖/权重、Boltz 数据资料和 MMseqs2。实际版本、环境分工与兼容修复已写在本文第 2.1 节，恢复材料见第 7 节；[环境说明](environment.md)另保留部署历史。本次只证明该小案例能在单张 24 GB 4090 上运行，未测显存峰值，不将 24 GB 写成所有任务的最低要求。团队 Coder 尚不能视为已部署好的 GPU 环境。
+脚本没有重写模型，也不是一键安装器。真实执行要求 Linux x86_64、已授权的 GPU、足够的数据盘空间、已安装的模型源码/依赖/权重、Boltz 数据资料和 MMseqs2。实际版本、环境分工与兼容修复已写在本文第 2.1 节，恢复材料见第 7 节；[环境说明](environment.md)维护当前通用依赖，历史部署身份见本文第 2.1 节。本次只证明该小案例能在单张 24 GB 4090 上运行，未测显存峰值，不将 24 GB 写成所有任务的最低要求。团队 Coder 尚不能视为已部署好的 GPU 环境。
 
 准备好的数据根目录应有以下真实内容，其中 `src/` 为固定版本的官方仓库，不能用未审查的新版本替代：
 
