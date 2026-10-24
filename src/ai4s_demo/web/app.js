@@ -450,3 +450,6 @@ async function initialize() {
 }
 
 initialize().catch(error => showError(error));
+
+// The standalone demo has no parent workbench; integrated preview does.
+if (location.pathname.endsWith("/agent/")) document.getElementById("back-workbench").hidden = false;

@@ -13,13 +13,20 @@ uv run python scripts/run_agent_demo.py
 
 浏览器打开 [工作流页面](http://127.0.0.1:3000)。服务端口可通过 `--port` 调整，停止服务使用所在终端的 Ctrl+C。
 
-在个人 Coder 工作区运行时，可用：
+### 与工作台共用 Coder 预览
+
+在个人工作区仓库根目录执行（先按原方式停止本人已有的 3000 端口服务）：
 
 ```bash
-uv run python scripts/run_agent_demo.py --host 0.0.0.0 --port 3000
+uv sync --frozen
+uv run python scripts/run_agent_demo.py --with-workbench --host 127.0.0.1 --port 3000
 ```
 
-通过 Coder 已有的端口预览打开。该服务没有独立账号系统，按单用户工作区使用，不作为公开多人服务部署。当前验证环境见 [环境说明](environment.md#agent-接入-demo-开发验证2026-10-24)；没有部署到团队科研服务器或租用 GPU 实例。
+工作台首页保留，左侧「智能体接入」打开相对路径 `./agent/`；Agent 页面可返回工作台。工作台在 3000 端口代理仅监听回环地址的 Agent 服务（默认 3002），页面和 API 路径兼容 Coder 预览前缀。联合进程退出时一起停止服务，不需要修改 Coder 模板或新增预览入口。
+
+工作台模拟快照继续使用用户状态目录中的 `ai4s-workbench-demo/api-state`；Agent 使用独立的 `.local/agent-demo/`，不会自动转换或覆盖原工作台快照。可分别通过 `--workbench-data-dir` 与 `--data-dir` 指定。此模式不启动 PyMOL；PyMOL 依赖和联合服务仍需另行准备。
+
+服务没有独立账号系统，按单用户、个人 Coder 开发预览使用。新部署不会携带本机私有 API key、工作流或输入文件，请在目标预览的「模型 API 设置」配置 DeepSeek。工作区停止后需重新启动服务；服务与数据可用不代表科学执行或 AiiDA 已接通。
 
 ## 2. 配置 DeepSeek
 
@@ -72,7 +79,7 @@ uv run python scripts/run_agent_demo.py --host 0.0.0.0 --port 3000
 uv run pytest tests/test_agent_demo.py tests/test_protein_design_pipeline.py -q
 ```
 
-本轮 **27 项通过**，其中本 Demo 18 项、既有科学流程脚本 9 项。Demo 检查包括整体保存、非法字段和类型、版本冲突、重复操作、撤销、快照不改写、请求过期、真实 PDB 的链信息、FASTA 记录、A3M 查询一致性、资料证据、密钥不回显、重启持久化、单进程锁和模型模拟返回的处理。
+初版 **27 项通过**，其中本 Demo 18 项、既有科学流程脚本 9 项。当前 main 同步后的检查范围另见下方部署记录。Demo 检查包括整体保存、非法字段和类型、版本冲突、重复操作、撤销、快照不改写、请求过期、真实 PDB 的链信息、FASTA 记录、A3M 查询一致性、资料证据、密钥不回显、重启持久化、单进程锁和模型模拟返回的处理。
 
 测试中的 `TestModel` 仅验证集成机制，不作为真实语言理解证据。
 
@@ -102,6 +109,10 @@ uv run python scripts/verify_agent_demo.py --live --output .local/agent-demo-liv
 已在浏览器检查三节点显示、独立工作流创建、实际文件上传与链信息、手工批量保存、刷新持久化、真实资料提取及覆盖确认、真实对话修改、登记确认和最终请求。有效 CSS 宽度 1778 与 463 时页面无整体横向溢出，流程图自身可横向滚动；截图及具体范围见共享验收证据。页面内确认框替代原生 confirm，以展示具体操作内容。保存反馈由实际后端结果决定，模型生成的保存前说明折叠展示。
 
 ![真实 Agent 修改后，流程图、参数和服务端保存摘要](assets/agent-demo/workbench.jpg)
+
+### 工作台整合验证（2026-10-25）
+
+同步 main 后，Agent 18 项、流程脚本 10 项、工作台 API 8 项共 **36 项确定性检查通过**；既有 6 项前端模拟检查与 API 客户端检查通过。实际启动联合服务检查了工作台入口、Agent 静态资源与 HEAD、同源创建和改参、持久化、跨站写入拒绝、真实历史 PDB 上传。首次整合暴露子路径静态资源定位问题，修正代理保留 `/agent/` 前缀后复核通过。未再次调用付费 DeepSeek API，历史真实语言验收与本次部署检查分别判断。
 
 ### live-panel-skill 的实际使用范围（追加调整）
 

@@ -6,9 +6,9 @@
   <meta name="color-scheme" content="light">
   <link rel="icon" href="data:,">
   <title>研序 · AI4S 工作流接入</title>
-  <link rel="stylesheet" href="/assets/styles.css">
-  <link rel="stylesheet" href="/assets/app.css">
-  <link rel="stylesheet" href="/assets/panel.css">
+  <link rel="stylesheet" href="./assets/styles.css">
+  <link rel="stylesheet" href="./assets/app.css">
+  <link rel="stylesheet" href="./assets/panel.css">
 </head>
 <body>
 <div class="app">
@@ -16,7 +16,7 @@
     <div class="brand"><svg class="brand-mark" viewBox="0 0 36 40" aria-hidden="true"><path d="m4 11 13-7 14 8-13 8Zm0 9 14 8 13-8M4 29l14 8 13-8" stroke-linecap="round" stroke-linejoin="round"/></svg><div><div class="brand-name">研序</div><div class="brand-sub">SCIENCE WORKBENCH</div></div></div>
     <div class="project-card"><div class="eyebrow">AI4S · PROTEIN DESIGN</div><div class="project-title">蛋白质设计工作流</div><span class="sidebar-hint">从模型说明到确认配置</span></div>
     <div class="nav-label">WORKSPACE</div>
-    <nav><div class="nav-item active" aria-current="page">工作流接入 <span class="nav-count">01</span></div><div class="nav-item static">数据目录 · 后续</div><div class="nav-item static">科学执行 · 待对接</div></nav>
+    <nav><div class="nav-item active" aria-current="page">工作流接入 <span class="nav-count">01</span></div><a class="nav-item" id="back-workbench" href="../" hidden>返回工作台 ↗</a><div class="nav-item static">科学执行 · 待对接</div></nav>
     <div class="sidebar-bottom"><button class="nav-item" id="settings-button">模型 API 设置 ↗</button><div id="sidebar-api" class="sidebar-hint">正在读取连接配置</div><div class="side-user"><span class="avatar">研</span><div>配置演示<div class="sidebar-hint">单用户开发工作区</div></div></div></div>
   </aside>
   <div class="shell">
@@ -63,6 +63,6 @@
 <dialog class="modal small-modal" id="confirm-dialog" aria-labelledby="confirm-title"><div class="modal-head"><h2 id="confirm-title">确认操作</h2></div><div class="modal-body"><p id="confirm-content" class="confirm-content"></p><label id="confirm-input-label" class="field" hidden><span class="field-label">名称</span><input id="confirm-input" maxlength="80"></label></div><div class="modal-foot"><button id="confirm-cancel" class="button" data-confirm-control>取消操作</button><button id="confirm-apply" class="button primary" data-confirm-control>确认操作</button></div></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
-<script type="module" src="/assets/app.js"></script>
+<script type="module" src="./assets/app.js"></script>
 </body>
 </html>

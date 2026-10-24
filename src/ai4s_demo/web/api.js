@@ -6,10 +6,12 @@ export class APIError extends Error {
   }
 }
 
+const appRoot = new URL('../', import.meta.url);
+
 export async function api(path, options = {}) {
   const headers = {...options.headers};
   if (options.body && !(options.body instanceof FormData)) headers['Content-Type'] = 'application/json';
-  const response = await fetch(path, {...options, headers, signal: AbortSignal.timeout(115000)});
+  const response = await fetch(new URL(path.replace(/^\/+/, ''), appRoot), {...options, headers, signal: AbortSignal.timeout(115000)});
   const payload = await response.json();
   if (!response.ok) throw new APIError(response.status, payload.error || '操作失败', payload.details);
   return payload;

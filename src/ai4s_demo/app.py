@@ -22,7 +22,7 @@ from .settings import APISettings, ProviderSettings
 from .storage import Problem, Store
 
 
-def create_app(data_dir=None, *, gateway_factory=AgentGateway):
+def create_app(data_dir=None, *, gateway_factory=AgentGateway, root_path=""):
     load_dotenv(".local/agent-demo.env", override=False)
     store = Store(data_dir or os.environ.get("AI4S_DEMO_DATA", ".local/agent-demo"))
     service = WorkflowService(store)
@@ -40,7 +40,7 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
             yield
             fcntl.flock(lock, fcntl.LOCK_UN)
 
-    app = FastAPI(title="AI4S Workflow Demo", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="AI4S Workflow Demo", version="0.1.0", lifespan=lifespan, root_path=root_path)
     app.state.service, app.state.gateway = service, gateway
 
     @app.middleware("http")
@@ -136,7 +136,7 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
     web = Path(__file__).parent / "web"
     app.mount("/assets", StaticFiles(directory=web), name="assets")
 
-    @app.get("/", include_in_schema=False)
+    @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
     def index():
         return FileResponse(web / "index.html")
 
