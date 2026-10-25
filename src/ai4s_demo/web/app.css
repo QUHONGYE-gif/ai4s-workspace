@@ -32,14 +32,18 @@ a.nav-item { text-decoration: none; }
 /* Chat prose has its own rhythm; user messages keep their original breaks. */
 .chat-message { padding: 16px; margin-bottom: 14px; }
 .chat-message .who { font-size: 11px; font-weight: 600; margin-bottom: 10px; }
-.message-body { white-space: normal; overflow-wrap: break-word; line-height: 1.8; color: #343b50; }
+.message-body { white-space: normal; overflow-wrap: break-word; font-size: 13px; line-height: 1.8; color: #343b50; }
 .chat-message.user .message-body { white-space: pre-wrap; }
 .message-body p { margin: 0 0 .8em; }
 .message-body ul, .message-body ol { margin: .65em 0 .85em; padding-left: 1.5em; }
 .message-body li { margin: .5em 0; padding-left: .15em; }
+.message-item-label { display: block; margin-bottom: 3px; font-weight: 600; color: #444064; }
+.message-item-detail { display: block; line-height: 2; }
 .message-body h4 { margin: 1em 0 .5em; font-size: 1em; font-weight: 650; color: #444064; }
 .message-body strong { font-weight: 650; color: #444064; }
 .message-body code {
+  display: inline-block;
+  max-width: 100%;
   font-family: var(--mono);
   font-size: .92em;
   color: #58508b;
@@ -56,7 +60,7 @@ a.nav-item { text-decoration: none; }
   border-radius: 7px;
   background: #f7f7fb;
 }
-.message-body pre code { white-space: pre; overflow-wrap: normal; padding: 0; background: none; }
+.message-body pre code { display: block; max-width: none; white-space: pre; overflow-wrap: normal; padding: 0; background: none; }
 .message-body > :first-child { margin-top: 0; }
 .message-body > :last-child { margin-bottom: 0; }
 .chat-summary { white-space: normal; padding-top: 12px; margin-top: 12px; }

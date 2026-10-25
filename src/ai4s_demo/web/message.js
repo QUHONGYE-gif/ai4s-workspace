@@ -19,12 +19,20 @@ export function renderMessage(text, parameterNames = []) {
 
   const blocks = [];
   let paragraph = [], list = null, code = null;
+  function listItem(value) {
+    const group = value.match(/^([^:：]{1,80})([:：])\s*(.+)$/);
+    const fields = group?.[3].match(/\b[A-Za-z_][A-Za-z0-9_]*\b/g) || [];
+    if (group && fields.some(field => parameters.has(field))) {
+      return `<li><span class="message-item-label">${inline(group[1] + group[2])}</span><span class="message-item-detail">${inline(group[3])}</span></li>`;
+    }
+    return `<li>${inline(value)}</li>`;
+  }
   function flushParagraph() {
     if (paragraph.length) blocks.push(`<p>${inline(paragraph.join(' '))}</p>`);
     paragraph = [];
   }
   function flushList() {
-    if (list) blocks.push(`<${list.tag}>${list.items.map(item => `<li>${inline(item)}</li>`).join('')}</${list.tag}>`);
+    if (list) blocks.push(`<${list.tag}>${list.items.map(listItem).join('')}</${list.tag}>`);
     list = null;
   }
   function flushCode() {
