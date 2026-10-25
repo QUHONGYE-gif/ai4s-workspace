@@ -27,7 +27,8 @@
 .demo-node.selected{border-color:var(--role-strong);padding:11px 12px 10px;box-shadow:inset 0 0 0 1px var(--role-line)}
 
 .node-head{display:flex;align-items:center;gap:9px}
-.node-icon{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;background:var(--role-fill)}
+.node-icon{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;background:var(--role-fill);animation:node-icon-breathe 3.6s ease-in-out infinite;transform-origin:50% 50%}
+@keyframes node-icon-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 .node-icon svg{width:16px;height:16px;fill:none;stroke:var(--role-strong);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .node-titles{display:flex;flex-direction:column;min-width:0;gap:1px}
 .model-name{font-size:13.5px;font-weight:700;color:#23272e;letter-spacing:-.01em;white-space:nowrap}

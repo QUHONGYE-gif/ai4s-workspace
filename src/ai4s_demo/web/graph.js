@@ -14,6 +14,7 @@ const ICONS = {
   prediction: '<circle cx="12" cy="12" r="3.4"/><path d="M12 2.4v3.2M12 18.4v3.2M2.4 12h3.2M18.4 12h3.2"/>',
 };
 const NS = 'http://www.w3.org/2000/svg';
+const FLOW_MS = 1300;   // one traversal of a wire, in ms (faster = livelier)
 let previousWorkflow = null, previousRevision = null, previousNodes = new Map();
 let flowFrame = null;
 
@@ -51,6 +52,11 @@ export function drawNodes(state, models, selected, select) {
     </div>`;
   }).join('') : '<div class="empty-graph">还没有科学步骤。点击「＋ 步骤」添加第一个模型。</div>';
   pipeline.querySelectorAll('[data-node-id]').forEach(button => button.addEventListener('click', () => select(button.dataset.nodeId)));
+  // every icon breathes slowly (staggered) so the row is never completely still;
+  // reduced-motion users get the static icon from the global CSS override
+  pipeline.querySelectorAll('.demo-stage .node-icon').forEach((icon, index) => {
+    icon.style.animationDelay = `${(-index * 1.1).toFixed(1)}s`;
+  });
   previousWorkflow = state.draft.id; previousRevision = state.draft.revision;
   previousNodes = new Map(state.draft.nodes.map(n => [n.id, JSON.stringify(n)]));
   // One brief outline response to an actual saved revision; no fake worker
@@ -76,6 +82,23 @@ function svgEl(tag, attrs) {
 function stopFlow() {
   if (flowFrame !== null) cancelAnimationFrame(flowFrame);
   flowFrame = null;
+}
+
+// The icon in front of a card title bounces once when a wire lands on that
+// stage, so a packet visibly travels from one box to the next. The lasting
+// breathing is a CSS animation; this one-shot is cancelled and replaced so
+// repeated arrivals never stack up.
+const knocks = new WeakMap();
+function knock(stage) {
+  const icon = stage && stage.querySelector('.node-icon');
+  if (!icon) return;
+  knocks.get(icon)?.cancel();
+  knocks.set(icon, icon.animate([
+    {transform: 'translateY(0) scale(1)'},
+    {transform: 'translateY(-3px) scale(1.26)'},
+    {transform: 'translateY(0) scale(0.95)'},
+    {transform: 'translateY(0) scale(1)'},
+  ], {duration: 470, easing: 'cubic-bezier(.34,1.56,.64,1)'}));
 }
 
 // polyline -> path with rounded corners, the same shape the skill's loop view draws
@@ -163,23 +186,30 @@ export function drawWires(state, selected = document.querySelector('.demo-node.s
     group.appendChild(text);
     svg.appendChild(group);
     const len = path.getTotalLength();
-    if (len > 12) drawn.push({path, len});
+    if (len > 12) drawn.push({path, len, target: b});
   });
-  // gentle packets drifting along every wire (the skill's light theme keeps this small)
+  // flowing packets: one dot per wire, source frame -> target frame; the target
+  // icon bounces when it lands, so the motion reads as "from this box to that one"
   if (drawn.length && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const dots = drawn.map((wire, index) => {
       const dot = svgEl('circle', {r: 2.6, fill: '#2f7d47', opacity: 0.9});
       svg.appendChild(dot);
-      return {...wire, dot, offset: index * 0.5, speed: wire.len / 2600};
+      return {...wire, dot, offset: index * 0.5, speed: wire.len / FLOW_MS, previous: null};
     });
     const started = performance.now();
     const tick = now => {
       const elapsed = now - started;
-      dots.forEach(({dot, path, len, offset, speed}) => {
+      dots.forEach(item => {
+        const {dot, path, len, offset, speed} = item;
         const at = (elapsed * speed + offset * len) % len;
         const point = path.getPointAtLength(at);
         dot.setAttribute('cx', point.x.toFixed(1));
         dot.setAttribute('cy', point.y.toFixed(1));
+        // fade at both ends so the packet is absorbed by the arrow instead of popping
+        const fade = Math.max(0, Math.min(1, Math.min(at, len - at) / Math.max(1, len * 0.08)));
+        dot.setAttribute('opacity', (0.9 * fade).toFixed(2));
+        if (item.previous !== null && at < item.previous) knock(item.target);
+        item.previous = at;
       });
       flowFrame = requestAnimationFrame(tick);
     };
