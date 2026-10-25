@@ -42,6 +42,7 @@ export function drawNodes(state, models, selected, select) {
     const {inputs, outputs} = formats(model);
     const active = selected === n.id;
     return `<div class="demo-stage role-${role}${active ? ' selected' : ''}">
+      <span class="stage-ripple" aria-hidden="true"></span>
       <div class="stage-head"><span class="stage-index">${String(index + 1).padStart(2, '0')}</span><span class="stage-title">${esc(model.role)}</span></div>
       <button class="demo-node${active ? ' selected' : ''}" data-node-id="${esc(n.id)}" aria-pressed="${active}">
         <span class="node-head"><span class="node-icon" aria-hidden="true"><svg viewBox="0 0 24 24">${ICONS[role]}</svg></span><span class="node-titles"><span class="model-name">${esc(model.name)}</span><span class="node-label">${esc(n.label)}</span></span></span>
@@ -99,6 +100,29 @@ function knock(stage) {
     {transform: 'translateY(0) scale(0.95)'},
     {transform: 'translateY(0) scale(1)'},
   ], {duration: 470, easing: 'cubic-bezier(.34,1.56,.64,1)'}));
+  bump(stage);
+}
+
+// After the icon settles, the whole stage frame answers the arrival the way the
+// skill's loop view does: a >= 0.9 s bump, deeper border colour, a soft shadow
+// and a ring that grows ~6 px while fading out.
+const bumps = new WeakMap();
+function bump(stage) {
+  if (!stage) return;
+  bumps.get(stage)?.forEach(animation => animation.cancel());
+  const ring = stage.querySelector('.stage-ripple');
+  const animations = [stage.animate([
+    {transform: 'translateY(0) scale(1)', borderColor: 'var(--role-line)', boxShadow: '0 0 0 0 var(--role-ring)'},
+    {transform: 'translateY(-2px) scale(1.012)', borderColor: 'var(--role-strong)', boxShadow: '0 6px 18px -10px rgba(35,39,46,.28), 0 0 0 3px var(--role-ring)'},
+    {transform: 'translateY(0) scale(1)', borderColor: 'var(--role-line)', boxShadow: '0 0 0 0 var(--role-ring)'},
+  ], {duration: 900, delay: 460, easing: 'cubic-bezier(.34,1.3,.64,1)'})];
+  if (ring) {
+    animations.push(ring.animate([
+      {transform: 'scale(1)', opacity: 0.9},
+      {transform: 'scale(1.045)', opacity: 0},
+    ], {duration: 760, delay: 460, easing: 'cubic-bezier(.22,.61,.36,1)'}));
+  }
+  bumps.set(stage, animations);
 }
 
 // polyline -> path with rounded corners, the same shape the skill's loop view draws

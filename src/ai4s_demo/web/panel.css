@@ -14,7 +14,9 @@
 .demo-pipeline{display:flex;align-items:stretch;justify-content:center;gap:52px;width:100%;min-height:0;position:relative;z-index:2}
 
 /* one stage = one titled frame, as the skill draws a frame per stage */
-.demo-stage{flex:1 1 0;min-width:168px;max-width:300px;display:flex;flex-direction:column;gap:9px;padding:9px 9px 10px;border:1.4px solid var(--role-line);border-radius:14px;background:var(--role-fill);transition:border-color .18s,box-shadow .18s}
+.demo-stage{position:relative;flex:1 1 0;min-width:168px;max-width:300px;display:flex;flex-direction:column;gap:9px;padding:9px 9px 10px;border:1.4px solid var(--role-line);border-radius:14px;background:var(--role-fill);transition:border-color .18s,box-shadow .18s}
+/* ring that the arrival bump lets grow and fade (see bump() in graph.js) */
+.stage-ripple{position:absolute;inset:-1px;border-radius:15px;border:1.5px solid var(--role-strong);opacity:0;pointer-events:none;will-change:transform,opacity}
 .demo-stage:hover{border-color:var(--role-strong)}
 .demo-stage.selected{border-color:var(--role-strong);box-shadow:0 0 0 4px var(--role-ring)}
 .stage-head{display:flex;align-items:baseline;gap:7px;padding:0 2px;color:var(--role-strong)}
