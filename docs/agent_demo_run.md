@@ -121,7 +121,7 @@ uv run python scripts/verify_agent_demo.py --live --output .local/agent-demo-liv
 - Coder 内上述 **37 项 Python 检查全部通过**；JavaScript 逻辑检查在本机执行，Coder 未安装 Node.js。
 - 已在真实 Coder 预览验证首页入口、三模型节点、返回链接、批量改参保存与刷新持久化。独立的「Coder 部署核验（非科学运行）」工作流将 ProteinMPNN 设为 16 条、温度 0.2、全部链和上游记录 0，保存为 r1；原示例保留。
 - 联合进程在后台运行；日志和 PID 位于用户状态目录的 `ai4s-workbench-demo/server.log`、`server.pid`。Agent 的 JSON 与私有设置仍在独立数据目录，停止工作区后需按第 1 节重新启动。
-- **目标环境尚未配置 DeepSeek API key，本轮没有在 Coder 重跑真实 LLM 验收。** 本机私有密钥和历史工作流没有随 Git 传入；在目标页面的「模型 API 设置」配置后才能使用对话与资料识别。历史真实 API 验收、本轮部署验证与科学执行分别判断；AiiDA 仍未接通。
+- **首次部署验证时，目标环境尚未配置 DeepSeek API key，该轮没有在 Coder 重跑真实 LLM 验收。** 本机私有密钥和历史工作流没有随 Git 传入；在目标页面的「模型 API 设置」配置后才能使用对话与资料识别。历史真实 API 验收、本轮部署验证与科学执行分别判断；AiiDA 仍未接通。
 
 ### live-panel-skill 的实际使用范围（追加调整）
 
@@ -139,7 +139,7 @@ uv run python scripts/verify_agent_demo.py --live --output .local/agent-demo-liv
 
 ### 队友分支画布同步（2026-10-25）
 
-本次合入 `dev-zjx` 的 `6cee154`，采用其阶段外框、节点图标、连线和流动点／图标弹跳样式。其余 Agent 后端及 Coder 预览适配保持原实现。流动点与弹跳是配置依赖的示意动画，页面继续标注「未执行」，不代表科学模型已运行或数据已真实传输；本次未调用 DeepSeek 或提交科学任务。合并后的 37 项 Python 检查、既有前端逻辑检查及 JavaScript 语法检查通过。
+本次合入 `dev-zjx` 的 `6cee154`，采用其阶段外框、节点图标、连线和流动点／图标弹跳样式。其余 Agent 后端及 Coder 预览适配保持原实现。流动点与弹跳是配置依赖的示意动画，页面继续标注「未执行」，不代表科学模型已运行或数据已真实传输；本次未调用 DeepSeek 或提交科学任务。合并后的 37 项 Python 检查、既有前端逻辑检查及 JavaScript 语法检查通过。Coder 真实预览中的三节点、连线和选中详情正常，检查时没有浏览器控制台错误；既有草稿与对话保留，页面显示 DeepSeek 已配置。本次只读核对配置状态，未读取密钥或重新调用 API。
 
 ## 6. 交接边界
 
