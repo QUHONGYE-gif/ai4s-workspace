@@ -1,4 +1,5 @@
 import {api, post, operationId, escapeHTML as esc, download} from './api.js';
+import {renderMessage} from './message.js';
 import {drawNodes, drawWires} from './graph.js';
 
 const $ = id => document.getElementById(id);
@@ -218,15 +219,16 @@ async function uploadInput(e) {
 
 function renderConversation() {
   const root = $('conversation');
+  const parameterNames = Object.values(models).flatMap(model => model.fields.map(field => field.key));
   root.innerHTML = state.messages.length ? state.messages.map(m => {
     // The save result determines the status; model text was generated before
     // persistence and may describe a proposal rather than the finished action.
     const saved = !!m.summary?.length, proposed = !!m.proposal;
     const text = saved ? '这批修改已保存到草稿，尚未确认登记。' : proposed ? '请确认下方修改提案；尚未保存。' : m.text;
     return `<article class="chat-message ${m.role === 'user' ? 'user' : 'assistant'}"><div class="who">${m.role === 'user' ? '你' : '接入助手'}</div>
-      <div class="message-body">${esc(text)}</div>
-      ${saved ? `<div class="chat-summary">${esc(m.summary.join('\n'))}</div>` : ''}
-      ${saved || proposed ? `<details><summary>查看模型的保存前说明</summary><div class="message-body spaced">${esc(m.text)}</div></details>` : ''}
+      <div class="message-body">${m.role === 'user' ? esc(text) : renderMessage(text, parameterNames)}</div>
+      ${saved ? `<div class="chat-summary message-body">${renderMessage(m.summary.map(line => '- ' + line).join('\n'), parameterNames)}</div>` : ''}
+      ${saved || proposed ? `<details><summary>查看模型的保存前说明</summary><div class="message-body spaced">${renderMessage(m.text, parameterNames)}</div></details>` : ''}
       ${proposed ? `<div class="chat-actions"><button class="button soft compact" data-apply-message="${esc(m.id)}">查看并确认修改</button></div>` : ''}
       ${m.usage ? `<div class="chat-meta">${esc(m.usage.model)} · ${m.usage.elapsed_seconds}s · ${m.tools?.length || 0} 次工具调用</div>` : ''}</article>`;
   }).join('') : '<div class="chat-greeting">我会根据模型说明协助配置。<br>你可以先导入资料，或直接提出修改。<br><br>试着问：<br>“温度 0.2 是什么意思？”<br>“把当前节点的序列数改为 16”<br><br>所有配置由服务端检查并保存；普通问答不修改参数。</div>';

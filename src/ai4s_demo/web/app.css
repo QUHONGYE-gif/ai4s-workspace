@@ -11,3 +11,61 @@
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 a.nav-item { text-decoration: none; }
+
+/* Navigation belongs to the viewport, even when the workbench is taller. */
+:root { --sidebar-width: 188px; }
+.app { grid-template-columns: var(--sidebar-width) minmax(0, 1fr); }
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  z-index: 10;
+}
+.sidebar-bottom { display: block; }
+.shell { grid-column: 2; }
+
+/* Chat prose has its own rhythm; user messages keep their original breaks. */
+.chat-message { padding: 16px; margin-bottom: 14px; }
+.chat-message .who { font-size: 11px; font-weight: 600; margin-bottom: 10px; }
+.message-body { white-space: normal; overflow-wrap: break-word; line-height: 1.8; color: #343b50; }
+.chat-message.user .message-body { white-space: pre-wrap; }
+.message-body p { margin: 0 0 .8em; }
+.message-body ul, .message-body ol { margin: .65em 0 .85em; padding-left: 1.5em; }
+.message-body li { margin: .5em 0; padding-left: .15em; }
+.message-body h4 { margin: 1em 0 .5em; font-size: 1em; font-weight: 650; color: #444064; }
+.message-body strong { font-weight: 650; color: #444064; }
+.message-body code {
+  font-family: var(--mono);
+  font-size: .92em;
+  color: #58508b;
+  background: #efedf8;
+  border-radius: 4px;
+  padding: .1em .3em;
+  overflow-wrap: anywhere;
+}
+.message-body pre {
+  margin: .8em 0;
+  padding: 12px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #f7f7fb;
+}
+.message-body pre code { white-space: pre; overflow-wrap: normal; padding: 0; background: none; }
+.message-body > :first-child { margin-top: 0; }
+.message-body > :last-child { margin-bottom: 0; }
+.chat-summary { white-space: normal; padding-top: 12px; margin-top: 12px; }
+.chat-summary li { color: #325f56; }
+.chat-meta { margin-top: 13px; font-size: 10px; line-height: 1.6; }
+.chat-message details { margin-top: 12px; }
+
+@media (max-width: 1150px) { :root { --sidebar-width: 155px; } }
+@media (max-width: 900px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .shell { grid-column: 1; }
+}
