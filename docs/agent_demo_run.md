@@ -137,6 +137,10 @@ uv run python scripts/verify_agent_demo.py --live --output .local/agent-demo-liv
 
 ![参考 live-panel 浅色规范调整后的交互画布](assets/agent-demo/workbench-panel.jpg)
 
+### 队友分支画布同步（2026-10-25）
+
+本次合入 `dev-zjx` 的 `6cee154`，采用其阶段外框、节点图标、连线和流动点／图标弹跳样式。其余 Agent 后端及 Coder 预览适配保持原实现。流动点与弹跳是配置依赖的示意动画，页面继续标注「未执行」，不代表科学模型已运行或数据已真实传输；本次未调用 DeepSeek 或提交科学任务。合并后的 37 项 Python 检查、既有前端逻辑检查及 JavaScript 语法检查通过。
+
 ## 6. 交接边界
 
 目前已形成「资料→真实 Agent→配置草稿→用户确认登记→请求」闭环。API 设置可在页面完成。**没有科学任务提交入口，不执行 Shell，不存在已接通的 AiiDA 插件。**
