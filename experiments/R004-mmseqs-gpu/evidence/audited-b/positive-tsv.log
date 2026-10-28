@@ -1,0 +1,19 @@
+convertalis /root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/query /root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu /root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/hits /root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/hits.tsv --format-output query,target,fident,alnlen,qcov,tcov,evalue,bits 
+
+MMseqs Version:        	fcf516aba34be4569b3eb5bda2b9db9e26a8f278
+Substitution matrix    	aa:blosum62.out,nucl:nucleotide.out
+Alignment format       	0
+Format alignment output	query,target,fident,alnlen,qcov,tcov,evalue,bits
+Translation table      	1
+Gap open cost          	aa:11,nucl:5
+Gap extension cost     	aa:1,nucl:2
+Database output        	false
+Preload mode           	0
+Search type            	0
+Threads                	10
+Compressed             	0
+Verbosity              	3
+
+[=================================================================] 1 0s 0ms
+Time for merging to hits.tsv: 0h 0m 0s 0ms
+Time for processing: 0h 0m 0s 74ms

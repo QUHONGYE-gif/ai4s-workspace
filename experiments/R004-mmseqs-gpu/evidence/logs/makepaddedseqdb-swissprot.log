@@ -1,0 +1,17 @@
+makepaddedseqdb /root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base /root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu 
+
+MMseqs Version:                    	fcf516aba34be4569b3eb5bda2b9db9e26a8f278
+Substitution matrix                	aa:blosum62.out,nucl:nucleotide.out
+Score bias                         	0
+Mask residues                      	1
+Mask residues probability          	0.9
+Mask lower case residues           	0
+Mask lower letter repeating N times	0
+Write lookup file                  	1
+Threads                            	10
+Verbosity                          	3
+
+[=================================================================] 575.75K 4s 253ms
+Time for merging to swissprot_gpu: 0h 0m 0s 183ms
+Time for merging to swissprot_gpu_h: 0h 0m 0s 103ms
+Time for processing: 0h 0m 5s 341ms

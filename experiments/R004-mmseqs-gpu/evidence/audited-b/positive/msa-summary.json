@@ -1,0 +1,11 @@
+{
+  "aligned_records": 499,
+  "candidate_hits": 498,
+  "retained_unique_sequences": 466,
+  "records": 467,
+  "query_length": 142,
+  "hits": 498,
+  "used_by_boltz": true,
+  "filtered_sha256": "ae724d3749f39d2dfbfc612330d8c8bb059d894d8818d78f1ead425e467b4d59",
+  "query": "MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR"
+}

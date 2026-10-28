@@ -1,0 +1,330 @@
+{
+  "status": "failed",
+  "started_utc": "2026-10-21T14:25:57.023930+00:00",
+  "stages": [
+    {
+      "name": "environment",
+      "argv": [
+        "bash",
+        "-c",
+        "date -Is; hostname; uname -a; ldd --version; nvidia-smi; df -h / /mnt; free -h; lscpu"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:25:57.024203+00:00",
+      "end_utc": "2026-10-21T14:25:57.262758+00:00",
+      "wall_seconds": 0.2375484425574541,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/environment.log",
+        "bytes": 5843,
+        "sha256": "6c5d9e555a29fb3ab54bfc44d4bbbf75a38095a4f762e7bc0fd6610830931808"
+      }
+    },
+    {
+      "name": "design-createdb",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "createdb",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/query.fasta",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/query"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:25:58.638316+00:00",
+      "end_utc": "2026-10-21T14:25:58.652170+00:00",
+      "wall_seconds": 0.013539515435695648,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design-createdb.log",
+        "bytes": 877,
+        "sha256": "af2b6d6a66887b2cd0db5895e21cab44c854f7b5bd7ecf98791babce2e4e6572"
+      }
+    },
+    {
+      "name": "design-search",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "search",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/query",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/hits",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/tmp",
+        "--gpu",
+        "1",
+        "-e",
+        "0.001",
+        "--max-seqs",
+        "500",
+        "--threads",
+        "10",
+        "-a",
+        "1",
+        "--alignment-mode",
+        "3",
+        "--min-seq-id",
+        "0.3",
+        "-c",
+        "0.8",
+        "--cov-mode",
+        "2"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:25:58.652596+00:00",
+      "end_utc": "2026-10-21T14:25:59.164752+00:00",
+      "wall_seconds": 0.5119591932743788,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design-search.log",
+        "bytes": 7201,
+        "sha256": "b8acffe71281b1892b294ef4f719c20f429029dc485932ad0777aa57eb77e505"
+      }
+    },
+    {
+      "name": "design-tsv",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "convertalis",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/query",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/hits",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/hits.tsv",
+        "--format-output",
+        "query,target,fident,alnlen,qcov,tcov,evalue,bits"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:25:59.165507+00:00",
+      "end_utc": "2026-10-21T14:25:59.242401+00:00",
+      "wall_seconds": 0.07667526230216026,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design-tsv.log",
+        "bytes": 953,
+        "sha256": "dc3eea749979ee7cd3bfb1674e54d56f32c9e81d150914a5e0e24e6d801a491b"
+      }
+    },
+    {
+      "name": "design-msa",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "result2msa",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/query",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/hits",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/alignment",
+        "--msa-format-mode",
+        "5"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:25:59.242854+00:00",
+      "end_utc": "2026-10-21T14:25:59.332968+00:00",
+      "wall_seconds": 0.08988974988460541,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design-msa.log",
+        "bytes": 1231,
+        "sha256": "4ac0fd91c2f98aa147c18dc40146f7711e07c2ed75cf2fb6bc21edb4fec4b39d"
+      }
+    },
+    {
+      "name": "design-unpack",
+      "argv": [
+        "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+        "unpackdb",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/alignment",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/a3m",
+        "--unpack-name-mode",
+        "1",
+        "--unpack-suffix",
+        ".a3m"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:25:59.333645+00:00",
+      "end_utc": "2026-10-21T14:25:59.337740+00:00",
+      "wall_seconds": 0.0037491675466299057,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design-unpack.log",
+        "bytes": 561,
+        "sha256": "a2936e37bc78d80c415ba0d5d8b973ba079178849763a0f347fb053fbc173e10"
+      }
+    },
+    {
+      "name": "design-boltz",
+      "argv": [
+        "/root/miniconda3/envs/myconda/bin/boltz",
+        "predict",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/input.yaml",
+        "--out_dir",
+        "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design/boltz",
+        "--cache",
+        "/root/ai4s-trial/cache/boltz",
+        "--model",
+        "boltz2",
+        "--accelerator",
+        "gpu",
+        "--devices",
+        "1",
+        "--output_format",
+        "pdb",
+        "--no_kernels",
+        "--num_workers",
+        "0",
+        "--seed",
+        "42",
+        "--recycling_steps",
+        "3",
+        "--sampling_steps",
+        "200",
+        "--diffusion_samples",
+        "1"
+      ],
+      "cwd": "/root/ai4s-trial",
+      "start_utc": "2026-10-21T14:25:59.339270+00:00",
+      "end_utc": "2026-10-21T14:26:38.325510+00:00",
+      "wall_seconds": 38.98588585853577,
+      "exit_code": 0,
+      "log": {
+        "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/audited/design-boltz.log",
+        "bytes": 2416,
+        "sha256": "4ba2de8b30406445de492d10f319c50e2960cd022d1499e2710a92101a209f0f"
+      }
+    }
+  ],
+  "branches": {
+    "design": {
+      "aligned_records": 1,
+      "candidate_hits": 0,
+      "retained_unique_sequences": 0,
+      "records": 1,
+      "query_length": 80,
+      "hits": 0,
+      "used_by_boltz": false,
+      "filtered_sha256": "b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb",
+      "query": "SLLKLLLEEKLKEEKLIEEAKKRIKELLETTKDKEELIEKLEEIAEELEKEPVLEELKELVEERIEDLKAGKEKEYEIKL"
+    }
+  },
+  "runner": {
+    "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/run_audited.py",
+    "bytes": 4576,
+    "sha256": "992ea66c6a6473e0a1fde3275ecb621efe961b19ffb9dc7b769d7a1e6b79b6f6"
+  },
+  "helper": {
+    "path": "/root/ai4s-trial/protein_design_pipeline.py",
+    "bytes": 22339,
+    "sha256": "f59cbe99eb26ba64716a7089d3b6081c9b9fcef050cb8c57f38047edb3e58cc7"
+  },
+  "notes": [
+    "Initial successful interactive search log overwritten by accidental duplicate attempt; initial result and tmp retained. Audited run uses exclusive logs and new prefixes.",
+    "CPU sensitivity 7 versus GPU maximum; no speedup claim."
+  ],
+  "inputs": [
+    {
+      "path": "/root/ai4s-trial/db/uniprot_sprot.fasta.gz",
+      "bytes": 93801562,
+      "sha256": "a9c3496aa727e61d25d9e1291c9ba28d2c2ad19c0e26569dc083d53ec4169536"
+    },
+    {
+      "path": "/root/ai4s-trial/db/uniprot_sprot.fasta",
+      "bytes": 288201213,
+      "sha256": "1372f18e218d761027616bf17479bcf450b30314fc0a8095fcb0e97e85d6ecf9"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R003b-pipeline/inputs/design.fasta",
+      "bytes": 89,
+      "sha256": "b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb"
+    },
+    {
+      "path": "/root/ai4s-trial/inputs/positive_control.fasta",
+      "bytes": 163,
+      "sha256": "9f28ee2461cfee4c04e56bb447316d0ad23687d15f3da13aaae5946de4f0273a"
+    },
+    {
+      "path": "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+      "bytes": 117398776,
+      "sha256": "f46fc772abad7417e7ae1bf0f219883fcfc4fa3cdc2ab4117fa6f8bd7e0e9c11"
+    }
+  ],
+  "databases": [
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base",
+      "bytes": 210169339,
+      "sha256": "fa1e73f7a733274ff80abac0cf661e149a8f848e56d41cf0ea16aae0c0a0b77b"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base.dbtype",
+      "bytes": 4,
+      "sha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base.index",
+      "bytes": 11640442,
+      "sha256": "1373fc908fbdf7a4c51e2ea7239e01765f94169fd4da4dba17b2f129147443f1"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base.lookup",
+      "bytes": 9124554,
+      "sha256": "19cdd048e330f5dadafaa3da37f9b901d7e387f55f119ca0a330f35d6ef6a4bc"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base.source",
+      "bytes": 22,
+      "sha256": "f9cab6fe690a534362ee23f4dd0798eee2199361c317d8bd129c83d6e776eb35"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base_h",
+      "bytes": 75411973,
+      "sha256": "963cb32bc09c3b22686944310ab8618a9d05f1e8a331733415bd8ec45f0ae85f"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base_h.dbtype",
+      "bytes": 4,
+      "sha256": "42f4aeb81c1ef81f771f3de8abca9dcf66901c575530e7672e4b1146474ae650"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base_h.index",
+      "bytes": 11237571,
+      "sha256": "198d2f0722ab0f078decb087a6e0c360cb6efb68bbe1d3e645d672a57a32c378"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu",
+      "bytes": 209881292,
+      "sha256": "c046ef5110fc574d4845370941c6f9e6120be75c93897868c373a47d3d4c3310"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu.dbtype",
+      "bytes": 4,
+      "sha256": "c9c7e8c63836a93f6d8c04598b6503d2863a2df7b86366157178234175704dcc"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu.index",
+      "bytes": 11380815,
+      "sha256": "5cd1d3a09594946b4cfc6da48d80363eace0d2b165dba61797e93b606d900995"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu.lookup",
+      "bytes": 11892184,
+      "sha256": "4fc18756882d833cee0c4e1b996ca58ccd02c12b8c09dcb0a5da817af08861e3"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu.source",
+      "bytes": 22,
+      "sha256": "f9cab6fe690a534362ee23f4dd0798eee2199361c317d8bd129c83d6e776eb35"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu_h",
+      "bytes": 75411973,
+      "sha256": "b12ad6033e799fb8986d8fdc01110cd0c64c32492cb9e3b296f50d263a88b746"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu_h.dbtype",
+      "bytes": 4,
+      "sha256": "42f4aeb81c1ef81f771f3de8abca9dcf66901c575530e7672e4b1146474ae650"
+    },
+    {
+      "path": "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_gpu_h.index",
+      "bytes": 11232831,
+      "sha256": "e2682176bb73bf63b874211c700b2a60f3b4e21bd791a5caccb73c2b4564b406"
+    }
+  ],
+  "ended_utc": "2026-10-21T14:26:38.326879+00:00",
+  "error": "AssertionError()"
+}

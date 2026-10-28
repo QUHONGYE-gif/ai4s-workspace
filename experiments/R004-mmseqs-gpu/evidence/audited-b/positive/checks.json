@@ -1,0 +1,24 @@
+{
+  "prediction_count": 1,
+  "sequence_matches_query": true,
+  "length": 142,
+  "confidence": {
+    "confidence_score": 0.922421395778656,
+    "ptm": 0.8999794125556946,
+    "iptm": 0.0,
+    "ligand_iptm": 0.0,
+    "protein_iptm": 0.0,
+    "complex_plddt": 0.9280318021774292,
+    "complex_iplddt": 0.9280318021774292,
+    "complex_pde": 0.46216630935668945,
+    "complex_ipde": 0.0,
+    "chains_ptm": {
+      "0": 0.8999794125556946
+    },
+    "pair_chains_iptm": {
+      "0": {
+        "0": 0.8999794125556946
+      }
+    }
+  }
+}

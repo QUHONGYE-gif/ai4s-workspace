@@ -1,0 +1,12 @@
+Create directory /root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/a3m
+unpackdb /root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/alignment /root/ai4s-trial/runs/R004-mmseqs-gpu/audited-b/positive/a3m --unpack-name-mode 1 --unpack-suffix .a3m 
+
+MMseqs Version: 	fcf516aba34be4569b3eb5bda2b9db9e26a8f278
+Unpack name mode	1
+Unpack suffix   	.a3m
+Threads         	10
+Verbosity       	3
+
+No lookup file for alignment found, using key-based file naming
+[=================================================================] 1 0s 0ms
+Time for processing: 0h 0m 0s 0ms

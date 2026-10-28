@@ -1,0 +1,14 @@
+{
+  "mode": "swissprot",
+  "used_by_boltz": false,
+  "aligned_records": 1,
+  "candidate_hits": 0,
+  "retained_unique_sequences": 0,
+  "records": 1,
+  "search_hits": 0,
+  "min_identity": 0.3,
+  "query_coverage": 0.8,
+  "evalue": 0.001,
+  "database_source_sha256": "4c2a0673d7dc40d847e3c7182edb0aefed7c4bec91ef91d41dd1aa8ed4c5aad1",
+  "reason": "no candidates passed identity, coverage, and E-value screens; use single-sequence mode"
+}

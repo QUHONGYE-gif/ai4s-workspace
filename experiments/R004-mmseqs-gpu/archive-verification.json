@@ -1,0 +1,14 @@
+{
+  "archive": "ai4s-R004-gpu-full-20261021.tar.gz",
+  "bytes": 270256012,
+  "sha256": "c189c457e803d73f64b199d79d61668add4cff189f5b36a12791528e104ee445",
+  "inventory_entries": 206,
+  "verified": {
+    "files": 201,
+    "symlinks": 5
+  },
+  "extra_files": [
+    "inventory-final.json"
+  ],
+  "status": "verified"
+}

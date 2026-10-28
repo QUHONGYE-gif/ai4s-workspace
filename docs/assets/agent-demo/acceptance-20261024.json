@@ -1,0 +1,506 @@
+{
+  "kind": "development_acceptance_not_scientific_validation",
+  "date": "2026-10-24",
+  "runtime": {
+    "python": "3.12.13",
+    "os": "Darwin",
+    "architecture": "arm64",
+    "dependencies": {
+      "fastapi": "0.162.0",
+      "uvicorn": "0.54.0",
+      "pydantic": "2.14.1",
+      "pydantic-ai-slim": "2.61.0",
+      "pytest": "9.1.1"
+    }
+  },
+  "backend_file_sha256": {
+    "src/ai4s_demo/__init__.py": "7fa9a555d687beeb71fbbac01a53592f45818af433b2f9fdce3472ca05df7485",
+    "src/ai4s_demo/agent.py": "7dcc1eaac5f75f7f0cabd67401908c6303d09e1dece8b65737d34c88eb233cb3",
+    "src/ai4s_demo/app.py": "52a17811fdab0d5ff2755c784efae12ee49a2f30bae04e120958628ebc0a3efb",
+    "src/ai4s_demo/catalog.py": "d00b7d20be37b0adb34920caa25b5d1349cb3dbf2b05e4eec609531f693c9965",
+    "src/ai4s_demo/files.py": "a4b45b6f95b061763b708a7550a7c65300a05b4108dd1bc8f7e0292a76fcc7a6",
+    "src/ai4s_demo/models.py": "7f70ee792eedf079db9512ef4b42f1c8c80d939a2e8a505bf61e7f50fce5aadc",
+    "src/ai4s_demo/service.py": "b3ff4df5b647e60f5a8902c2142e9a0f70e99979ee72e2bff617c8c191a1c145",
+    "src/ai4s_demo/settings.py": "dc904f482422f20db40bf5cc653ad1cdde410f453294bd590ca40098f2af9d67",
+    "src/ai4s_demo/storage.py": "525f93be49203056956d8d6ab0c7faaac4b49d48eb3baa6768c27d9a4628fe36",
+    "scripts/verify_agent_demo.py": "d23c17733592fd3abd654b3b39613709f2ebad4893ec3dbd27d21a85762d870e",
+    "uv.lock": "5fbc8c6d8188f9eeb10a8f379a41aa8e716dd067f579c381264f11bf99d4f61c"
+  },
+  "identity_note": "Hashes collected after final live run; browser presentation changes were checked separately.",
+  "deterministic_checks": {
+    "demo": 18,
+    "existing_pipeline": 9,
+    "total": 27,
+    "passed": true
+  },
+  "prior_attempts": [
+    {
+      "attempt": "A",
+      "started": "2026-10-24T13:15:35.089302+00:00",
+      "status": "failed",
+      "passed_checks_before_failure": 9,
+      "failed_cases": [
+        {
+          "name": "非法批量要求不局部写入",
+          "passed": false,
+          "prompt": "当前 ProteinMPNN 的温度改成0.3，序列数设为-1，两个一起改。",
+          "intent": "change",
+          "reply": "只能先改温度这一项：sampling_temp 0.2 → 0.3（范围 0.001–2，步进 0.01，合法）。\n\nnum_seq_per_target = -1 不合法，未提交。该字段要求正整数，范围 1–512；-1 既不是合法值，也不是本服务支持的「自动/全部」选项。请给一个 1–512 的具体整数，我再一起补上（当前值仍是 16）。\n\n提醒：「序列设计 1」（mpnn-1）链策略已设为设计全部链；Boltz 节点仍缺 sequence 的上游输出记录选择，sequence_to_boltz_yaml 适配层尚未接入，流程暂不可运行。",
+          "summary": [
+            "序列设计 1 · sampling_temp：0.2 → 0.3"
+          ],
+          "tools": [
+            "propose_workflow_change:validated"
+          ],
+          "usage": {
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "requests": 3,
+            "input_tokens": 22598,
+            "output_tokens": 413,
+            "elapsed_seconds": 4.811
+          },
+          "before_revision": 6,
+          "after_revision": 7
+        }
+      ],
+      "note": "Failure preserved before corrective changes"
+    },
+    {
+      "attempt": "B",
+      "started": "2026-10-24T13:18:01.629080+00:00",
+      "status": "incomplete_http_502",
+      "passed_checks_before_failure": 9,
+      "failed_cases": [],
+      "note": "CLI stopped on HTTP 502 in invalid-batch case; no finished marker"
+    },
+    {
+      "attempt": "C",
+      "started": "2026-10-24T13:20:39.244786+00:00",
+      "status": "failed",
+      "passed_checks_before_failure": 10,
+      "failed_cases": [
+        {
+          "name": "同模型多个节点歧义先澄清",
+          "passed": false,
+          "prompt": "把 Boltz 的采样数改为3。",
+          "intent": "change",
+          "reply": "已针对 boltz-1（结构预测 1）提案：预测样本数 diffusion_samples 由 2 改为 3（支持范围 1–32）。工作流里有两个 Boltz 节点，本次按上一轮改过的节点 boltz-1 处理；若你指的是「第二个结构预测」（boltz-2，当前为 1），告诉我我再改。提交后请在页面确认保存。",
+          "summary": [
+            "结构预测 1 · diffusion_samples：2 → 3"
+          ],
+          "tools": [
+            "read_workflow",
+            "propose_workflow_change:validated",
+            "check_request_completeness:passed"
+          ],
+          "usage": {
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "requests": 4,
+            "input_tokens": 33813,
+            "output_tokens": 403,
+            "elapsed_seconds": 5.405
+          },
+          "before_revision": 7,
+          "after_revision": 8
+        }
+      ],
+      "note": "Failure preserved before corrective changes"
+    }
+  ],
+  "final_live_run": {
+    "started": "2026-10-24T13:24:22.794649+00:00",
+    "kind": "real_provider_acceptance",
+    "checks": [
+      {
+        "name": "真实 DeepSeek 连接与结构化返回",
+        "passed": true,
+        "usage": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "requests": 1,
+          "input_tokens": 1889,
+          "output_tokens": 86,
+          "elapsed_seconds": 1.044
+        }
+      },
+      {
+        "name": "真实资料识别与原文依据",
+        "passed": true,
+        "parameters": [
+          {
+            "field": "num_seq_per_target",
+            "value": 8,
+            "category": "example",
+            "quote": "--num_seq_per_target 8"
+          },
+          {
+            "field": "sampling_temp",
+            "value": 0.1,
+            "category": "example",
+            "quote": "--sampling_temp 0.1"
+          },
+          {
+            "field": "seed",
+            "value": 42,
+            "category": "example",
+            "quote": "--seed 42"
+          }
+        ],
+        "usage": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "requests": 1,
+          "input_tokens": 918,
+          "output_tokens": 268,
+          "elapsed_seconds": 1.94
+        }
+      },
+      {
+        "name": "数字问答不改配置",
+        "passed": true,
+        "prompt": "温度 0.2 是什么意思？不要修改当前参数。",
+        "intent": "answer",
+        "reply": "「温度」指的是 ProteinMPNN 的采样温度（sampling_temp），控制从模型打分中采样氨基酸时的随机程度：温度越低分布越尖锐、更接近模型最偏好的残基，输出更保守、序列更集中；温度越高分布越平缓、采样更随机，序列多样性通常更大。当前节点是 0.1，属于偏低值；0.2 只是稍多一点随机性，不保证结构更稳或功能更好，需要下游验证。\n\n补充几点：温度越高通常增大序列多样性，但不保证质量；变体数由「设计序列数」（num_seq_per_target，当前 8）决定，温度只管多样性分布。字段允许 0–2，本演示只支持填写一个温度（官方入口可传多个温度字符串）。当前参数未做任何修改。",
+        "summary": [],
+        "tools": [
+          "read_model_info:proteinmpnn"
+        ],
+        "usage": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "requests": 2,
+          "input_tokens": 13802,
+          "output_tokens": 253,
+          "elapsed_seconds": 3.224
+        },
+        "before_revision": 2,
+        "after_revision": 2
+      },
+      {
+        "name": "真实对话批量改参",
+        "passed": true,
+        "prompt": "请把当前节点采样温度改成 0.2，设计序列数量改为 16。",
+        "intent": "change",
+        "reply": "好的，针对当前选中的「序列设计 1」（mpnn-1）提出两处改动：采样温度 0.1 → 0.2，设计序列数 8 → 16。两值均在支持范围内（温度 0–2，序列数 1–512）。提交后需在页面确认才会生效。",
+        "summary": [
+          "序列设计 1 · sampling_temp：0.1 → 0.2",
+          "序列设计 1 · num_seq_per_target：8 → 16"
+        ],
+        "tools": [
+          "propose_workflow_change:validated",
+          "check_request_completeness:passed"
+        ],
+        "usage": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "requests": 3,
+          "input_tokens": 17041,
+          "output_tokens": 395,
+          "elapsed_seconds": 3.4939999999999998
+        },
+        "before_revision": 2,
+        "after_revision": 3
+      },
+      {
+        "name": "对话补充缺少的链策略",
+        "passed": true,
+        "prompt": "这个 PDB 我要设计全部链，请登记这个链策略到草稿。",
+        "intent": "change",
+        "reply": "已为「序列设计 1」（mpnn-1，绑定 PDB 文件）拟将设计链策略设为「全部链」，用于消除“请确认设计全部链或选择部分链”的缺项；需在页面确认后写入草稿。提醒：下游「结构预测 1」仍缺 sequence 的上游输出记录（如 sample=1），需另行指定。",
+        "summary": [
+          "序列设计 1 · 设计链策略：all"
+        ],
+        "tools": [
+          "read_workflow",
+          "read_model_info:proteinmpnn",
+          "propose_workflow_change:validated",
+          "check_request_completeness:passed"
+        ],
+        "usage": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "requests": 4,
+          "input_tokens": 28736,
+          "output_tokens": 448,
+          "elapsed_seconds": 6.226
+        },
+        "before_revision": 3,
+        "after_revision": 4
+      },
+      {
+        "name": "登记、参数和最终请求一致",
+        "passed": true,
+        "request_id": "req-f85b0e5b64ac457eb6c2a33e54709396"
+      },
+      {
+        "name": "跨模型修改 RFdiffusion",
+        "passed": true,
+        "prompt": "把 RFdiffusion 的骨架长度改为 90，骨架数量改成 2。",
+        "intent": "change",
+        "reply": "针对「骨架生成 1」（rfd-1）提出两处改动：骨架长度 80 → 90，生成骨架数 1 → 2（均在支持范围：长度 20–512，数量 1–64）。需在页面确认后才写入草稿。注意下游 Boltz 仍缺 sequence 的上游输出记录（如 sample=1），需另行指定。",
+        "summary": [
+          "骨架生成 1 · length：80 → 90",
+          "骨架生成 1 · num_designs：1 → 2"
+        ],
+        "tools": [
+          "propose_workflow_change:validated",
+          "check_request_completeness:passed"
+        ],
+        "usage": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "requests": 3,
+          "input_tokens": 17488,
+          "output_tokens": 410,
+          "elapsed_seconds": 5.345
+        },
+        "before_revision": 4,
+        "after_revision": 5
+      },
+      {
+        "name": "跨模型修改 Boltz",
+        "passed": true,
+        "prompt": "把 Boltz 的 diffusion_samples 设成 2。",
+        "intent": "change",
+        "reply": "针对「结构预测 1」（boltz-1）提出一处改动：预测样本数 diffusion_samples 1 → 2（支持范围 1–32）。提交后需在页面确认才会写入草稿。提醒：该节点 sequence 仍缺上游输出记录（如 sample=1），需另行指定。",
+        "summary": [
+          "结构预测 1 · diffusion_samples：1 → 2"
+        ],
+        "tools": [
+          "propose_workflow_change:validated",
+          "check_request_completeness:passed"
+        ],
+        "usage": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "requests": 3,
+          "input_tokens": 17787,
+          "output_tokens": 363,
+          "elapsed_seconds": 4.316
+        },
+        "before_revision": 5,
+        "after_revision": 6
+      },
+      {
+        "name": "含糊修改先澄清",
+        "passed": true,
+        "prompt": "当前节点温度再高一点。",
+        "intent": "clarify",
+        "reply": "「高一点」不明确，请给具体值。当前节点「序列设计 1」（mpnn-1）的采样温度是 0.2（范围 0–2，只支持填一个温度），例如改成 0.3 或 0.5，请告我目标数值，我再提出修改。",
+        "summary": [],
+        "tools": [],
+        "usage": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "requests": 1,
+          "input_tokens": 7104,
+          "output_tokens": 117,
+          "elapsed_seconds": 1.536
+        },
+        "before_revision": 6,
+        "after_revision": 6
+      },
+      {
+        "name": "非法批量要求不局部写入",
+        "passed": true,
+        "prompt": "当前 ProteinMPNN 的温度改成0.3，序列数设为-1，两个一起改。",
+        "intent": "clarify",
+        "reply": "这批修改没有保存：参数不符合模型定义。请修正不合法的字段后再一起修改。",
+        "summary": [],
+        "tools": [
+          "propose_workflow_change:rejected"
+        ],
+        "usage": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "requests": 2,
+          "input_tokens": 14566,
+          "output_tokens": 237,
+          "elapsed_seconds": 2.617
+        },
+        "before_revision": 6,
+        "after_revision": 6
+      },
+      {
+        "name": "同模型多个节点歧义先澄清",
+        "passed": true,
+        "prompt": "把 Boltz 的采样数改为3。",
+        "intent": "clarify",
+        "reply": "当前工作流里有两个 Boltz 节点：「结构预测 1」（boltz-1，预测样本数 2）和「第二个结构预测」（boltz-2，预测样本数 1）。请指定要改哪个节点，我再提出修改。另外「采样数」我理解为预测样本数 diffusion_samples，若你指的是采样步数 sampling_steps 请一并说明。",
+        "summary": [],
+        "tools": [
+          "propose_workflow_change:validated"
+        ],
+        "usage": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "requests": 2,
+          "input_tokens": 14664,
+          "output_tokens": 165,
+          "elapsed_seconds": 2.604
+        },
+        "before_revision": 7,
+        "after_revision": 7
+      },
+      {
+        "name": "明确只问不修改",
+        "passed": true,
+        "prompt": "不要改任何参数，只解释 ProteinMPNN 的 seed=0 是什么意思。",
+        "intent": "answer",
+        "reply": "本轮只做解释，不改任何参数。\n\nProteinMPNN 的 `seed` 是随机种子，对应 argparse 的 `--seed`。在这一版（提交 8907e667…，protein_mpnn_run.py）里，官方默认值是 0，而 0 是特殊含义：表示「不指定种子、随机选择」，即每次运行的随机起点不同，采样出的序列组合也会不同。因此 seed=0 并不代表「用 0 作为种子做固定复现」。\n\n相对地，填一个非零整数（例如 42）会让随机过程可复现：同样的骨架、同样的序列数和温度、同样的种子，通常能得到相同结果，也方便对比不同参数的效果。本工作流里「序列设计 1」（mpnn-1）当前就是 seed=42。\n\n补充两点：42 只是本项目的示例值，不是官方默认；本服务支持区间是 0–2147483647 的整数。",
+        "summary": [],
+        "tools": [
+          "read_model_info:proteinmpnn"
+        ],
+        "usage": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "requests": 2,
+          "input_tokens": 15362,
+          "output_tokens": 322,
+          "elapsed_seconds": 3.477
+        },
+        "before_revision": 7,
+        "after_revision": 7
+      },
+      {
+        "name": "后续修改令原请求过期",
+        "passed": true
+      }
+    ],
+    "provider_config": {
+      "provider": "deepseek",
+      "base_url": "https://api.deepseek.com",
+      "model": "deepseek-flash",
+      "has_key": true,
+      "thinking": "disabled",
+      "key_storage": "server_private_file_or_environment"
+    },
+    "workflow_id": "wf-079a0cc32b61433d9747c42f5f9ff19f",
+    "finished": "2026-10-24T13:24:58.943224+00:00",
+    "passed": true
+  },
+  "browser_checks": [
+    "independent workflow creation",
+    "actual PDB upload: chain A, 80 residues",
+    "multi-field form save",
+    "refresh persistence",
+    "registration confirmation",
+    "matching request parameters and not_submitted status",
+    "real import with quote/example evidence and old/new confirmation",
+    "real chat update reflected in form and save summary"
+  ],
+  "not_verified": [
+    "AiiDA submission",
+    "scientific execution from this UI",
+    "multi-user deployment",
+    "arbitrary language correctness"
+  ],
+  "additional_integration_checks": [
+    {
+      "name": "补充登记与请求 rfd-1",
+      "passed": true,
+      "registration_id": "reg-85c0cbd603b24191bde96335386bd617",
+      "request_id": "req-641d6cf428704a24b860e26c15303865"
+    },
+    {
+      "name": "补充登记与请求 boltz-1",
+      "passed": true,
+      "registration_id": "reg-b9a8ac41b2f94a90939b7a570f2791a4",
+      "request_id": "req-7203bbe4f57c473aa917e3f602aeb151"
+    },
+    {
+      "name": "真实 Agent 新增与连接",
+      "passed": true,
+      "prompt": "请新增一个 ProteinMPNN 节点，ID 为 mpnn-check-2，名称为序列设计检查2，并将 rfd-1 的 backbone 输出连接到这个新节点的 backbone 输入，选择上游骨架记录 0。只做新增和连接。",
+      "message": {
+        "id": "msg-a8da8e7f763c41c09b68407dea0b5715",
+        "time": "2026-10-24T13:40:21.322376+00:00",
+        "role": "assistant",
+        "text": "提出两处操作：新增 ProteinMPNN 节点「序列设计检查2」（id: mpnn-check-2），并把「骨架生成 1」（rfd-1）的 backbone 输出连接到它的 backbone 输入，上游记录选 0。未改动其他节点的参数与连接；需在页面确认后才写入草稿。\n\n提醒：rfd-1 当前生成 2 个骨架，这里只连了记录 0；新节点的参数将采用模型定义中的演示值（序列数 8、温度 0.1、种子 42），如需调整请另行说明。",
+        "intent": "change",
+        "summary": [
+          "新增 序列设计检查2",
+          "连接 rfd-1 → mpnn-check-2"
+        ],
+        "proposal": null,
+        "tools": [
+          "read_model_info:proteinmpnn",
+          "read_model_info:rfdiffusion",
+          "propose_workflow_change:validated",
+          "check_request_completeness:passed"
+        ],
+        "usage": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "requests": 4,
+          "input_tokens": 28772,
+          "output_tokens": 614,
+          "elapsed_seconds": 6.203
+        },
+        "focus_node_id": "mpnn-check-2"
+      }
+    },
+    {
+      "name": "真实 Agent 删除须确认，确认后可撤销",
+      "passed": true,
+      "message": {
+        "id": "msg-6eac3c8ad1534bdbb16abf4a64b5506e",
+        "time": "2026-10-24T13:40:25.104542+00:00",
+        "role": "assistant",
+        "text": "提出一处删除：移除节点「序列设计检查2」（mpnn-check-2），与其相连的 rfd-1 → mpnn-check-2 backbone 连接会一并删除。删除不可逆，需在页面确认后才生效。其余节点的参数与连接不变。",
+        "intent": "change",
+        "summary": [],
+        "proposal": {
+          "expected_revision": 9,
+          "operation_id": "agent-extra-b251b964d2a14f38b0192733b17df393",
+          "operations": [
+            {
+              "type": "remove_node",
+              "node_id": "mpnn-check-2"
+            }
+          ],
+          "confirmed": false
+        },
+        "tools": [
+          "propose_workflow_change:validated",
+          "check_request_completeness:passed"
+        ],
+        "usage": {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "requests": 3,
+          "input_tokens": 19889,
+          "output_tokens": 343,
+          "elapsed_seconds": 3.752
+        },
+        "focus_node_id": "mpnn-check-2"
+      }
+    }
+  ],
+  "layout_checks": [
+    {
+      "effective_css_width": 1778,
+      "document_scroll_width": 1778,
+      "horizontal_document_overflow": false
+    },
+    {
+      "effective_css_width": 463,
+      "document_scroll_width": 463,
+      "horizontal_document_overflow": false
+    }
+  ],
+  "frontend_file_sha256": {
+    "src/ai4s_demo/web/api.js": "4015fb99287b7647d86f998bb257ea82d1fd9b9608af8577ac5d071fec4bd867",
+    "src/ai4s_demo/web/app.css": "865ca494317f5b92d62c7efd9df14af18689beb61c93b65b882e3946d9753f23",
+    "src/ai4s_demo/web/app.js": "3bbb8bb1a532e53582fbc333a03b49565b419aa073ad4f4a4134b680fae666b6",
+    "src/ai4s_demo/web/graph.js": "0c1e609c987c554dddc3a6fcb22ae3b494e8ef16cf2593cf2d560ed872b77fd9",
+    "src/ai4s_demo/web/index.html": "586380b96647a6238e9bbf5987c0b231636ce937ee481f910fba7cfc41f34273",
+    "src/ai4s_demo/web/styles.css": "942a6cdb5939f6bb72881569606ed73a3f674de3b0203067aae22c362a225e5c"
+  },
+  "screenshots": [
+    "docs/assets/agent-demo/workbench.jpg"
+  ]
+}

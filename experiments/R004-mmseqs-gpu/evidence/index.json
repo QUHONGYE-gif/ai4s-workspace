@@ -1,0 +1,294 @@
+{
+  "source_archive": "ai4s-R004-gpu-evidence-20261021.tar.gz",
+  "source_archive_sha256": "71b36a5c6ab7a4ba88368d46c81b4d2f85cef688eac97bf86797c8b2696eeaf8",
+  "files": [
+    {
+      "source": "R004-mmseqs-gpu/audited-b/manifest.json",
+      "file": "audited-b/manifest.json",
+      "bytes": 19101,
+      "sha256": "371626378444532b3a02f716b980cf4ec8f5a70b678b9bf9e5375653122bb26b"
+    },
+    {
+      "source": "R004-mmseqs-gpu/validation.json",
+      "file": "validation.json",
+      "bytes": 2295,
+      "sha256": "280a09c839855e2e1155eb4caea04b3ee91f46b914b2c91f08a2a202bd1663fc"
+    },
+    {
+      "source": "R004-mmseqs-gpu/cpu-gpu-comparison.json",
+      "file": "cpu-gpu-comparison.json",
+      "bytes": 739,
+      "sha256": "8cdb5d53ea14d1e9275c0cccf6c0bc8eebe92327c4a9bd19fb4ee61f03642d5b"
+    },
+    {
+      "source": "R004-mmseqs-gpu/inventory-final.json",
+      "file": "inventory-final.json",
+      "bytes": 32664,
+      "sha256": "507e6fc92c2cabc09a2447609cd8e9a3254f238bf568b16e8166e32334c3bc9b"
+    },
+    {
+      "source": "R004-mmseqs-gpu/runtime-versions.txt",
+      "file": "runtime-versions.txt",
+      "bytes": 147,
+      "sha256": "5f53f62cfefc6bb0cc33b44452379ad766195d82075f69aabec39462949caa50"
+    },
+    {
+      "source": "R004-mmseqs-gpu/run_audited.py",
+      "file": "run_audited.py",
+      "bytes": 4576,
+      "sha256": "992ea66c6a6473e0a1fde3275ecb621efe961b19ffb9dc7b769d7a1e6b79b6f6"
+    },
+    {
+      "source": "R004-mmseqs-gpu/run_audited_b.py",
+      "file": "run_audited_b.py",
+      "bytes": 4630,
+      "sha256": "e8eaa3b8ee9e5a4f4f9c813d7b979fa41ae1ea190ffccdc86d5bb8f0316de5dc"
+    },
+    {
+      "source": "R004-mmseqs-gpu/finalize.py",
+      "file": "finalize.py",
+      "bytes": 3471,
+      "sha256": "478587a89ffb54941417a02dcfcdf24499964933a919a39c573d7bf55ec83a5d"
+    },
+    {
+      "source": "R004-mmseqs-gpu/logs/createdb-swissprot.json",
+      "file": "logs/createdb-swissprot.json",
+      "bytes": 546,
+      "sha256": "a024d748e33241940d256912fe582e5b829104ae6532f1a711c299476226e1c6"
+    },
+    {
+      "source": "R004-mmseqs-gpu/logs/createdb-swissprot.log",
+      "file": "logs/createdb-swissprot.log",
+      "bytes": 929,
+      "sha256": "abe41b40260306a25288aab291b2c4f4c62e97311182c4bce0aa957cee8fdbb7"
+    },
+    {
+      "source": "R004-mmseqs-gpu/logs/makepaddedseqdb-swissprot.json",
+      "file": "logs/makepaddedseqdb-swissprot.json",
+      "bytes": 580,
+      "sha256": "dba7a625e75da51b12e38f2a05474609db77d85da03d4a8be907a3fac4713066"
+    },
+    {
+      "source": "R004-mmseqs-gpu/logs/makepaddedseqdb-swissprot.log",
+      "file": "logs/makepaddedseqdb-swissprot.log",
+      "bytes": 809,
+      "sha256": "7b50e8a95d8dce3150839fbc1698651b39b4990429c459bfc2a38efdf6d38d7f"
+    },
+    {
+      "source": "R004-mmseqs-gpu/logs/audited-driver.log",
+      "file": "logs/audited-driver.log",
+      "bytes": 584,
+      "sha256": "95f6d0f79ba802c45bfc557503c3a2a5f038efb007ddc2e9e8ac77a37dd41db3"
+    },
+    {
+      "source": "R004-mmseqs-gpu/logs/audited-b-driver.log",
+      "file": "logs/audited-b-driver.log",
+      "bytes": 2116,
+      "sha256": "b663453a2ca6767bb393cb18a29cc554350df44ec9c2e05967f91c99898540c0"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited/manifest.json",
+      "file": "audited/manifest.json",
+      "bytes": 11538,
+      "sha256": "277c5a6e155a30b4d3ce475ee01578d10984bfba939ed4b66e5f75410918ed3a"
+    },
+    {
+      "source": "R004-mmseqs-gpu/logs/search-gpu.log",
+      "file": "logs/search-gpu.log",
+      "bytes": 5143,
+      "sha256": "acec98c9993756055fd79634d24812549207df9c2fdae3757eff521764705695"
+    },
+    {
+      "source": "R004-mmseqs-gpu/logs/search-gpu-retry1.log",
+      "file": "logs/search-gpu-retry1.log",
+      "bytes": 6968,
+      "sha256": "43e0dc235bfc08efb14994c9fa2dcf8060ab8dfad304821d53a2a901b2b76170"
+    },
+    {
+      "source": "R004-mmseqs-gpu/cpu-source-config.json",
+      "file": "cpu-source-config.json",
+      "bytes": 958,
+      "sha256": "b1fee819288a119790de1a7d5bd884bcf3f3e2f7901734a13847f1a9673965f2"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design-search.log",
+      "file": "audited-b/design-search.log",
+      "bytes": 7219,
+      "sha256": "296915518748011bac1b2453ad094b381177e9c78712775e10c58a57004c50da"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design-boltz.log",
+      "file": "audited-b/design-boltz.log",
+      "bytes": 2416,
+      "sha256": "84b7557cf77e4ec6bc7a9e8fb023eb7817e802ad587de200e08422f17c492b94"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design-createdb.log",
+      "file": "audited-b/design-createdb.log",
+      "bytes": 882,
+      "sha256": "0d42c6eca37a594c05eed9d745f63f4a6614249999a52ac9b52c4317a7aa0709"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design-tsv.log",
+      "file": "audited-b/design-tsv.log",
+      "bytes": 959,
+      "sha256": "3407219236f9e110f835cc019e76682ef7d3ecb35c8068fba921f78f7f01a311"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design-msa.log",
+      "file": "audited-b/design-msa.log",
+      "bytes": 1237,
+      "sha256": "403f64329b45b7dbe64f1d70f4cb6aeba799db3b0cfb91deb4597a377f8f11eb"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design-unpack.log",
+      "file": "audited-b/design-unpack.log",
+      "bytes": 567,
+      "sha256": "17388bc5145505b7508d4027dd7db4f087c09beb3428b40074bbb6fc193a1664"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design/query.fasta",
+      "file": "audited-b/design/query.fasta",
+      "bytes": 89,
+      "sha256": "b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design/hits.tsv",
+      "file": "audited-b/design/hits.tsv",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design/a3m/0.a3m",
+      "file": "audited-b/design/a3m/0.a3m",
+      "bytes": 89,
+      "sha256": "b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design/filtered.a3m",
+      "file": "audited-b/design/filtered.a3m",
+      "bytes": 89,
+      "sha256": "b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design/msa-summary.json",
+      "file": "audited-b/design/msa-summary.json",
+      "bytes": 345,
+      "sha256": "abad4516d8b81b352862f2cee9f319ce170b91c5cd3c04726345a4b78fffb24e"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design/input.yaml",
+      "file": "audited-b/design/input.yaml",
+      "bytes": 226,
+      "sha256": "38c1e76684734c06d3d1a570c80d22a98fb7ff3de512e267930e6e10edf606ed"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design/checks.json",
+      "file": "audited-b/design/checks.json",
+      "bytes": 530,
+      "sha256": "117219393a8ac2dcfe2e0ff4e38f672717a8fa1f61dbfafbc8c16a0e5732cacd"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design/boltz/boltz_results_input/predictions/input/input_model_0.pdb",
+      "file": "audited-b/design/boltz/boltz_results_input/predictions/input/input_model_0.pdb",
+      "bytes": 54593,
+      "sha256": "6d833da44195aa14b4d02d8bb8d8e97bbc28162a2e5dc3bb6448c7542870695a"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/design/boltz/boltz_results_input/predictions/input/confidence_input_model_0.json",
+      "file": "audited-b/design/boltz/boltz_results_input/predictions/input/confidence_input_model_0.json",
+      "bytes": 442,
+      "sha256": "36eaf60cce94715dcbb261daf2abdb304b3e662d9090c0ee958d09e67901960f"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive-search.log",
+      "file": "audited-b/positive-search.log",
+      "bytes": 7241,
+      "sha256": "27e6be6829304456fdb9aa75044980f8a9c5a3fc85f76a9029fdb257fb531da7"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive-boltz.log",
+      "file": "audited-b/positive-boltz.log",
+      "bytes": 2323,
+      "sha256": "bbaf3d4bc512554a92ebf406b3bde665d3765c0d2ae9350e2c2cc35f6e4b2e93"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive-createdb.log",
+      "file": "audited-b/positive-createdb.log",
+      "bytes": 885,
+      "sha256": "4d078bc8f6e905f5c98a5b2ddaca001188f94fc4e6c8fd3d167bceb9dce598c1"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive-tsv.log",
+      "file": "audited-b/positive-tsv.log",
+      "bytes": 965,
+      "sha256": "4d201247f95d0daf670c102e7cf4020f9bbb547293829f725525f4c7be9968e5"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive-msa.log",
+      "file": "audited-b/positive-msa.log",
+      "bytes": 1243,
+      "sha256": "1e6a1d1f09d1662950ef8f4832a35ebeef47b92d7382dbf7d4e7de5bd8a4fbdc"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive-unpack.log",
+      "file": "audited-b/positive-unpack.log",
+      "bytes": 573,
+      "sha256": "aa0f465031e7362f6b975852ddfcb73a89f5eecfcf9251f0dc15efbc4f09aff8"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive/query.fasta",
+      "file": "audited-b/positive/query.fasta",
+      "bytes": 163,
+      "sha256": "9f28ee2461cfee4c04e56bb447316d0ad23687d15f3da13aaae5946de4f0273a"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive/hits.tsv",
+      "file": "audited-b/positive/hits.tsv",
+      "bytes": 29879,
+      "sha256": "d432449344a2abbcc8a706d75662e7a4d878504370a2a6861c24604d33a6c93c"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive/a3m/0.a3m",
+      "file": "audited-b/positive/a3m/0.a3m",
+      "bytes": 76349,
+      "sha256": "4b722acebdaa7d24bdced9103307728607a795adc52630fd30af5615da689b77"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive/filtered.a3m",
+      "file": "audited-b/positive/filtered.a3m",
+      "bytes": 71409,
+      "sha256": "ae724d3749f39d2dfbfc612330d8c8bb059d894d8818d78f1ead425e467b4d59"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive/msa-summary.json",
+      "file": "audited-b/positive/msa-summary.json",
+      "bytes": 417,
+      "sha256": "58427c79aad8002a3f1c7fda9e4606e97dae33204370b41a08e797e6844a48e7"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive/input.yaml",
+      "file": "audited-b/positive/input.yaml",
+      "bytes": 352,
+      "sha256": "7cd2d9428d19cb4263c3da340427240f3ff6fe029e4ba61dffaca2519de5ba1d"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive/checks.json",
+      "file": "audited-b/positive/checks.json",
+      "bytes": 532,
+      "sha256": "af279613fb1bac2c517abd0c5dfa3b56d781a8203845d865bdcf5a88d1d3cef0"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive/boltz/boltz_results_input/predictions/input/input_model_0.pdb",
+      "file": "audited-b/positive/boltz/boltz_results_input/predictions/input/input_model_0.pdb",
+      "bytes": 87317,
+      "sha256": "6f9b3d1c8125a1f16b18b4719c884e31de102df82978858a95ccb1bc6455a480"
+    },
+    {
+      "source": "R004-mmseqs-gpu/audited-b/positive/boltz/boltz_results_input/predictions/input/confidence_input_model_0.json",
+      "file": "audited-b/positive/boltz/boltz_results_input/predictions/input/confidence_input_model_0.json",
+      "bytes": 443,
+      "sha256": "4a25fec3f91482c20b8ae0eeeda0ab7a1f93dd22fdfc429ce82288e45470864a"
+    }
+  ]
+}

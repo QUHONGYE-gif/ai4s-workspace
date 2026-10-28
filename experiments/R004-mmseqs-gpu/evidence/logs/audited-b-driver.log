@@ -1,0 +1,16 @@
+environment 0 0.22227825224399567
+design-createdb 0 0.013988038524985313
+design-search 0 0.5103776399046183
+design-tsv 0 0.07918988727033138
+design-msa 0 0.07761877402663231
+design-unpack 0 0.00392184779047966
+design-boltz 0 36.3027279227972
+design {"aligned_records": 1, "candidate_hits": 0, "retained_unique_sequences": 0, "records": 1, "query_length": 80, "hits": 0, "used_by_boltz": false, "filtered_sha256": "b8d3aa156dab83dd6a7bd36c35cf18ab560a04046d37c6145ed6fcc6df75caeb", "query": "SLLKLLLEEKLKEEKLIEEAKKRIKELLETTKDKEELIEKLEEIAEELEKEPVLEELKELVEERIEDLKAGKEKEYEIKL", "checks": {"prediction_count": 1, "sequence_matches_query": true, "length": 80, "confidence": {"confidence_score": 0.8671682476997375, "ptm": 0.7490227222442627, "iptm": 0.0, "ligand_iptm": 0.0, "protein_iptm": 0.0, "complex_plddt": 0.8967046737670898, "complex_iplddt": 0.8967046737670898, "complex_pde": 0.763861894607544, "complex_ipde": 0.0, "chains_ptm": {"0": 0.7490227222442627}, "pair_chains_iptm": {"0": {"0": 0.7490227222442627}}}}}
+positive-createdb 0 0.01243186742067337
+positive-search 0 0.46956391260027885
+positive-tsv 0 0.08078103139996529
+positive-msa 0 0.08924145996570587
+positive-unpack 0 0.004193844273686409
+positive-boltz 0 34.50118989497423
+positive {"aligned_records": 499, "candidate_hits": 498, "retained_unique_sequences": 466, "records": 467, "query_length": 142, "hits": 498, "used_by_boltz": true, "filtered_sha256": "ae724d3749f39d2dfbfc612330d8c8bb059d894d8818d78f1ead425e467b4d59", "query": "MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR", "checks": {"prediction_count": 1, "sequence_matches_query": true, "length": 142, "confidence": {"confidence_score": 0.922421395778656, "ptm": 0.8999794125556946, "iptm": 0.0, "ligand_iptm": 0.0, "protein_iptm": 0.0, "complex_plddt": 0.9280318021774292, "complex_iplddt": 0.9280318021774292, "complex_pde": 0.46216630935668945, "complex_ipde": 0.0, "chains_ptm": {"0": 0.8999794125556946}, "pair_chains_iptm": {"0": {"0": 0.8999794125556946}}}}}
+FINAL completed files 199

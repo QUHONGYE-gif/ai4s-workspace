@@ -1,0 +1,15 @@
+{
+  "name": "createdb-swissprot",
+  "argv": [
+    "/root/ai4s-trial/tools/mmseqs-gpu/bin/mmseqs",
+    "createdb",
+    "/root/ai4s-trial/db/uniprot_sprot.fasta",
+    "/root/ai4s-trial/runs/R004-mmseqs-gpu/db/swissprot_base"
+  ],
+  "start_utc": "2026-10-21T13:15:15.786617+00:00",
+  "end_utc": "2026-10-21T13:15:17.438948+00:00",
+  "wall_seconds": 1.6523388996720314,
+  "exit_code": 0,
+  "log": "/root/ai4s-trial/runs/R004-mmseqs-gpu/logs/createdb-swissprot.log",
+  "log_sha256": "abe41b40260306a25288aab291b2c4f4c62e97311182c4bce0aa957cee8fdbb7"
+}
