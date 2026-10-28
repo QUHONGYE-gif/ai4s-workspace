@@ -1,0 +1,26 @@
+[project]
+name = "ai4s-workflow-demo"
+version = "0.1.0"
+description = "Agent-assisted registration of three protein workflow models"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.34,<1",
+  "pydantic-ai-slim[openai]>=1,<3",
+  "python-multipart>=0.0.20,<1",
+  "python-dotenv>=1,<2",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "httpx>=0.28,<1"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai4s_demo"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

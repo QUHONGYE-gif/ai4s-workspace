@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import http.client
 from functools import partial
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -19,10 +20,11 @@ MAX_BODY = 2 * 1024 * 1024
 
 
 class DemoHandler(SimpleHTTPRequestHandler):
-    def __init__(self, *args, store, fixtures, directory, pymol, **kwargs):
+    def __init__(self, *args, store, fixtures, directory, pymol, agent_port, **kwargs):
         self.store = store
         self.pymol = pymol
         self.fixtures = fixtures
+        self.agent_port = agent_port
         self.frontend = Path(directory).resolve()
         super().__init__(*args, directory=str(self.frontend), **kwargs)
 
@@ -42,6 +44,8 @@ class DemoHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path).path
+        if path == "/agent" or path.startswith("/agent/"):
+            return self.proxy_agent()
         try:
             if path == "/api/tools/pymol":
                 try:
@@ -78,6 +82,9 @@ class DemoHandler(SimpleHTTPRequestHandler):
             )
 
     def do_HEAD(self):
+        path = urlsplit(self.path).path
+        if path == "/agent" or path.startswith("/agent/"):
+            return self.proxy_agent()
         if urlsplit(self.path).path.startswith("/api/"):
             return self.do_GET()
         target = Path(self.translate_path(self.path)).resolve()
@@ -86,6 +93,8 @@ class DemoHandler(SimpleHTTPRequestHandler):
         return super().do_HEAD()
 
     def do_PUT(self):
+        if urlsplit(self.path).path.startswith("/agent/"):
+            return self.proxy_agent()
         if urlsplit(self.path).path != "/api/demo/state":
             return self.reply(404, {"error": "Unknown API endpoint"})
         if self.headers.get_content_type() != "application/json":
@@ -117,6 +126,8 @@ class DemoHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
+        if path.startswith("/agent/"):
+            return self.proxy_agent()
         if path not in (
             "/api/tools/pymol/load", "/api/tools/pymol/style",
             "/api/tools/pymol/mode", "/api/tools/pymol/command",
@@ -151,6 +162,46 @@ class DemoHandler(SimpleHTTPRequestHandler):
         except (OSError, PyMOLError):
             return self.reply(503, {"error": "PyMOL 操作未返回，请检查会话；耗时命令可能仍在运行"})
 
+    def proxy_agent(self):
+        """Forward only the fixed Agent service; preserve the browser's Host/Origin."""
+        if urlsplit(self.path).path == "/agent":
+            self.send_response(HTTPStatus.TEMPORARY_REDIRECT)
+            self.send_header("Location", "./agent/")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            return self.reply(400, {"error": "Invalid Content-Length"})
+        if length < 0 or length > 6 * 1024 * 1024:
+            self.close_connection = True
+            return self.reply(413, {"error": "Agent request exceeds 6 MiB"})
+        if self.headers.get("Transfer-Encoding"):
+            self.close_connection = True
+            return self.reply(400, {"error": "Content-Length is required"})
+        connection = http.client.HTTPConnection("127.0.0.1", self.agent_port, timeout=120)
+        excluded = {"connection", "keep-alive", "transfer-encoding", "upgrade", "proxy-connection"}
+        headers = {k: v for k, v in self.headers.items() if k.lower() not in excluded}
+        try:
+            connection.request(self.command, self.path[len("/agent"):],
+                               self.rfile.read(length) if length else None, headers)
+            response = connection.getresponse()
+            body = response.read()
+        except (OSError, http.client.HTTPException):
+            return self.reply(503, {"error": "智能体服务暂不可用，请检查联合服务及其日志"})
+        finally:
+            connection.close()
+        self.send_response(response.status)
+        for key, value in response.getheaders():
+            if key.lower() not in excluded | {"content-length", "server", "date"}:
+                self.send_header(key, value)
+        content_length = response.getheader("Content-Length", "0") if self.command == "HEAD" else str(len(body))
+        self.send_header("Content-Length", content_length)
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
+
     def list_directory(self, path):
         self.send_error(HTTPStatus.NOT_FOUND)
         return None
@@ -160,14 +211,14 @@ class DemoHandler(SimpleHTTPRequestHandler):
         super().log_message(format, *args)
 
 
-def create_server(host="127.0.0.1", port=3000, data_dir=None):
+def create_server(host="127.0.0.1", port=3000, data_dir=None, agent_port=3002):
     fixtures = json.loads(
         (ROOT / "configs/workbench-demo.json").read_text(encoding="utf-8")
     )
     store = SnapshotStore(Path(data_dir) if data_dir else ROOT / ".local/workbench-api")
     handler = partial(
         DemoHandler, store=store, fixtures=fixtures, directory=ROOT / "web/demo",
-        pymol=PyMOLSession(store.directory.parent / "pymol-inputs")
+        pymol=PyMOLSession(store.directory.parent / "pymol-inputs"), agent_port=agent_port
     )
     return ThreadingHTTPServer((host, port), handler)
 

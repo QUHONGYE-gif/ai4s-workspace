@@ -14,6 +14,10 @@ python scripts/serve_workbench.py --host 127.0.0.1 --port 3000 \
 
 然后打开工作区已有“开发预览”。需要真实 PyMOL 时，改用 [联合启动器](../tools/pymol_web/README.md)，不同时启动两个占用 3000 端口的服务。
 
+## Agent 工作流接入
+
+安装 `uv sync --frozen` 后，继续通过原 [PyMOL 联合启动入口](../tools/pymol_web/README.md) 运行；工作台左侧“智能体接入”进入 `./agent/`。普通服务入口保留，仅运行原工作台。模型 API、数据目录和验证边界见 [最小说明](../docs/agent_demo_run.md)。
+
 ## 状态目录与启动切换
 
 上述普通启动示例显式使用与 PyMOL 联合启动相同的状态目录，因此以后可在两种方式之间切换并继续读取同一份模拟快照。

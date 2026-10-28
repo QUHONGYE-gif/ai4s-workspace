@@ -9,6 +9,7 @@
 | 工作台前后端 | Python 3.10+，运行时仅使用标准库；基础镜像见 [Dockerfile](../docker/workspace/Dockerfile) |
 | 前端逻辑检查 | Node.js，仅运行已有测试，页面本身无需构建 |
 | PyMOL | 与目标发行版配套的 PyMOL、Qt、Xvfb、noVNC 和 Nginx；[安装与启动](../tools/pymol_web/README.md) |
+| Agent 工作流接入 | Python 3.12+、uv；依赖与版本见 [pyproject.toml](../pyproject.toml)、[uv.lock](../uv.lock)，使用项目 `.venv`；[运行说明](agent_demo_run.md) |
 | 蛋白质设计 | 独立模型环境、权重和数据库，具体字段见 [使用说明](protein_pipeline.md) 与 [配置示例](../configs/protein_design.example.json) |
 | 管理员 Python 脚本 | provider 下载依赖 `requests` 及其 `urllib3` 依赖；[专用环境准备](operations.md#管理员脚本依赖) |
 | Coder 底座 | Compose、Docker 及 Terraform provider；版本以配置和模板锁文件为准 |

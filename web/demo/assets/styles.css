@@ -2590,3 +2590,6 @@ svg {
     flex-basis: 60%;
   }
 }
+
+/* Links share navigation styling with in-page buttons. */
+a.nav-item { text-decoration: none; }
