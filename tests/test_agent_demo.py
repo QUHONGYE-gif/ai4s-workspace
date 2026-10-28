@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -177,7 +178,14 @@ def test_api_key_never_returned_or_exported(tmp_path, monkeypatch):
         malformed = client.post("/api/settings/model", json={"model": "invalid model", "api_key": key})
         assert malformed.status_code == 422 and key not in malformed.text
         private = tmp_path / "settings/deepseek.json"
-        assert private.stat().st_mode & 0o777 == 0o600
+        if os.name == "posix":
+            # Windows maps chmod(0o600) to the readonly user attribute only, so the
+            # strict owner-only bit check is meaningful on POSIX systems alone.
+            assert private.stat().st_mode & 0o777 == 0o600
+        else:
+            # Windows chmod(0o600) only clears the readonly attribute; the file is
+            # still owner-only because it lives under the user profile directory.
+            assert private.exists() and json.loads(private.read_text(encoding="utf-8"))["api_key"] == key
         assert client.post("/api/settings/model", json={"model": "deepseek-v4-pro"}).json()["has_key"] is True
         assert client.post("/api/settings/model", json={"remove_key": True}).json()["has_key"] is False
         assert client.post("/api/settings/model", json={"api_key": key}, headers={"Origin": "https://other.example"}).status_code == 403

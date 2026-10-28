@@ -2593,3 +2593,262 @@ svg {
 
 /* Links share navigation styling with in-page buttons. */
 a.nav-item { text-decoration: none; }
+
+/* Flow graph: one titled frame per step, a white card inside it, orthogonal
+   wires with an arrowhead. Roles and spacing follow the workflow editor's graph
+   so the create page and the experiment page read the same way. */
+.role-backbone {
+  --role-line:#b389d9;
+  --role-strong:#7d4fb0;
+  --role-fill:#f2eafa;
+  --role-ring:rgba(179,137,217,.18);
+}
+.role-sequence {
+  --role-line:#6fb34f;
+  --role-strong:#3f7a2e;
+  --role-fill:#e7f4de;
+  --role-ring:rgba(111,179,79,.18);
+}
+.role-prediction {
+  --role-line:#5f93e0;
+  --role-strong:#3a6fc8;
+  --role-fill:#e4eefc;
+  --role-ring:rgba(95,147,224,.18);
+}
+.flow-graph {
+  position: relative;
+  padding: 20px 22px 16px;
+  background: #fcfcfb;
+  overflow: auto;
+}
+.flow-wires {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
+}
+.flow-pipeline {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: stretch;
+  gap: 26px;
+  min-width: max-content;
+}
+.flow-stage {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 172px;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 9px 9px 10px;
+  border: 1.4px solid var(--role-line);
+  border-radius: 14px;
+  background: var(--role-fill);
+  transition: border-color .18s, box-shadow .18s;
+}
+.flow-stage:hover { border-color: var(--role-strong); }
+.flow-stage.selected {
+  border-color: var(--role-strong);
+  box-shadow: 0 0 0 4px var(--role-ring);
+}
+.stage-head {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 0 2px;
+  color: var(--role-strong);
+}
+.stage-index {
+  font: 10px/1.4 monospace;
+  letter-spacing: .06em;
+}
+.stage-title {
+  font-size: 12px;
+  font-weight: 700;
+}
+.flow-node {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px 10px;
+  border: 1.5px solid var(--role-line);
+  background: #fff;
+  border-radius: 11px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color .18s, box-shadow .18s;
+}
+.flow-node:hover { border-color: var(--role-strong); }
+.flow-node.selected {
+  border-color: var(--role-strong);
+  box-shadow: inset 0 0 0 1px var(--role-line);
+}
+.flow-node.static { cursor: default; }
+.node-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.node-icon {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--role-fill);
+}
+.node-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--role-strong);
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.node-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+.model-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #23272e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.node-label {
+  font-size: 10px;
+  color: #5f6670;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.node-summary {
+  display: block;
+  margin-top: 8px;
+  font: 10.5px/1.5 monospace;
+  color: #3f4550;
+  overflow-wrap: anywhere;
+}
+.node-state {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 10px;
+  color: #5f6670;
+}
+.node-state.good { color: #2f7d47; }
+.node-state.warn { color: #9a6a0a; }
+.node-state.blue { color: #3a6fc8; }
+.state-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+.node-formats {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 9px;
+  border-top: 1px solid var(--role-fill);
+  font: 9.5px/1.4 monospace;
+  color: #5f6670;
+}
+
+/* Step detail: parameters, inputs and the reuse reason; candidates stay folded. */
+.step-detail {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.step-detail.empty-detail {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 8px 2px;
+}
+.step-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.step-detail-head b { font-size: 13px; }
+.step-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 18px;
+  margin-top: 12px;
+}
+.detail-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.detail-label.spaced { margin-top: 14px; }
+.detail-value {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #3f4550;
+}
+.step-candidates { margin-top: 14px; }
+.step-candidates summary,
+.more-params summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: #5b6180;
+}
+.step-candidates[open] summary,
+.more-params[open] summary { margin-bottom: 10px; }
+.more-params {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+
+/* Create page: configure on top, the flow graph in the middle, settings and
+   the create action last, instead of one long scrolling workspace. */
+.create-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 18px;
+}
+.create-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.action-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin-right: auto;
+}
+.panel-note {
+  font-size: 11px;
+  color: #8b90a4;
+}
+@media (max-width: 900px) {
+  .step-detail-grid { grid-template-columns: 1fr; }
+  .create-actions { flex-direction: column; align-items: stretch; }
+  .action-note { margin-right: 0; }
+  .flow-pipeline { gap: 18px; }
+}

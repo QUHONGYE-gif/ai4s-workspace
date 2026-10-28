@@ -9,9 +9,14 @@
     moleculeSteps = fixture.moleculeSteps;
   const workflowInfo = fixture.workflowInfo,
     builtinPolicies = fixture.policies;
+  // Field definitions come from the workflow editor's model catalog, so the
+  // workbench never invents parameter names, ranges or options of its own.
+  const modelCatalog = fixture.modelCatalog || {};
   let activeWorkflow = 'protein',
     baseConfig = proteinBase,
     steps = proteinSteps;
+  // Which flow step the create page has expanded; null means "all collapsed".
+  let selectedStep = null;
   const toolInfo = {
     pymol: {
       name: 'PyMOL',
@@ -994,7 +999,16 @@ ${esc(step[key] || '')}</textarea
   const setDraftValue = function setDraftValue(name, value) {
     const d = currentDraft();
     if (!d) return;
-    if (name.startsWith('config.')) {
+    if (name.startsWith('nodeParams.')) {
+      // <step>.<field>, e.g. nodeParams.structure.diffusion_samples; numbers are
+      // stored as numbers so the snapshot keeps the model's own value type.
+      const [, stepId, key] = name.split('.');
+      const model = modelOf(steps.find((s) => s.id === stepId) || {});
+      const sample = (model ? model.sample_params : {})[key];
+      const next = typeof sample === 'number' && value !== '' ? Number(value) : value;
+      d.config.nodeParams = d.config.nodeParams || {};
+      d.config.nodeParams[stepId] = { ...(d.config.nodeParams[stepId] || {}), [key]: next };
+    } else if (name.startsWith('config.')) {
       const key = name.slice(7);
       d.config[key] = key === 'remote' ? value === 'true' : value;
     } else d[name] = value;
@@ -1023,29 +1037,6 @@ ${esc(step[key] || '')}</textarea
     }
     invalidateDraft();
   };
-  const scenarioProduct = function scenarioProduct(id) {
-    const d = currentDraft();
-    d.config = { ...baseConfig };
-    if (workflowInfo[activeWorkflow].executionDefinition)
-      d.config.input = workflowInfo[activeWorkflow].executionDefinition.inputPath;
-    d.inputSource = workflowInfo[activeWorkflow].custom ? 'path' : 'sample';
-    d.inputArtifactId = '';
-    d.inputMeta = null;
-    d.intent = 'replay';
-    d.simulation = id === 'failure' ? 'fail' : 'success';
-    if (id === 'model') d.config.predictor = workflowKind() === 'molecule' ? 'dock-v2' : 'fold-v2';
-    if (id === 'waiting') {
-      d.config.predictor = workflowKind() === 'molecule' ? 'dock-v1' : 'fold-v2';
-      d.config.seed = '7';
-    }
-    if (id === 'fresh') {
-      d.intent = 'fresh';
-      d.config.sampleToken = d.id;
-    }
-    invalidateDraft();
-    render();
-  };
-
   // Simulation execution and persistence
   const persistable = function persistable() {
     return {
@@ -1189,10 +1180,8 @@ ${esc(step[key] || '')}</textarea
       notify(error);
       return;
     }
-    if (!d.checked) {
-      notify('请先检查输入与共享候选，再确认运行计划。');
-      return;
-    }
+    // The create page only configures; checking candidates is part of creating.
+    if (!d.checked && !checkDraft()) return;
     const p = packPlan(d),
       w = workflowInfo[activeWorkflow];
     const e = {
@@ -2031,33 +2020,11 @@ ${esc(policyDraft.description)}</textarea
           ['dock-v1', 'DemoDock v1'],
           ['dock-v2', 'DemoDock v2'],
         ]);
+    // Scope, intent and policy live in the create page's visible settings; this
+    // panel keeps only the model/run parameters behind a "more" disclosure.
     return (
       fields +
-      choiceField(
-        '本次实验意图',
-        'intent',
-        d.intent,
-        [
-          ['replay', '复现实验 · 查找等价历史结果'],
-          ['fresh', '生成新样本 · 不替代为旧样本'],
-        ],
-        '新样本会改变生成步骤及下游身份；上游预处理仍可复用。自定义流程保守重算。',
-      ) +
       field('随机种子', 'config.seed', c.seed, 'number') +
-      choiceField('复用查找范围', 'reuseScope', d.reuseScope, [
-        ['team', '我的产物 + 团队共享'],
-        ['mine', '仅我的产物'],
-      ]) +
-      choiceField('新生成产物的共享范围', 'shareOutput', d.shareOutput, [
-        ['team', '团队共享（模拟）'],
-        ['private', '仅自己（模拟）'],
-      ]) +
-      choiceField(
-        '复用与保存策略',
-        'policy',
-        d.policy,
-        allPolicies().map((p) => [p.id, p.name]),
-      ) +
       choiceField('模拟读取位置', 'config.remote', String(!!c.remote), [
         ['false', '本地读取（示例）'],
         ['true', '远端读取较慢（示例）'],
@@ -2184,134 +2151,339 @@ ${esc(policyDraft.description)}</textarea
         </div>`,
     );
   };
-  const experimentDiagram = function experimentDiagram(p) {
-    const custom = workflowKind() === 'custom';
-    const nodes = p
-      .map(
-        (s, i) =>
-          /* HTML */ `<button
-            class="${custom ? 'custom-flow-node' : 'node'} ${s.action === 'reuse' ? '' : 'changed'}"
-            ${custom ? '' : `style="${s.position}"`}
-            data-plan-step="${s.id}"
-            aria-label="查看${esc(s.name)}的依赖与计划"
-          >
-            <span class="node-top"
-              >${icon(s.icon)}<span
-                >${s.action === 'reuse' ? '复用' : s.action === 'wait' ? '等待' : '重算'}</span
-              ></span
-            ><span class="node-name">${esc(s.name)}</span
-            ><span class="node-sub">${fmt(s.time)} · 预计用时</span>
-          </button>`,
-      )
-      .join('');
-    const edges = custom
-      ? ''
-      : /* HTML */ `<svg
-          class="connections"
-          viewBox="0 0 1000 186"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <path
-            d="${workflowKind() === 'protein'
-              ? 'M213 93H244V41H266M244 93v52h22'
-              : 'M213 93H244V41H266'}"
-          />
-          <path d="M479 41h21v52h21M479 145h21V93" />
-          <path d="M734 93h53" />
-        </svg>`;
-    return panel(
-      '步骤依赖与本次计划',
-      /* HTML */ `<div class="dag-wrap">
-        <div class="dag-caption">
-          <span>${custom ? '自定义串行流程' : '演示步骤依赖；点击节点查看说明'}</span
-          ><span>实际决策见下方列表</span>
-        </div>
-        <div class="${custom ? 'custom-flow' : 'dag'}">${edges}${nodes}</div>
-      </div>`,
+  // One flow graph for the whole experiment: a titled frame per step, a white
+  // card inside it, orthogonal wires ending in an arrowhead, and a resident
+  // data dot per wire. Structure and visual grammar follow the workflow
+  // editor's graph so both pages read the same way.
+  const STEP_ROLES = {
+    prepare: 'backbone',
+    generate: 'backbone',
+    embedding: 'sequence',
+    msa: 'sequence',
+    target: 'sequence',
+    structure: 'prediction',
+    docking: 'prediction',
+    analysis: 'prediction',
+  };
+  const ROLE_ICONS = {
+    backbone:
+      '<path d="M12 2.9 3.8 7v10l8.2 4.1 8.2-4.1V7Z"/><path d="m3.8 7 8.2 4.1L20.2 7"/><path d="M12 11.1v10"/>',
+    sequence: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>',
+    prediction:
+      '<circle cx="12" cy="12" r="3.4"/><path d="M12 2.4v3.2M12 18.4v3.2M2.4 12h3.2M18.4 12h3.2"/>',
+  };
+  const stepRole = (s) => STEP_ROLES[s.id] || 'backbone';
+  const modelOf = (s) => (s.model && modelCatalog[s.model] ? modelCatalog[s.model] : null);
+  const stepFields = function (s) {
+    const model = modelOf(s);
+    if (!model) return [];
+    const keys = s.paramKeys || Object.keys(model.sample_params);
+    return model.fields.filter((f) => keys.includes(f.key));
+  };
+  const nodeParamValues = function (d, s) {
+    const model = modelOf(s);
+    if (!model) return {};
+    const saved = (d.config.nodeParams || {})[s.id] || {};
+    return Object.fromEntries(
+      stepFields(s).map((f) => [f.key, Object.hasOwn(saved, f.key) ? saved[f.key] : model.sample_params[f.key]]),
     );
+  };
+  const paramField = function (s, f, value) {
+    const name = 'nodeParams.' + s.id + '.' + f.key,
+      hint = '工作流登记字段 · ' + (modelOf(s) ? modelOf(s).name : '');
+    if (f.type === 'select')
+      return choiceField(f.label, name, value, (f.options || []).map(([id, label]) => [id, label]), hint);
+    const bounds = [
+      Number.isFinite(f.min) ? `min="${f.min}"` : '',
+      Number.isFinite(f.max) ? `max="${f.max}"` : '',
+      f.step ? `step="${esc(f.step)}"` : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+    return /* HTML */ `<label class="field"
+      ><span>${esc(f.label)}</span
+      ><input data-draft="${name}" type="number" value="${esc(value)}" ${bounds} />
+      <div class="field-hint">${esc(hint)}</div></label
+    >`;
+  };
+  const flowGraph = function (list, selected = null) {
+    return /* HTML */ `<div class="flow-graph" id="flow-graph">
+      <svg class="flow-wires" id="flow-wires" aria-hidden="true"></svg>
+      <div class="flow-pipeline" id="flow-pipeline">
+        ${list
+          .map((s, i) => {
+            const role = stepRole(s),
+              model = modelOf(s),
+              active = selected === s.id;
+            return /* HTML */ `<div
+              class="flow-stage role-${role}${active ? ' selected' : ''}"
+              data-stage="${esc(s.id)}"
+            >
+              <div class="stage-head">
+                <span class="stage-index">${String(i + 1).padStart(2, '0')}</span
+                ><span class="stage-title">${esc(s.name)}</span>
+              </div>
+              <button
+                class="flow-node${active ? ' selected' : ''}"
+                data-action="select-step"
+                data-value="${esc(s.id)}"
+                aria-pressed="${active}"
+                aria-label="查看${esc(s.name)}的参数、输入与复用原因"
+              >
+                <span class="node-head"
+                  ><span class="node-icon" aria-hidden="true"
+                    ><svg viewBox="0 0 24 24">${ROLE_ICONS[role]}</svg></span
+                  ><span class="node-titles"
+                    ><span class="model-name">${esc(model ? model.name : s.kind + ' 处理')}</span
+                    ><span class="node-label">${esc(model ? model.role : s.file)}</span></span
+                  ></span
+                >
+                <span class="node-summary">${esc(s.kind)} · 预计 ${fmt(s.cost)}</span>
+                <span class="node-formats"
+                  ><span>${(s.deps || []).length ? '依赖 ' + s.deps.length + ' 个上游' : '流程入口'}</span
+                  ><span aria-hidden="true">→</span><span>${esc(s.kind)}</span></span
+                >
+              </button>
+            </div>`;
+          })
+          .join('')}
+      </div>
+    </div>`;
+  };
+  // Orthogonal wires with rounded corners, drawn from measured DOM boxes so the
+  // graph reflows with the panel instead of using fixed coordinates.
+  const wirePath = function (points, radius) {
+    let d = `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
+    for (let i = 1; i < points.length - 1; i++) {
+      const a = points[i - 1],
+        b = points[i],
+        c = points[i + 1];
+      const l1 = Math.hypot(b.x - a.x, b.y - a.y),
+        l2 = Math.hypot(c.x - b.x, c.y - b.y);
+      if (!l1 || !l2) continue;
+      const r = Math.min(radius, l1 / 2, l2 / 2);
+      const p1 = { x: b.x + ((a.x - b.x) / l1) * r, y: b.y + ((a.y - b.y) / l1) * r };
+      const p2 = { x: b.x + ((c.x - b.x) / l2) * r, y: b.y + ((c.y - b.y) / l2) * r };
+      d += `L${p1.x.toFixed(1)},${p1.y.toFixed(1)}Q${b.x.toFixed(1)},${b.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+    }
+    const end = points[points.length - 1];
+    return d + `L${end.x.toFixed(1)},${end.y.toFixed(1)}`;
+  };
+  const drawFlowWires = function (list) {
+    const graph = $('#flow-graph'),
+      svg = $('#flow-wires');
+    if (!graph || !svg) return;
+    const NS = 'http://www.w3.org/2000/svg',
+      base = graph.getBoundingClientRect();
+    svg.setAttribute('width', graph.scrollWidth);
+    svg.setAttribute('height', graph.scrollHeight);
+    svg.innerHTML = '';
+    const add = (tag, attrs) => {
+      const el = document.createElementNS(NS, tag);
+      Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      svg.appendChild(el);
+      return el;
+    };
+    list.forEach((s, index) => {
+      (s.deps || []).forEach((dep) => {
+        const a = graph.querySelector(`[data-stage="${dep}"]`),
+          b = graph.querySelector(`[data-stage="${s.id}"]`);
+        if (!a || !b) return;
+        const ra = a.getBoundingClientRect(),
+          rb = b.getBoundingClientRect();
+        const x1 = ra.right - base.left + graph.scrollLeft,
+          y1 = ra.top + ra.height / 2 - base.top + graph.scrollTop;
+        const x2 = rb.left - base.left + graph.scrollLeft,
+          y2 = rb.top + rb.height / 2 - base.top + graph.scrollTop;
+        const mid = (x1 + x2) / 2,
+          lower = Math.max(ra.bottom, rb.bottom) - base.top + graph.scrollTop + 12 + index * 8;
+        const points =
+          x2 - x1 > 24
+            ? Math.abs(y1 - y2) < 2
+              ? [
+                  { x: x1, y: y1 },
+                  { x: x2, y: y2 },
+                ]
+              : [
+                  { x: x1, y: y1 },
+                  { x: mid, y: y1 },
+                  { x: mid, y: y2 },
+                  { x: x2, y: y2 },
+                ]
+            : [
+                { x: x1, y: y1 },
+                { x: x1 + 16, y: y1 },
+                { x: x1 + 16, y: lower },
+                { x: x2 - 16, y: lower },
+                { x: x2 - 16, y: y2 },
+                { x: x2, y: y2 },
+              ];
+        const active = selectedStep === s.id || selectedStep === dep;
+        add('path', {
+          d: wirePath(points, 14),
+          fill: 'none',
+          stroke: active ? '#7d4fb0' : '#5f6670',
+          'stroke-width': active ? 2 : 1.5,
+          'stroke-linejoin': 'round',
+          'stroke-linecap': 'round',
+          opacity: active ? 1 : 0.9,
+        });
+        const tip = points[points.length - 1],
+          before = points[points.length - 2];
+        const length = Math.hypot(tip.x - before.x, tip.y - before.y) || 1,
+          ux = (tip.x - before.x) / length,
+          uy = (tip.y - before.y) / length,
+          size = 6.5;
+        add('polygon', {
+          points: `${tip.x.toFixed(1)},${tip.y.toFixed(1)} ${(tip.x - ux * size + uy * size * 0.52).toFixed(1)},${(tip.y - uy * size - ux * size * 0.52).toFixed(1)} ${(tip.x - ux * size - uy * size * 0.52).toFixed(1)},${(tip.y - uy * size + ux * size * 0.52).toFixed(1)}`,
+          fill: active ? '#7d4fb0' : '#5f6670',
+        });
+        add('circle', { cx: mid.toFixed(1), cy: ((y1 + y2) / 2).toFixed(1), r: 3.2, fill: '#2f7d47', opacity: 0.85 });
+      });
+    });
+  };
+  const stepDetail = function (s, d) {
+    const fields = stepFields(s),
+      values = nodeParamValues(d, s);
+    const inputs = (s.deps || []).length
+      ? s.deps
+          .map((id) => {
+            const up = steps.find((x) => x.id === id);
+            return up ? `${up.name}（${up.kind}）` : id;
+          })
+          .join('、')
+      : '本次实验输入';
+    const planned = d.checked ? plan(d.config, d.policy, d).find((x) => x.id === s.id) : null;
+    const actionName = planned
+      ? planned.action === 'reuse'
+        ? '复用已有结果'
+        : planned.action === 'wait'
+          ? '等待共享结果'
+          : '本次重算'
+      : '尚未检查';
+    return /* HTML */ `<div class="step-detail">
+      <div class="step-detail-head">
+        <div>
+          <b>${esc(s.name)}</b>
+          <div class="reason">${esc(s.description)}</div>
+        </div>
+        <span class="pill ${planned && planned.action !== 'compute' ? 'good' : 'blue'}">${esc(actionName)}</span>
+      </div>
+      <div class="step-detail-grid">
+        <div>
+          <div class="detail-label">输入</div>
+          <div class="detail-value">${esc(inputs)} → 产出 ${esc(s.kind)}（${esc(s.file)}）</div>
+        </div>
+        <div>
+          <div class="detail-label">复用原因</div>
+          <div class="detail-value">${esc(planned ? planned.reason : '填写输入与参数后检查共享候选，此处显示该步骤的判定原因。')}</div>
+        </div>
+        <div>
+          <div class="detail-label">本次身份标识</div>
+          <div class="detail-value mono">${esc(planned ? planned.key : '检查候选后生成')}</div>
+        </div>
+      </div>
+      ${
+        fields.length
+          ? /* HTML */ `<div class="detail-label spaced">本步骤参数（来自工作流登记的模型字段）</div>
+              <div class="registration-grid">${fields.map((f) => paramField(s, f, values[f.key])).join('')}</div>`
+          : /* HTML */ `<div class="detail-label spaced">本步骤参数</div>
+              <div class="detail-value">该步骤在工作流登记的模型目录中没有参数字段，只消费上游产物。</div>`
+      }
+      ${
+        planned
+          ? /* HTML */ `<details class="step-candidates">
+              <summary>查看 ${planned.candidates.length} 个共享候选与来源</summary>
+              ${candidateRows(planned)}
+            </details>`
+          : ''
+      }
+      ${planned ? /* HTML */ `<div class="detail-label spaced">本步骤执行方式</div>${candidateDecision(planned, d)}` : ''}
+    </div>`;
   };
   const workflowPage = function () {
     const d = currentDraft() || createExperimentDraft(activeWorkflow);
     const checked = d.checked;
+    const selected = steps.find((s) => s.id === selectedStep) || null;
+    const m = planMetrics(plan(d.config, d.policy, d));
     return (
       heading(
         '创建实验',
-        '流程定义保持独立；本次输入、参数与产物选择保存为实验快照。',
+        '填写输入与本次设置；点击流程中的步骤查看它的参数、输入与复用原因。创建后进入实验详情查看运行与结果。',
         routeButton('工作流列表', 'workflows'),
       ) +
-      flowRibbon(checked ? 1 : 0) +
-      /* HTML */ `<div class="scenario-bar">
-          <span>体验场景</span>${[
-            ['baseline', '相同配置与团队复用'],
-            ['model', '模型变化'],
-            ['waiting', '有人正在生成'],
-            ['fresh', '生成新样本'],
-            ['failure', '步骤失败'],
-          ]
-            .map(([id, name]) => button(name, 'scenario', id))
-            .join('')}
-        </div>
-        <div class="workspace-grid">
-          <div class="left-stack">
-            ${panel(
-              '1. 实验信息与输入',
-              /* HTML */ `<div class="create-body">
-                <div class="registration-grid">
-                  ${field('实验名称', 'name', d.name)}<label class="field"
-                    ><span>所用流程</span
-                    ><input readonly value="${esc(workflowInfo[activeWorkflow].name)}" /></label
-                  >${inputPanel(d)}
-                </div>
-              </div>`,
-            )}${checked
-              ? experimentDiagram(plan(d.config, d.policy, d)) + reviewPanel(d)
-              : panel(
-                  '2. 检查共享候选',
-                  /* HTML */ `<div class="empty">
-                    先填写输入与参数，再检查可复用的个人或团队产物。
-                    <div style="margin-top:15px">
-                      ${button('检查输入与共享候选', 'check', '', true)}
-                    </div>
-                  </div>`,
-                )}${checked
-              ? panel(
-                  '3. 确认并模拟运行',
-                  /* HTML */ `<div class="detail-body">
-                    <p class="small muted">
-                      计划确认后将锁定本次配置。模拟运行期间可以离开此页查看记录。
-                    </p>
-                    ${button('确认计划并模拟运行', 'start', '', true)}
-                    ${button('导出本次计划', 'export-plan')}
-                  </div>`,
-                )
-              : ''}
-          </div>
-          <aside class="right-stack">
-            ${panel(
-              '本次实验参数',
-              /* HTML */ `<div class="config-body">
-                ${parameterPanel(d)}${button(
-                  checked ? '重新检查候选' : '检查输入与共享候选',
-                  'check',
-                  '',
-                  true,
-                )}
-              </div>`,
-            )}${panel(
-              '本次保存与模拟',
-              /* HTML */ `<div class="detail-body">
-                <div class="callout">
-                  实验草稿有浏览器备份，并保存到演示后端。团队共享、可读取状态与运行成本均为演示。
-                </div>
-                ${choiceField('模拟结果', 'simulation', d.simulation, [
-                  ['success', '正常完成'],
-                  ['fail', '在后续步骤模拟失败'],
-                ])}
-              </div>`,
+      /* HTML */ `<div class="create-layout">
+        ${panel(
+          '本次实验',
+          /* HTML */ `<div class="create-body">
+            <div class="registration-grid">
+              ${field('实验名称', 'name', d.name)}<label class="field"
+                ><span>所用流程</span
+                ><input readonly value="${esc(workflowInfo[activeWorkflow].name)}" /></label
+              >${inputPanel(d)}
+            </div>
+          </div>`,
+        )}
+        ${panel(
+          '流程与步骤参数',
+          flowGraph(steps, selectedStep) +
+            (selected
+              ? stepDetail(selected, d)
+              : /* HTML */ `<div class="step-detail empty-detail">
+                  点击流程图中的步骤，查看它的参数、输入与复用原因。
+                </div>`),
+          /* HTML */ `<span class="panel-note"
+            >${steps.length} 个步骤 · 连线表示数据流</span
+          >`,
+        )}
+        ${panel(
+          '本次设置',
+          /* HTML */ `<div class="config-body">
+            ${choiceField(
+              '本次实验意图',
+              'intent',
+              d.intent,
+              [
+                ['replay', '复现实验 · 查找等价历史结果'],
+                ['fresh', '生成新样本 · 不替代为旧样本'],
+              ],
+              '新样本会改变生成步骤及下游身份；上游预处理仍可复用。',
+            )}${choiceField('复用查找范围', 'reuseScope', d.reuseScope, [
+              ['team', '我的产物 + 团队共享'],
+              ['mine', '仅我的产物'],
+            ])}${choiceField('新生成产物的共享范围', 'shareOutput', d.shareOutput, [
+              ['team', '团队共享（模拟）'],
+              ['private', '仅自己（模拟）'],
+            ])}${choiceField(
+              '复用与保存策略',
+              'policy',
+              d.policy,
+              allPolicies().map((p) => [p.id, p.name]),
             )}
-          </aside>
-        </div>`
+            <details class="more-params">
+              <summary>更多参数 · 模型版本、随机种子与保存方式</summary>
+              <div class="registration-grid">${parameterPanel(d)}</div>
+              ${choiceField('模拟结果', 'simulation', d.simulation, [
+                ['success', '正常完成'],
+                ['fail', '在后续步骤模拟失败'],
+              ])}
+            </details>
+          </div>`,
+        )}
+        <div class="create-actions">
+          <span class="action-note"
+            >${checked
+              ? `已检查共享候选 · ${m.reuse} 步复用 · ${m.wait} 步等待 · 预计 ${fmt(m.total)}`
+              : `创建时会先检查共享候选 · 共 ${steps.length} 个步骤`}</span
+          >
+          ${button('检查共享候选', 'check')}${button(
+            '创建实验并开始模拟',
+            'start',
+            '',
+            true,
+          )}
+        </div>
+      </div>`
     );
   };
   const experimentTable = function experimentTable(list) {
@@ -2373,6 +2545,69 @@ ${esc(policyDraft.description)}</textarea
       experimentTable(list)
     );
   };
+  // Same graph grammar on the experiment page: one frame per step, the artifact
+  // it produced, and the state of that step in this run.
+  const runStepState = function (e, s, index) {
+    const out = e.outputs.find((o) => o.stepId === s.id),
+      a = out && artifactById(out.artifactId),
+      live = ['running', 'waiting'].includes(e.status) && !e.fixture;
+    if (e.status === 'failed' && s.id === e.failedStep) return { text: '模拟失败', cls: 'warn' };
+    if (a)
+      return {
+        text: out.mode === 'compute' ? '本次生成' : out.mode === 'wait' ? '等待后复用' : '复用已有结果',
+        cls: 'good',
+      };
+    if (live && e.currentStep === index)
+      return { text: e.status === 'waiting' ? '等待共享结果' : '模拟中', cls: 'blue' };
+    return { text: '尚未执行', cls: '' };
+  };
+  const runFlowGraph = function (e) {
+    const list = e.workflowSnapshot.steps;
+    const card = (s, i, a, state) => {
+      const role = stepRole(s);
+      const body = /* HTML */ `<span class="node-head"
+          ><span class="node-icon" aria-hidden="true"
+            ><svg viewBox="0 0 24 24">${ROLE_ICONS[role]}</svg></span
+          ><span class="node-titles"
+            ><span class="model-name">${esc(s.name)}</span
+            ><span class="node-label">${esc(s.kind)} · ${esc(s.file)}</span></span
+          ></span
+        >
+        <span class="node-summary">${a ? esc(a.name) : '尚未产生产物'}</span>
+        <span class="node-state ${state.cls}"
+          ><i class="state-dot" aria-hidden="true"></i>${esc(state.text)}</span
+        >`;
+      return a
+        ? /* HTML */ `<button
+            class="flow-node"
+            data-route="artifact"
+            data-id="${esc(a.id)}"
+            aria-label="查看${esc(s.name)}的产物详情"
+          >
+            ${body}
+          </button>`
+        : /* HTML */ `<div class="flow-node static">${body}</div>`;
+    };
+    return /* HTML */ `<div class="flow-graph" id="flow-graph">
+      <svg class="flow-wires" id="flow-wires" aria-hidden="true"></svg>
+      <div class="flow-pipeline">
+        ${list
+          .map((s, i) => {
+            const out = e.outputs.find((o) => o.stepId === s.id),
+              a = out && artifactById(out.artifactId),
+              state = runStepState(e, s, i);
+            return /* HTML */ `<div class="flow-stage role-${stepRole(s)}" data-stage="${esc(s.id)}">
+              <div class="stage-head">
+                <span class="stage-index">${String(i + 1).padStart(2, '0')}</span
+                ><span class="stage-title">${esc(s.name)}</span>
+              </div>
+              ${card(s, i, a, state)}
+            </div>`;
+          })
+          .join('')}
+      </div>
+    </div>`;
+  };
   const experimentPage = function experimentPage(e) {
     if (!e) return missingPage('找不到这次实验');
     const done = e.outputs.length,
@@ -2386,6 +2621,13 @@ ${esc(policyDraft.description)}</textarea
       flowRibbon(live ? 2 : 3) +
       banner(
         `${statusBadge(e.status)} <span style="margin-left:10px">${e.fixture ? '预置团队／个人示例，未执行真实计算。' : '所有步骤仅模拟执行，日志中的科学产物与用时为示例。'}</span>`,
+      ) +
+      panel(
+        '本次运行流程',
+        runFlowGraph(e),
+        /* HTML */ `<span class="panel-note"
+          >${done} / ${e.workflowSnapshot.steps.length} 步已产生产物 · 点击节点查看产物</span
+        >`,
       ) +
       /* HTML */ `<div class="workspace-grid">
         <div class="left-stack">
@@ -3355,7 +3597,11 @@ ${esc(policyDraft.description)}</textarea
     }
     if (action === 'check') return checkDraft();
     if (action === 'start') return startExperiment();
-    if (action === 'scenario') return scenarioProduct(value);
+    if (action === 'select-step') {
+      selectedStep = selectedStep === value ? null : value;
+      render();
+      return;
+    }
     if (action === 'new-draft') {
       if (product.drafts[value]) {
         openModal(
@@ -3767,25 +4013,6 @@ ${esc(policyDraft.description)}</textarea
           artifact: page.query.get('artifact') || '',
           from: page.query.get('from') || '',
         });
-    document.querySelectorAll('[data-plan-step]').forEach(
-      (el) =>
-        (el.onclick = () => {
-          const s = plan().find((s) => s.id === el.dataset.planStep);
-          if (!s) return;
-          openModal(
-            s.name,
-            /* HTML */ `<p>${esc(s.description)}</p>
-              <div class="callout">${esc(s.reason)}</div>
-              <h3>依赖步骤</h3>
-              <p>
-                ${s.deps.map((id) => esc(steps.find((x) => x.id === id).name)).join('、') ||
-                '本次输入数据'}
-              </p>
-              <h3>本次演示身份</h3>
-              <p class="mono">${esc(s.key)}</p>`,
-          );
-        }),
-    );
     if ($('#tool-source'))
       $('#tool-source').onchange = (e) =>
         nav('tools', activeTool, {
@@ -3865,6 +4092,16 @@ ${esc(policyDraft.description)}</textarea
     if ($('#about-inline')) $('#about-inline').onclick = showAbout;
     bindProductActions();
   };
+  // Wires are drawn from measured boxes, so redraw after every render and on resize.
+  const drawWiresForRoute = function () {
+    requestAnimationFrame(() => {
+      if (route === 'workflow') drawFlowWires(steps);
+      else if (route === 'experiment') {
+        const e = experimentById(page.id);
+        if (e) drawFlowWires(e.workflowSnapshot.steps);
+      }
+    });
+  };
   const render = function () {
     let html;
     try {
@@ -3936,6 +4173,7 @@ ${esc(policyDraft.description)}</textarea
     bindPymolControls();
     bindCreation();
     bindRegistration();
+    drawWiresForRoute();
   };
   const bootProduct = function bootProduct() {
     let restored = false;
@@ -3957,6 +4195,8 @@ ${esc(policyDraft.description)}</textarea
     readRoute();
     saveProduct();
     render();
+    // Registered once the workbench is live; the wire geometry depends on layout.
+    window.addEventListener('resize', () => drawWiresForRoute());
     $('#help-btn').onclick = showAbout;
     const global = $('#global-search');
     global.placeholder = '搜索个人与团队产物…';
