@@ -1,0 +1,9 @@
+[
+  {"type":"add_node","node_id":"mpnn-branch","model_id":"proteinmpnn","label":"另一组序列设计"},
+  {"type":"add_node","node_id":"boltz-branch","model_id":"boltz","label":"分支结构预测"},
+  {"type":"connect","source":"rfd-1","source_port":"backbone","target":"mpnn-branch","target_port":"backbone","record_id":"0"},
+  {"type":"connect","source":"mpnn-branch","source_port":"sequences","target":"boltz-branch","target_port":"sequence","record_id":"sample=1"},
+  {"type":"add_relation","relation_id":"confidence-feedback","source":"boltz-1","source_port":"confidence","target":"rfd-1","kind":"feedback","label":"评估后重新设计"},
+  {"type":"add_relation","relation_id":"score-reference","source":"mpnn-branch","source_port":"scores","target":"boltz-branch","kind":"reference","label":"查看序列设计评分"},
+  {"type":"set_layout","layout":"layered"}
+]

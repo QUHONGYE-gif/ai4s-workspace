@@ -255,3 +255,44 @@ def test_multiple_model_instances_cannot_be_silently_chosen(client):
     assert result.status_code == 200
     assert result.json()["message"]["intent"] == "clarify"
     assert result.json()["state"]["draft"] == draft
+
+
+def test_visual_operations_preserve_science_and_registration(client):
+    draft = workflow(client)
+    base = f"/api/workflows/{draft['id']}"
+    reg = client.post(base + '/registrations', json={"expected_revision":0,"operation_id":"visual-reg","node_ids":["rfd-1"]}).json()['registration']
+    operations = [{"type":"move_node","node_id":"rfd-1","x":-100,"y":300},
+                  {"type":"set_layout","layout":"circle"}]
+    preview = client.post(base + '/changes/preview', json={"expected_revision":0,"operation_id":"preview","operations":operations})
+    assert preview.status_code == 200
+    assert read(client,draft)['draft'] == draft
+    result = change(client,draft,operations).json()['state']
+    assert result['draft']['nodes'] == draft['nodes']
+    assert result['draft']['edges'] == draft['edges']
+    assert result['draft']['visual'] == {"layout":"circle","positions":{}}
+    assert next(r for r in result['registrations'] if r['id'] == reg['id'])['current']
+    assert client.get('/api/graph-contract').json()['changes']['$defs']['AddRelation']
+
+
+def test_branch_and_feedback_are_distinct_and_atomic(client):
+    draft = workflow(client)
+    ops = [{"type":"add_node","node_id":"mpnn-branch","model_id":"proteinmpnn","label":"分支设计"},
+           {"type":"connect","source":"rfd-1","source_port":"backbone","target":"mpnn-branch","target_port":"backbone"},
+           {"type":"add_relation","relation_id":"review","source":"boltz-1","source_port":"confidence","target":"rfd-1","kind":"feedback","label":"评估后重新设计"}]
+    response = change(client,draft,ops)
+    assert response.status_code == 200
+    current = response.json()['state']['draft']
+    assert len([e for e in current['edges'] if e['source']=='rfd-1']) == 2
+    assert current['nodes'][0]['inputs'] == {}
+    base = f"/api/workflows/{draft['id']}"
+    registration = client.post(base + '/registrations',json={"expected_revision":1,"operation_id":"feedback-reg","node_ids":["rfd-1"]}).json()['registration']
+    request = client.post(base + '/requests',json={"registration_id":registration['id']}).json()['request']
+    assert request['design_relations'][0]['id'] == 'review'
+    assert 'design_relations_not_executable' in request['blocking_issues']
+    invalid = change(client,current,[{"type":"move_node","node_id":"rfd-1","x":20,"y":20},
+                                    {**ops[-1],"relation_id":"bad","source_port":"nonexistent"}],operation_id='invalid-visual')
+    assert invalid.status_code == 422
+    assert read(client,draft)['draft'] == current
+    removed = change(client,current,[{"type":"remove_node","node_id":"boltz-1"}],operation_id='remove-visual',confirmed=True)
+    assert removed.status_code == 200
+    assert removed.json()['state']['draft']['visual']['relations'] == []

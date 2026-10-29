@@ -26,6 +26,7 @@ const assert = require('node:assert/strict');
   branch.nodes.push({...structuredClone(draft.nodes[0]), id:'mpnn-2'});
   branch.edges.push({source:'rfd',target:'mpnn-2'});
   assert.throws(()=>registrationFromAgent(branch,models,current),/分支/);
+  assert.throws(()=>registrationFromAgent({...draft,visual:{relations:[{id:'feedback'}]}},models,current),/设计关系/);
   result.registrations[1].command='reviewed command';
   assert.equal(registrationFromAgent(draft,models,result).registrations[1].command,'reviewed command');
   const changed = structuredClone(draft); changed.nodes[0].params.sampling_temp=0.3;

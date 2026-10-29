@@ -1,6 +1,7 @@
 // Convert configuration into a handoff draft, never into executable commands.
 export function registrationFromAgent(draft, models, current) {
   const nodes = draft.nodes;
+  if (draft.visual?.relations?.length) throw new Error('草稿含反馈或参考设计关系；当前接入表单不能保留这些关系，请保留 AI 草稿，不能直接展平。');
   if (!nodes.length || nodes.length > 12) throw new Error('接入草稿需要 1–12 个步骤。');
   const byId = new Map(nodes.map(node => [node.id, node]));
   const next = new Map(), incoming = new Set();

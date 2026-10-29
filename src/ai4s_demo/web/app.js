@@ -19,7 +19,8 @@ export async function mountAssistant(host, {onApply}) {
   root.prepend(links);
   await Promise.all(loaded);
   const $ = id => root.getElementById(id);
-  const {drawNodes, drawWires, destroy} = createGraph(root);
+  const graph = createGraph(root, {onMove: (node_id, position) => saveGraphOperations([{type:'move_node',node_id,...position}]), onError: showError});
+  const {drawNodes, drawWires, destroy} = graph;
   const lifecycle = new AbortController();
   let state, models = {}, files = [], selected = null, tab = 'params', busy = false, dirty = false;
   let preview = null, currentRequest = null, toastTimer, settings;
@@ -42,7 +43,7 @@ export async function mountAssistant(host, {onApply}) {
   }
 
   function refreshDisabled() {
-    root.querySelectorAll('button:not([data-confirm-control])').forEach(b => b.disabled = busy);
+    root.querySelectorAll('button:not([data-confirm-control]):not([data-view-control])').forEach(b => b.disabled = busy);
     $('undo-button').disabled = busy || !state?.can_undo;
     for (const id of ['register-button', 'delete-button', 'import-button']) $(id).disabled = busy || !current();
     $('apply-preview').disabled = busy || !preview || !!preview.errors.length || !preview.accepted.length;
@@ -60,6 +61,16 @@ export async function mountAssistant(host, {onApply}) {
     try { await action(); }
     catch (error) { showError(error, errorTarget); }
     finally { busy = false; refreshDisabled(); }
+  }
+
+  async function saveGraphOperations(operations, confirmed = false) {
+    if (busy) throw new Error('请等待当前操作完成。');
+    if (dirty) throw new Error('请先保存参数表单，再修改画布结构或位置。');
+    busy = true; refreshDisabled();
+    try {
+      const result = await post(endpoint('changes'), {expected_revision:state.draft.revision,operation_id:operationId(),operations,confirmed});
+      acceptState(result.state);
+    } finally { busy = false; refreshDisabled(); }
   }
 
   function acceptState(value, focus = null) {
@@ -102,7 +113,7 @@ export async function mountAssistant(host, {onApply}) {
     $('workflow-heading').textContent = state.draft.name;
     $('revision').textContent = `r${state.draft.revision}`;
     const registered = state.draft.nodes.filter(n => state.checks[n.id].status === '已登记').length;
-    $('flow-caption').textContent = `${state.draft.nodes.length} 个步骤 · ${state.draft.edges.length} 条连接 · 已登记 ${registered} · 虚线需转换`;
+    $('flow-caption').textContent = `${state.draft.nodes.length} 个步骤 · ${state.draft.edges.length} 条输入绑定 · ${state.draft.visual?.relations?.length || 0} 条设计关系 · 已登记 ${registered}`;
     drawNodes(state, models, selected, selectNode);
     const n = current();
     $('detail-title').textContent = n ? `${models[n.model_id].name} · ${n.label}` : '选择一个步骤';
@@ -404,20 +415,60 @@ export async function mountAssistant(host, {onApply}) {
       const result = await post(endpoint('changes'),{expected_revision:state.draft.revision,operation_id:operationId(),operations:[{type:'add_node',node_id:id,model_id:$('add-model').value,label:$('add-label').value}]});
       acceptState(result.state,id); $('add-dialog').close();
     }); });
+    function connectionPorts() {
+      const source = state.draft.nodes.find(n => n.id === $('connect-source').value);
+      const target = state.draft.nodes.find(n => n.id === $('connect-target').value);
+      const kind = $('connect-kind').value;
+      $('connect-source-port').innerHTML = choices(Object.entries(models[source?.model_id]?.outputs || {}).map(([port,format]) => [port,`${port} · ${format}`]));
+      $('connect-target-port').innerHTML = choices(Object.entries(models[target?.model_id]?.inputs || {}).map(([port,format]) => [port,`${port} · ${format}`]));
+      $('target-port-field').hidden = kind !== 'data'; $('record-field').hidden = kind !== 'data';
+      $('relation-label-field').hidden = kind === 'data';
+    }
+    for (const id of ['connect-kind','connect-source','connect-target']) $(id).addEventListener('change',connectionPorts);
     $('connect-button').addEventListener('click', () => {
       const options = state.draft.nodes.map(n => [n.id, `${models[n.model_id].name} · ${n.label}`]);
       $('connect-source').innerHTML = choices(options, selected);
       $('connect-target').innerHTML = choices(options, state.draft.nodes.find(n => n.id !== selected)?.id);
+      $('connect-kind').value = 'data'; connectionPorts();
       $('connect-record').value = ''; $('connect-error').hidden = true; $('connect-dialog').showModal();
     });
     $('connect-form').addEventListener('submit', e => { e.preventDefault(); run(async () => {
       if (!await discardOK()) return;
-      const source = state.draft.nodes.find(n => n.id === $('connect-source').value), target = state.draft.nodes.find(n => n.id === $('connect-target').value);
-      if (!source || !target) throw new Error('需要至少两个可连接的节点');
-      const op = {type:'connect',source:source.id,source_port:source.model_id === 'rfdiffusion' ? 'backbone' : 'sequences',target:target.id,target_port:target.model_id === 'proteinmpnn' ? 'backbone' : 'sequence',record_id:$('connect-record').value || null};
+      const source = $('connect-source').value, target = $('connect-target').value;
+      if (!source || !target) throw new Error('请先添加节点');
+      const kind = $('connect-kind').value;
+      const op = kind === 'data' ? {type:'connect',source,source_port:$('connect-source-port').value,target,target_port:$('connect-target-port').value,record_id:$('connect-record').value || null}
+        : {type:'add_relation',relation_id:'rel-'+crypto.randomUUID(),source,source_port:$('connect-source-port').value,target,kind,label:$('relation-label').value};
       const result = await post(endpoint('changes'),{expected_revision:state.draft.revision,operation_id:operationId(),operations:[op]});
-      acceptState(result.state,target.id); $('connect-dialog').close();
+      acceptState(result.state,target); $('connect-dialog').close();
     },'connect-error'); });
+    for (const [id,layout] of [['layout-tree','layered'],['layout-circle','circle']]) $(id).addEventListener('click',async () => {
+      try { await saveGraphOperations([{type:'set_layout',layout}]); graph.fit(); } catch(error) { showError(error); }
+    });
+    function showGraphDocument() {
+      $('graph-json').textContent = JSON.stringify(graph.document(),null,2);
+      $('graph-relations').innerHTML = (state.draft.visual?.relations || []).map(r=>`<div class="graph-relation-row"><span>${esc(r.source)}.${esc(r.source_port)} → ${esc(r.target)} · ${esc(r.label)}</span><button class="button compact" data-remove-relation="${esc(r.id)}">删除关系</button></div>`).join('');
+    }
+    $('graph-json-button').addEventListener('click', () => {
+      showGraphDocument(); $('graph-operations-error').hidden = true;
+      $('graph-operations').value = JSON.stringify([{type:'set_layout',layout:'layered'}],null,2);
+      $('graph-json-dialog').showModal();
+    });
+    $('download-graph').addEventListener('click',()=>download(state.draft.id+'-graph.json',graph.document()));
+    $('graph-relations').addEventListener('click',async e=> {
+      const id = e.target.closest('[data-remove-relation]')?.dataset.removeRelation;
+      if (!id || !await confirmAction('删除这条设计关系？不影响已有科学输入绑定。')) return;
+      try { await saveGraphOperations([{type:'remove_relation',relation_id:id}]); showGraphDocument(); } catch(error) { showError(error,'graph-operations-error'); }
+    });
+    $('apply-graph-operations').addEventListener('click',()=>run(async()=> {
+      if (dirty) throw new Error('请先保存参数表单');
+      let operations;
+      try { operations = JSON.parse($('graph-operations').value); } catch { throw new Error('操作 JSON 格式不正确'); }
+      const summary = await post(endpoint('changes/preview'), {expected_revision:state.draft.revision,operation_id:operationId(),operations});
+      if (!await confirmAction('以下操作将按当前版本一次性保存：\n'+summary.summary.join('\n'))) return;
+      const result = await post(endpoint('changes'),{expected_revision:state.draft.revision,operation_id:operationId(),operations,confirmed:true});
+      acceptState(result.state); showGraphDocument(); graph.fit();
+    },'graph-operations-error'));
     $('apply-workflow').addEventListener('click', () => run(async () => {
       if (dirty) throw new Error('请先保存当前参数表单，再应用到接入草稿。');
       if (!await confirmAction('将当前 AI 草稿的步骤、参数和连接应用到接入表单？已有步骤会替换，已填项目信息保留。服务器路径、运行环境和调用指令仍需人工核对。')) return;
@@ -485,7 +536,7 @@ export async function mountAssistant(host, {onApply}) {
         dialog.dispatchEvent(new Event('cancel', {cancelable: true}));
         if (dialog.open) dialog.close();
       });
-      destroy();
+      graph.pause();
     },
     destroy() { lifecycle.abort(); destroy(); clearTimeout(toastTimer); },
   };

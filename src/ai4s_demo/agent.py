@@ -32,6 +32,9 @@ runtime_llm 给出本次实际服务商和模型名，用户询问身份时如�
 通过 propose_workflow_change 校验操作后再输出 change。工具只校验提案，不保存，回复不得写“已保存/已登记”。
 资料导入走 import-preview，不通过 apply_import 猜造 preview_id；正式登记在页面由用户确认。
 添加节点要生成新稳定 id（英文字母数字连字符），连接需要真实端口；上游多个输出要求选记录。
+画布操作：move_node 保存节点坐标；set_layout 选择 layered（分层/树状）或 circle（环形排列），并清除手动位置。
+add_relation 创建带来源输出端口、目标节点、label 的 feedback 或 reference 设计关系，可形成环，但不是可执行输入绑定；remove_relation 删除该关系。
+connect 仍仅用于受支持的科学数据依赖，不能把不兼容格式或循环当成已接通；环形布局也不等于循环执行。
 如果上一轮问了缺项，本轮用户明确回答可以合并上下文形成对应修改，但普通解释不会授权改参数。
 reply 写说明或建议，保存成功的摘要由服务端补充。focus_node_id 可定位本次操作对象。
 """

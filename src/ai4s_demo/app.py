@@ -74,6 +74,13 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
     def models():
         return {"models": [{"id": key, **value, "documentation": knowledge(key)} for key, value in CATALOG.items()]}
 
+    @app.get("/api/graph-contract")
+    def graph_contract():
+        return {"schema_version": "ai4s-graph-1", "changes": ChangeRequest.model_json_schema(),
+                "execution_connected": False,
+                "relation_kinds": {"feedback": "设计反馈，不绑定输入", "reference": "产物参考，不绑定输入"},
+                "layouts": ["layered", "circle"], "models": CATALOG}
+
     @app.get("/api/settings/model")
     def get_settings():
         return settings.public()
@@ -111,6 +118,12 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
     @app.post("/api/workflows/{workflow_id}/changes")
     def changes(workflow_id: str, request: ChangeRequest):
         return service.change(workflow_id, request)
+
+    @app.post("/api/workflows/{workflow_id}/changes/preview")
+    def preview_changes(workflow_id: str, request: ChangeRequest):
+        with store.lock:
+            service._revision(service._read(workflow_id), request.expected_revision)
+            return {"summary": service.preview_changes(workflow_id, request.operations)}
 
     @app.post("/api/workflows/{workflow_id}/undo")
     def undo(workflow_id: str, request: RevisionRequest):

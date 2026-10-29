@@ -46,3 +46,51 @@
   .agent-panel { grid-column: 1; grid-row: 3; }
   .ai-toolbar-actions { width: 100%; }
 }
+/* Port-aware canvas; geometry is independent of scientific inputs and parameters. */
+.workbench { grid-template-rows: 590px 600px; grid-template-columns:minmax(0, 1fr) 360px; }
+.flow-panel { grid-column:1 / -1; display:flex; flex-direction:column; }
+.agent-panel { grid-column:2; grid-row:2; }
+.canvas-toolbar { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:10px 16px; border-bottom:1px solid var(--line); background:#fff; }
+.canvas-toolbar>div { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.canvas-toolbar button { min-height:34px; }
+.canvas-toolbar output { width:42px; text-align:center; font:11px var(--mono); }
+.flow-panel .demo-graph { position:relative; flex:1; min-height:220px; padding:0; overflow:hidden; background-color:#f9fafd; background-image:radial-gradient(#d6daea 1px,transparent 1px); cursor:grab; touch-action:none; isolation:isolate; }
+.demo-graph.dragging,.demo-graph.dragging * { cursor:grabbing; user-select:none; }
+#graph-world { position:absolute; left:0; top:0; width:0; height:0; transform-origin:0 0; }
+#pipeline { position:absolute; left:0; top:0; z-index:2; }
+#graph-world .wires { position:absolute; inset:0; width:1px; height:1px; overflow:visible; pointer-events:none; z-index:1; }
+.graph-card { position:absolute; width:292px; border:1.5px solid var(--role-line); border-radius:12px; background:#fff; box-shadow:0 3px 12px #3039570a; color:#293047; }
+.graph-card.selected { box-shadow:0 0 0 4px var(--role-ring); border-color:var(--role-strong); }
+.graph-drag-handle { height:28px; padding:5px 12px; border-radius:10px 10px 0 0; background:var(--role-fill); color:var(--role-strong); font:10px/18px var(--mono); cursor:grab; }
+.graph-drag-handle span { float:right; font-size:17px; }
+.graph-select { display:flex; flex-direction:column; padding:9px 14px 5px; width:100%; text-align:left; border:0; background:transparent; }
+.graph-select strong { font-size:15px; }
+.graph-select>span { font-size:11px; color:#626a80; max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.graph-summary { display:flex; justify-content:space-between; gap:8px; padding:0 14px 8px; font:10px/1.5 var(--mono); }
+.graph-summary>span { color:var(--role-strong); }
+.graph-port-head { display:flex; justify-content:space-between; font-size:9px; color:#626a80; padding:3px 12px; border-top:1px solid #eef0f6; }
+.graph-port { position:absolute; width:47%; font-size:10px; line-height:17px; padding:0 11px; }
+.graph-port.input { left:0; text-align:left; }
+.graph-port.output { right:0; text-align:right; }
+.graph-port strong,.graph-port span { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.graph-port strong { font-size:11px; color:#333c55; }
+.graph-port small { font-size:9px; font-weight:400; color:#626a80; }
+.graph-port span { color:#626a80; font-size:9px; }
+.graph-port i { position:absolute; top:15px; width:8px; height:8px; background:var(--role-strong); border:2px solid white; border-radius:50%; box-shadow:0 0 0 1px var(--role-line); }
+.graph-port.input i { left:-5px; }.graph-port.output i { right:-5px; }
+.graph-port.auxiliary i { border-radius:2px; background:#b77925; }
+.graph-unconditional { position:absolute; left:12px; top:128px; color:#626a80; font-size:11px; }
+.wire-label { font:10px var(--mono); fill:#535e78; stroke:#f9fafd; stroke-width:5px; }
+.canvas-help { padding:7px 16px; margin:0; color:#626a80; font-size:10px; background:#fff; }
+.canvas-expanded { position:fixed; inset:16px; z-index:100; background:white; box-shadow:0 0 0 30px #232b4366; }
+.canvas-expanded .demo-graph { min-height:0; }
+#graph-relations { display:flex; flex-direction:column; gap:8px; }
+.graph-relation-row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px; border:1px solid var(--line); border-radius:6px; font-size:11px; overflow-wrap:anywhere; }
+#graph-operations { min-height:160px; }
+@container (max-width:850px) {
+  .workbench { grid-template-columns:minmax(0,1fr); grid-template-rows:650px 480px 620px; }
+  .flow-panel { grid-column:1; }.agent-panel { grid-column:1; grid-row:3; }
+  .canvas-toolbar button { min-height:40px; }
+  .flow-panel .graph-caption { font-size:10px; }.flow-panel .panel-legend { gap:8px; font-size:9px; }
+  .canvas-expanded { inset:6px; }
+}

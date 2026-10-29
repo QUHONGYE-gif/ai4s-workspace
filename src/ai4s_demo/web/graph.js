@@ -1,224 +1,204 @@
 import {escapeHTML as esc} from './api.js';
+import {CARD_WIDTH, PORT_TOP, PORT_GAP, cardHeight, layoutNodes, graphDocument, graphBounds} from './graph-model.js';
 
-export function createGraph(root) {
-  // Visual grammar of live-panel's light-pastel presets: one titled stage frame
-  // per step, a white card with an icon tile inside it, orthogonal wires that
-  // end in an arrowhead at the next frame, dashed wires for a pending
-  // conversion, and one resident data dot per wire.
-  // This editor renders server state and real save events, so the skill's
-  // looping template, simulated machines and log are deliberately not used.
-  // https://github.com/ythx-101/live-panel-skill
-  const ROLES = {rfdiffusion: 'backbone', proteinmpnn: 'sequence', boltz: 'prediction'};
-  const ICONS = {
-    backbone: '<path d="M12 2.9 3.8 7v10l8.2 4.1 8.2-4.1V7Z"/><path d="m3.8 7 8.2 4.1L20.2 7"/><path d="M12 11.1v10"/>',
-    sequence: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>',
-    prediction: '<circle cx="12" cy="12" r="3.4"/><path d="M12 2.4v3.2M12 18.4v3.2M2.4 12h3.2M18.4 12h3.2"/>',
-  };
+// DOM/SVG canvas; all semantic writes go through the existing versioned changes API.
+export function createGraph(root, {onMove, onError}) {
+  const $ = id => root.getElementById(id);
+  const viewport = $('graph'), world = $('graph-world'), pipeline = $('pipeline'), wires = $('wires');
+  const lifecycle = new AbortController();
+  const listen = (element, type, action, options = {}) => element.addEventListener(type, action, {...options, signal:lifecycle.signal});
+  let state, models, selected, selectNode, positions = {}, camera = {x:35,y:50,zoom:1}, workflowId, drag = null, suppressClick = false;
   const NS = 'http://www.w3.org/2000/svg';
-  const FLOW_MS = 1300;   // one traversal of a wire, in ms (faster = livelier)
-  let previousWorkflow = null, previousRevision = null, previousNodes = new Map();
-  let flowFrame = null;
+  const svg = (tag, attrs, text) => {
+    const el = document.createElementNS(NS, tag);
+    Object.entries(attrs).forEach(([key,value]) => el.setAttribute(key, value));
+    if (text) el.textContent = text;
+    return el;
+  };
+  const summary = n => n.model_id === 'rfdiffusion' ? `${n.params.length} aa · ${n.params.num_designs} 个骨架`
+    : n.model_id === 'proteinmpnn' ? `${n.params.num_seq_per_target} 条序列 · T ${n.params.sampling_temp}`
+      : `${n.params.diffusion_samples} 个样本 · ${n.params.msa_mode === 'empty' ? '空 MSA' : '已有 A3M'}`;
+  const bound = value => Math.max(.08, Math.min(1.8, value));
 
-  function summary(n) {
-    const p = n.params;
-    if (n.model_id === 'rfdiffusion') return `${p.length} aa · ${p.num_designs} 个骨架`;
-    if (n.model_id === 'proteinmpnn') return `${p.num_seq_per_target} 条序列 · T ${p.sampling_temp}`;
-    return `${p.diffusion_samples} 个样本 · ${p.msa_mode === 'empty' ? '空 MSA' : '已有 A3M'}`;
-  }
-
-  function formats(model) {
-    const unique = dict => Object.values(dict).filter((v, i, all) => all.indexOf(v) === i).join(' / ');
-    return {inputs: unique(model.inputs) || '无条件', outputs: unique(model.outputs)};
-  }
-
-  function drawNodes(state, models, selected, select) {
-    const pipeline = root.getElementById('pipeline');
-    if (!pipeline) return;
-    const hasSaved = previousWorkflow === state.draft.id && previousRevision !== null && state.draft.revision > previousRevision;
-    const changed = new Set(state.draft.nodes.filter(n => hasSaved && previousNodes.get(n.id) !== JSON.stringify(n)).map(n => n.id));
-    pipeline.innerHTML = state.draft.nodes.length ? state.draft.nodes.map((n, index) => {
-      const model = models[n.model_id], role = ROLES[n.model_id] || 'backbone';
-      const status = state.checks[n.id].status;
-      const statusClass = status === '已登记' ? 'good' : status === '待补充' ? 'warn' : '';
-      const {inputs, outputs} = formats(model);
-      const active = selected === n.id;
-      return `<div class="demo-stage role-${role}${active ? ' selected' : ''}">
-        <div class="stage-head"><span class="stage-index">${String(index + 1).padStart(2, '0')}</span><span class="stage-title">${esc(model.role)}</span></div>
-        <button class="demo-node${active ? ' selected' : ''}" data-node-id="${esc(n.id)}" aria-pressed="${active}">
-          <span class="node-head"><span class="node-icon" aria-hidden="true"><svg viewBox="0 0 24 24">${ICONS[role]}</svg></span><span class="node-titles"><span class="model-name">${esc(model.name)}</span><span class="node-label">${esc(n.label)}</span></span></span>
-          <span class="node-summary">${esc(summary(n))}</span>
-          <span class="node-state ${statusClass}"><i class="state-dot" aria-hidden="true"></i>${esc(status)} · 未提交</span>
-          <span class="node-formats"><span>${esc(inputs)}</span><span aria-hidden="true">→</span><span>${esc(outputs)}</span></span>
-        </button>
-      </div>`;
-    }).join('') : '<div class="empty-graph">还没有科学步骤。点击「＋ 步骤」添加第一个模型。</div>';
-    pipeline.querySelectorAll('[data-node-id]').forEach(button => button.addEventListener('click', () => select(button.dataset.nodeId)));
-    // every icon breathes slowly (staggered) so the row is never completely still;
-    // reduced-motion users get the static icon from the global CSS override
-    pipeline.querySelectorAll('.demo-stage .node-icon').forEach((icon, index) => {
-      icon.style.animationDelay = `${(-index * 1.1).toFixed(1)}s`;
-    });
-    previousWorkflow = state.draft.id; previousRevision = state.draft.revision;
-    previousNodes = new Map(state.draft.nodes.map(n => [n.id, JSON.stringify(n)]));
-    // One brief outline response to an actual saved revision; no fake worker
-    // states, timers, calls, packet counts or scientific execution animation.
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      pipeline.querySelectorAll('.demo-stage').forEach(stage => {
-        const id = stage.querySelector('[data-node-id]')?.dataset.nodeId;
-        if (!changed.has(id)) return;
-        stage.animate([
-          {boxShadow: '0 0 0 0px #7d4fb04d'}, {boxShadow: '0 0 0 7px #7d4fb01a'}, {boxShadow: '0 0 0 0px #7d4fb000'},
-        ], {duration: 650, iterations: 1});
-      });
+  function applyCamera() {
+    world.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`;
+    $('zoom-value').textContent = `${Math.round(camera.zoom * 100)}%`;
+    viewport.style.backgroundPosition = `${camera.x}px ${camera.y}px`;
+    viewport.style.backgroundSize = `${24 * camera.zoom}px ${24 * camera.zoom}px`;
+    if (workflowId) {
+      try { localStorage.setItem('ai4s-camera-' + workflowId, JSON.stringify(camera)); } catch { /* Camera is optional personal preference. */ }
     }
-    requestAnimationFrame(() => drawWires(state, selected));
   }
-
-  function svgEl(tag, attrs) {
-    const node = document.createElementNS(NS, tag);
-    Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
-    return node;
+  function fit() {
+    if (!state || !viewport.clientWidth) return;
+    const edges = [...state.draft.edges, ...(state.draft.visual?.relations || [])];
+    const hasReturn = edges.some(e => positions[e.target]?.x <= positions[e.source]?.x + CARD_WIDTH + 30);
+    const b = graphBounds(state.draft.nodes, positions, models, hasReturn ? 60+edges.length*18 : 0);
+    camera.zoom = bound(Math.min((viewport.clientWidth - 24) / b.width, (viewport.clientHeight - 24) / b.height, 1));
+    camera.x = (viewport.clientWidth - b.width * camera.zoom) / 2 - b.x * camera.zoom;
+    camera.y = (viewport.clientHeight - b.height * camera.zoom) / 2 - b.y * camera.zoom;
+    applyCamera();
   }
-
-  function stopFlow() {
-    if (flowFrame !== null) cancelAnimationFrame(flowFrame);
-    flowFrame = null;
+  function zoom(factor, x = viewport.clientWidth / 2, y = viewport.clientHeight / 2) {
+    const next = bound(camera.zoom * factor), ratio = next / camera.zoom;
+    camera.x = x - (x-camera.x)*ratio; camera.y = y - (y-camera.y)*ratio; camera.zoom = next;
+    applyCamera();
   }
-
-  // The icon in front of a card title bounces once when a wire lands on that
-  // stage, so a packet visibly travels from one box to the next. The lasting
-  // breathing is a CSS animation; this one-shot is cancelled and replaced so
-  // repeated arrivals never stack up.
-  const knocks = new WeakMap();
-  function knock(stage) {
-    const icon = stage && stage.querySelector('.node-icon');
-    if (!icon) return;
-    knocks.get(icon)?.cancel();
-    knocks.set(icon, icon.animate([
-      {transform: 'translateY(0) scale(1)'},
-      {transform: 'translateY(-3px) scale(1.26)'},
-      {transform: 'translateY(0) scale(0.95)'},
-      {transform: 'translateY(0) scale(1)'},
-    ], {duration: 470, easing: 'cubic-bezier(.34,1.56,.64,1)'}));
+  function focus() {
+    const n = state?.draft.nodes.find(n => n.id === selected);
+    if (!n) return;
+    camera.zoom = 1;
+    camera.x = viewport.clientWidth / 2 - positions[n.id].x - CARD_WIDTH / 2;
+    camera.y = viewport.clientHeight / 2 - positions[n.id].y - cardHeight(models[n.model_id]) / 2;
+    applyCamera();
   }
-
-  // polyline -> path with rounded corners, the same shape the skill's loop view draws
-  function roundedPath(points, radius) {
-    let d = `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
-    for (let i = 1; i < points.length - 1; i++) {
-      const a = points[i - 1], b = points[i], c = points[i + 1];
-      const l1 = Math.hypot(b.x - a.x, b.y - a.y), l2 = Math.hypot(c.x - b.x, c.y - b.y);
-      if (!l1 || !l2) continue;
-      const r = Math.min(radius, l1 / 2, l2 / 2);
-      const p1 = {x: b.x + (a.x - b.x) / l1 * r, y: b.y + (a.y - b.y) / l1 * r};
-      const p2 = {x: b.x + (c.x - b.x) / l2 * r, y: b.y + (c.y - b.y) / l2 * r};
-      d += `L${p1.x.toFixed(1)},${p1.y.toFixed(1)}Q${b.x.toFixed(1)},${b.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  function inputDescription(input) {
+    if (!input.reference) return input.required ? '待提供' : '可选 · 当前不用';
+    const ref = input.reference;
+    if (ref.kind === 'node_output') return `${ref.node_id}.${ref.port}`;
+    if (ref.kind === 'sequence') return '直接序列';
+    return `文件 ${ref.file_id}`;
+  }
+  function drawNodes(value, definitions, active, select) {
+    state = value; models = definitions; selected = active; selectNode = select;
+    const switched = workflowId !== state.draft.id;
+    workflowId = state.draft.id;
+    positions = layoutNodes(state.draft, models);
+    const doc = graphDocument(state.draft, models);
+    pipeline.innerHTML = state.draft.nodes.map((n,index) => {
+      const model = models[n.model_id], info = doc.nodes[index], status = state.checks[n.id].status;
+      const role = {rfdiffusion:'backbone',proteinmpnn:'sequence',boltz:'prediction'}[n.model_id];
+      const ports = (list, direction) => list.map((p,i) => {
+        const output = direction === 'output';
+        const usage = output ? p.consumers.length ? `→ ${p.consumers.length} 处输入` : p.relations.length ? '→ 设计关系' : '未连接 · 待生成' : inputDescription(p);
+        return `<div class="graph-port ${direction}${p.role === 'auxiliary' ? ' auxiliary' : ''}" style="top:${PORT_TOP + i*PORT_GAP-18}px" title="${esc(p.port + ' · ' + usage)}"><i></i><strong>${esc(p.format)} <small>${esc(p.port)}</small></strong><span>${output && p.role === 'auxiliary' ? '辅助产物 · ' : ''}${esc(usage)}</span></div>`;
+      }).join('');
+      return `<article class="graph-card role-${role}${n.id === selected ? ' selected' : ''}" data-card-id="${esc(n.id)}" style="left:${positions[n.id].x}px;top:${positions[n.id].y}px;height:${cardHeight(model)}px">
+        <div class="graph-drag-handle" data-drag-id="${esc(n.id)}" title="拖动节点；选中后用方向键移动" aria-hidden="true">${String(index+1).padStart(2,'0')} · ${esc(model.role)} <span>⠿</span></div>
+        <button class="graph-select" data-node-id="${esc(n.id)}" aria-pressed="${n.id === selected}"><strong>${esc(model.name)}</strong><span>${esc(n.label)}</span></button>
+        <div class="graph-summary">${esc(summary(n))}<span>${esc(status)}</span></div>
+        <div class="graph-port-head"><span>所需输入</span><span>输出／辅助产物</span></div>
+        ${info.inputs.length ? ports(info.inputs,'input') : '<span class="graph-unconditional">无条件生成</span>'}${ports(info.outputs,'output')}
+      </article>`;
+    }).join('') || '<p class="empty-graph">添加科学步骤，开始构建工作流。</p>';
+    drawWires();
+    if (switched) {
+      let stored;
+      try { stored = JSON.parse(localStorage.getItem('ai4s-camera-' + workflowId)); } catch { /* Ignore invalid personal camera state. */ }
+      if (stored && ['x','y','zoom'].every(key => Number.isFinite(stored[key]))) { camera = {...stored,zoom:bound(stored.zoom)}; applyCamera(); }
+      else requestAnimationFrame(fit);
+    } else applyCamera();
+  }
+  function drawWires() {
+    if (!state) return;
+    wires.replaceChildren();
+    const defs = svg('defs', {});
+    for (const [id,color] of [['data','#7770af'],['feedback','#b77925'],['reference','#60768b']]) {
+      const marker = svg('marker', {id:'arrow-'+id,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,markerHeight:7,orient:'auto-start-reverse'});
+      marker.append(svg('path',{d:'M0,0 L10,5 L0,10 z',fill:color})); defs.append(marker);
     }
-    const end = points[points.length - 1];
-    return d + `L${end.x.toFixed(1)},${end.y.toFixed(1)}`;
-  }
-
-  function stageOf(id) {
-    const button = Array.from(root.querySelectorAll('[data-node-id]')).find(el => el.dataset.nodeId === id);
-    return button ? (button.closest('.demo-stage') || button) : null;
-  }
-
-  function drawWires(state, selected = root.querySelector('.demo-node.selected')?.dataset.nodeId) {
-    const graph = root.getElementById('graph'), svg = root.getElementById('wires');
-    if (!graph || !svg) return;
-    stopFlow();
-    if (!root.host.isConnected) return;
-    const base = graph.getBoundingClientRect();
-    svg.setAttribute('width', graph.scrollWidth);
-    svg.setAttribute('height', graph.scrollHeight);
-    svg.style.width = `${graph.scrollWidth}px`;
-    svg.style.height = `${graph.scrollHeight}px`;
-    svg.innerHTML = '';
-    const drawn = [];
-    state.draft.edges.forEach((edge, index) => {
-      const a = stageOf(edge.source), b = stageOf(edge.target);
-      if (!a || !b) return;
-      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
-      const x1 = ra.right - base.left + graph.scrollLeft, y1 = ra.top + ra.height / 2 - base.top + graph.scrollTop;
-      const x2 = rb.left - base.left + graph.scrollLeft, y2 = rb.top + rb.height / 2 - base.top + graph.scrollTop;
-      const lower = Math.max(ra.bottom, rb.bottom) - base.top + graph.scrollTop + 14 + index * 9;
-      const mid = (x1 + x2) / 2;
-      const points = x2 - x1 > 24
-        ? (Math.abs(y1 - y2) < 2 ? [{x: x1, y: y1}, {x: x2, y: y2}]
-          : [{x: x1, y: y1}, {x: mid, y: y1}, {x: mid, y: y2}, {x: x2, y: y2}])
-        : [{x: x1, y: y1}, {x: x1 + 16, y: y1}, {x: x1 + 16, y: lower}, {x: x2 - 16, y: lower}, {x: x2 - 16, y: y2}, {x: x2, y: y2}];
-      const path = svgEl('path', {
-        d: roundedPath(points, 14), fill: 'none',
-        stroke: edge.transform ? '#9aa0a8' : '#5f6670', 'stroke-width': 1.5,
-        'stroke-linejoin': 'round', 'stroke-linecap': 'round', opacity: 0.9,
-      });
-      const active = edge.source === selected || edge.target === selected;
-      if (edge.transform) path.setAttribute('stroke-dasharray', '7 5');
-      if (active) {
-        path.setAttribute('stroke', edge.transform ? '#9a6a0a' : '#6f66a8');
-        path.setAttribute('stroke-width', 2);
-        path.setAttribute('opacity', 1);
+    wires.append(defs);
+    const byId = new Map(state.draft.nodes.map(n => [n.id,n]));
+    const edges = [...state.draft.edges, ...(state.draft.visual?.relations || [])];
+    const graphBottom = Math.max(0,...state.draft.nodes.map(n=>positions[n.id].y+cardHeight(models[n.model_id])));
+    edges.forEach((edge,index) => {
+      const source = byId.get(edge.source), target = byId.get(edge.target);
+      if (!source || !target) return;
+      const a = positions[source.id], b = positions[target.id], outputPorts = Object.keys(models[source.model_id].outputs);
+      const x1 = a.x+CARD_WIDTH, y1 = a.y+PORT_TOP+Math.max(0,outputPorts.indexOf(edge.source_port))*PORT_GAP;
+      const x2 = b.x, y2 = edge.kind ? b.y+38 : b.y+PORT_TOP+Math.max(0,Object.keys(models[target.model_id].inputs).indexOf(edge.target_port))*PORT_GAP;
+      const backwards = x2 <= x1 + 30;
+      let d, lx, ly;
+      if (backwards) {
+        const bottom = graphBottom+35+index*18;
+        d = `M${x1} ${y1} C${x1+65} ${y1} ${x1+65} ${bottom} ${x1+30} ${bottom} L${x2-35} ${bottom} C${x2-75} ${bottom} ${x2-75} ${y2} ${x2} ${y2}`;
+        lx = (x1+x2)/2; ly = bottom-8;
+      } else {
+        const bend = Math.max(60,(x2-x1)/2);
+        d = `M${x1} ${y1} C${x1+bend} ${y1} ${x2-bend} ${y2} ${x2} ${y2}`;
+        lx = (x1+x2)/2; ly = (y1+y2)/2-12;
       }
-      const title = svgEl('title', {});
-      title.textContent = `${edge.source}.${edge.source_port} → ${edge.target}.${edge.target_port}${edge.transform ? '；FASTA→Boltz YAML 转换尚未接入' : ''}；仅表示配置依赖，未执行计算`;
-      const group = svgEl('g', {});
-      group.appendChild(title);
-      group.appendChild(path);
-      // arrowhead on the target border, like the skill's edge arrow
-      const tip = points[points.length - 1], before = points[points.length - 2];
-      const length = Math.hypot(tip.x - before.x, tip.y - before.y) || 1;
-      const ux = (tip.x - before.x) / length, uy = (tip.y - before.y) / length, size = 6.5;
-      group.appendChild(svgEl('polygon', {
-        points: `${tip.x.toFixed(1)},${tip.y.toFixed(1)} ${(tip.x - ux * size + uy * size * 0.52).toFixed(1)},${(tip.y - uy * size - ux * size * 0.52).toFixed(1)} ${(tip.x - ux * size - uy * size * 0.52).toFixed(1)},${(tip.y - uy * size + ux * size * 0.52).toFixed(1)}`,
-        fill: active ? (edge.transform ? '#9a6a0a' : '#6f66a8') : (edge.transform ? '#9aa0a8' : '#5f6670'),
-      }));
-      // the resident "data passes" dot: middle of the longest straight stretch
-      let best = -1, middle = points[0];
-      for (let i = 0; i + 1 < points.length; i++) {
-        const seg = Math.hypot(points[i + 1].x - points[i].x, points[i + 1].y - points[i].y);
-        if (seg > best) {
-          best = seg;
-          middle = {x: (points[i].x + points[i + 1].x) / 2, y: (points[i].y + points[i + 1].y) / 2};
-        }
-      }
-      group.appendChild(svgEl('circle', {cx: middle.x.toFixed(1), cy: middle.y.toFixed(1), r: 3.2, fill: '#2f7d47', opacity: 0.85}));
-      const label = edge.transform ? '需转换' : 'PDB';
-      const text = svgEl('text', {class: 'wire-label', x: (x2 - x1 > 24 ? mid : (x1 + x2) / 2).toFixed(1), y: (Math.min(y1, y2) - 9).toFixed(1), 'text-anchor': 'middle'});
-      text.textContent = label;
-      group.appendChild(text);
-      svg.appendChild(group);
-      const len = path.getTotalLength();
-      if (len > 12) drawn.push({path, len, target: b});
+      const kind = edge.kind || 'data', color = kind === 'feedback' ? '#b77925' : kind === 'reference' ? '#60768b' : '#7770af';
+      const group = svg('g',{}), path = svg('path',{d,fill:'none',stroke:color,'stroke-width':2,'marker-end':`url(#arrow-${kind})`});
+      if (edge.kind || edge.transform) path.setAttribute('stroke-dasharray', edge.kind ? '3 6' : '8 5');
+      if (edge.source !== selected && edge.target !== selected) path.setAttribute('opacity',.65);
+      const format = models[source.model_id].outputs[edge.source_port];
+      const label = edge.kind ? `${edge.kind === 'feedback' ? '反馈' : '参考'} · ${edge.label}` : `${format}${edge.transform ? ' · 需转换' : ''}${edge.record_id ? ' · '+edge.record_id : ''}`;
+      group.append(svg('title',{},`${source.label}.${edge.source_port} → ${target.label}${edge.kind ? '（设计关系，不绑定输入）' : '.'+edge.target_port}；未执行`),path,svg('text',{x:lx,y:ly,'text-anchor':'middle',class:'wire-label'},label));
+      wires.append(group);
     });
-    // flowing packets: one dot per wire, source frame -> target frame; the target
-    // icon bounces when it lands, so the motion reads as "from this box to that one"
-    if (drawn.length && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      const dots = drawn.map((wire, index) => {
-        const dot = svgEl('circle', {r: 2.6, fill: '#2f7d47', opacity: 0.9});
-        svg.appendChild(dot);
-        return {...wire, dot, offset: index * 0.5, speed: wire.len / FLOW_MS, previous: null};
-      });
-      const started = performance.now();
-      const tick = now => {
-        if (!root.host.isConnected) { stopFlow(); return; }
-        const elapsed = now - started;
-        dots.forEach(item => {
-          const {dot, path, len, offset, speed} = item;
-          const at = (elapsed * speed + offset * len) % len;
-          const point = path.getPointAtLength(at);
-          dot.setAttribute('cx', point.x.toFixed(1));
-          dot.setAttribute('cy', point.y.toFixed(1));
-          // fade at both ends so the packet is absorbed by the arrow instead of popping
-          const fade = Math.max(0, Math.min(1, Math.min(at, len - at) / Math.max(1, len * 0.08)));
-          dot.setAttribute('opacity', (0.9 * fade).toFixed(2));
-          if (item.previous !== null && at < item.previous) knock(item.target);
-          item.previous = at;
-        });
-        flowFrame = requestAnimationFrame(tick);
-      };
-      flowFrame = requestAnimationFrame(tick);
+  }
+  listen(pipeline,'click',event => {
+    if (suppressClick) { suppressClick = false; return; }
+    const button = event.target.closest('[data-node-id]');
+    if (button) selectNode(button.dataset.nodeId);
+  });
+  listen(viewport,'pointerdown',event => {
+    if (event.button !== 0 && event.button !== 1) return;
+    const handle = event.target.closest('[data-drag-id]');
+    if (!handle && event.target.closest('button, .graph-card')) return;
+    if (handle && root.host.getAttribute('aria-busy') === 'true') return;
+    const id = handle?.dataset.dragId;
+    drag = {id, pointer:event.pointerId, startX:event.clientX, startY:event.clientY, original:id ? {...positions[id]} : {...camera}, moved:false};
+    viewport.setPointerCapture(event.pointerId); viewport.classList.add('dragging'); event.preventDefault();
+  });
+  listen(viewport,'pointermove',event => {
+    if (!drag) return;
+    const dx = event.clientX-drag.startX, dy = event.clientY-drag.startY;
+    if (Math.hypot(dx,dy) < 4 && !drag.moved) return;
+    drag.moved = true;
+    if (drag.id) {
+      const x = Math.max(-100000,Math.min(100000,Math.round(drag.original.x+dx/camera.zoom)));
+      const y = Math.max(-100000,Math.min(100000,Math.round(drag.original.y+dy/camera.zoom)));
+      positions[drag.id] = {x,y};
+      const card = [...pipeline.children].find(el => el.dataset.cardId === drag.id);
+      card.style.left = x+'px'; card.style.top = y+'px'; drawWires();
+    } else { camera.x = drag.original.x+dx; camera.y = drag.original.y+dy; applyCamera(); }
+  });
+  async function finishDrag(event) {
+    if (!drag || drag.pointer !== event.pointerId) return;
+    const current = drag; drag = null; viewport.classList.remove('dragging');
+    if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
+    if (current.id && current.moved) {
+      suppressClick = true;
+      setTimeout(() => { suppressClick = false; }, 100);
+      if (event.type === 'pointercancel') { drawNodes(state,models,selected,selectNode); return; }
+      try { await onMove(current.id,positions[current.id]); }
+      catch(error) { onError(error); drawNodes(state,models,selected,selectNode); }
     }
   }
-
-  return {drawNodes, drawWires, destroy: stopFlow};
+  listen(viewport,'pointerup',finishDrag); listen(viewport,'pointercancel',finishDrag);
+  listen(viewport,'wheel',event => {
+    if (!event.ctrlKey && !event.metaKey) return;
+    event.preventDefault(); const r = viewport.getBoundingClientRect();
+    zoom(Math.exp(-event.deltaY*.003),event.clientX-r.left,event.clientY-r.top);
+  },{passive:false});
+  listen(viewport,'keydown',event => {
+    if (event.target.closest('[data-node-id]') && event.key.startsWith('Arrow')) {
+      event.preventDefault();
+      if (root.host.getAttribute('aria-busy') === 'true') return;
+      const id = event.target.dataset.nodeId, p = {...positions[id]}, delta = event.shiftKey ? 50 : 15;
+      p.x += event.key === 'ArrowRight' ? delta : event.key === 'ArrowLeft' ? -delta : 0;
+      p.y += event.key === 'ArrowDown' ? delta : event.key === 'ArrowUp' ? -delta : 0;
+      onMove(id,p).then(() => [...pipeline.querySelectorAll('[data-node-id]')].find(el=>el.dataset.nodeId===id)?.focus()).catch(onError);
+      return;
+    }
+    if (event.target !== viewport) return;
+    if (event.key === '+' || event.key === '=') { event.preventDefault(); zoom(1.2); }
+    if (event.key === '-') { event.preventDefault(); zoom(1/1.2); }
+    if (event.key === '0') { event.preventDefault(); fit(); }
+    if (event.key.startsWith('Arrow')) { event.preventDefault(); camera.x += event.key === 'ArrowLeft' ? 50 : event.key === 'ArrowRight' ? -50 : 0; camera.y += event.key === 'ArrowUp' ? 50 : event.key === 'ArrowDown' ? -50 : 0; applyCamera(); }
+  });
+  listen($('zoom-in'),'click',()=>zoom(1.2)); listen($('zoom-out'),'click',()=>zoom(1/1.2));
+  listen($('fit-graph'),'click',fit); listen($('focus-node'),'click',focus);
+  listen($('expand-graph'),'click',()=> {
+    const expanded = $('flow-panel').classList.toggle('canvas-expanded');
+    $('expand-graph').textContent = expanded ? '收起画布' : '展开画布';
+    $('expand-graph').setAttribute('aria-pressed',String(expanded)); requestAnimationFrame(fit);
+  });
+  listen(root,'keydown',e=> { if (e.key === 'Escape' && $('flow-panel').classList.contains('canvas-expanded')) $('expand-graph').click(); });
+  const observer = new ResizeObserver(()=>applyCamera()); observer.observe(viewport);
+  return {drawNodes,drawWires,fit,document:()=>graphDocument(state.draft,models),
+    pause() { $('flow-panel').classList.remove('canvas-expanded'); $('expand-graph').textContent='展开画布'; $('expand-graph').setAttribute('aria-pressed','false'); },
+    destroy() { lifecycle.abort(); observer.disconnect(); }};
 }
