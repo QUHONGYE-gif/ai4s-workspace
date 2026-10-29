@@ -2593,3 +2593,114 @@ svg {
 
 /* Links share navigation styling with in-page buttons. */
 a.nav-item { text-decoration: none; }
+
+.node-detail-body {
+  display: grid;
+  gap: 15px;
+}
+.node-io-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 12px;
+}
+.node-io-grid>div {
+  min-width: 0;
+  padding: 10px 12px;
+  background: #f8f9fc;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.node-io-grid span,.node-io-grid strong {
+  display: block;
+}
+.node-io-grid span {
+  color: var(--muted);
+  font-size: 10px;
+  margin-bottom: 4px;
+}
+.node-io-grid strong {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.node-parameter-fields {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 0 14px;
+}
+.node-parameter-fields .field {
+  min-width: 0;
+  margin-bottom: 13px;
+}
+.node-description,.node-candidates,.settings-disclosure,.snapshot-json {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.node-description summary,.node-candidates summary,.settings-disclosure summary,.snapshot-json summary {
+  color: #59627a;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 550;
+}
+.node-description p {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.75;
+}
+.node-reuse-summary {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 13px;
+}
+.node-reuse-summary .field {
+  margin: 3px 0 0;
+}
+.node-candidates .candidate-row {
+  align-items: flex-start;
+}
+.node-output-link {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.settings-disclosure-body {
+  display: grid;
+  gap: 0 14px;
+  padding-top: 15px;
+}
+.settings-disclosure-body .field {
+  margin-bottom: 15px;
+}
+.create-page-action {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--line);
+  padding-top: 15px;
+}
+.snapshot-json .log {
+  margin-top: 12px;
+}
+.scope-switch {
+  gap: 6px;
+}
+.scope-switch .btn.active {
+  border-color: #aeb8df;
+  background: #f2f4fc;
+  color: var(--accent);
+}
+@media(max-width:700px) {
+  .node-parameter-fields,.settings-disclosure-body {
+    grid-template-columns: 1fr;
+  }
+  .node-io-grid {
+    gap: 8px;
+  }
+  .node-io-grid>div {
+    padding: 9px;
+  }
+}

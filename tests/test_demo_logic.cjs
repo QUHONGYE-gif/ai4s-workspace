@@ -16,6 +16,7 @@ source = source
   .replace('await DemoAPI.loadState()', '({state:null})');
 const context = vm.createContext({
   URLSearchParams,
+  location: {hash: ''},
   console,
   assert,
   setTimeout,
@@ -76,6 +77,27 @@ check('structure cannot be supplied to sequence-only input', () => {
   createExperimentDraft('protein');
   const a = product.catalog.find((a) => a.kind === 'mmCIF' && a.status === 'complete');
   assert.equal(accepts(workflowInfo.protein, a), false);
+});
+check('selected node fields come from the workflow step definition', () => {
+  createExperimentDraft('protein');
+  selectedPlanStep = 'structure';
+  const html = workflowPage();
+  assert.match(html, /data-draft="config\.predictor"/);
+  assert.match(html, /data-draft="config\.seed"/);
+  assert.doesNotMatch(html, /体验场景/);
+});
+check('creation saves a ready experiment before simulation starts', () => {
+  createExperimentDraft('protein');
+  createExperiment();
+  const experiment = product.experiments.at(-1);
+  assert.equal(experiment.status, 'ready');
+  assert.equal(experiment.outputs.length, 0);
+  assert.equal(experiment.plan.length, 5);
+  assert.equal(product.drafts.protein, undefined);
+  page = {name: 'experiment', id: experiment.id, query: new URLSearchParams()};
+  const html = experimentPage(experiment);
+  assert.match(html, /确认候选并开始模拟/);
+  assert.match(html, /查看候选结果/);
 });
 
 console.log(count + ' simulation checks passed.');

@@ -68,7 +68,8 @@
     activeSimulation = null;
   let catalogScope = 'current',
     catalogText = '',
-    experimentScope = 'mine';
+    experimentScope = 'mine',
+    selectedPlanStep = '';
 
   // Display helpers
   const $ = (s) => document.querySelector(s);
@@ -135,6 +136,7 @@
   };
   const statusBadge = function statusBadge(value) {
     const names = {
+      ready: '待运行',
       completed: '模拟完成',
       running: '模拟进行中',
       waiting: '等待共享结果',
@@ -1177,20 +1179,12 @@ ${esc(step[key] || '')}</textarea
       }
     selectWorkflowContext(product.selectedWorkflow);
   };
-  const startExperiment = function startExperiment() {
+  const createExperiment = function createExperiment() {
     const d = currentDraft();
     if (!d) return;
-    if (product.experiments.some((e) => !e.fixture && ['running', 'waiting'].includes(e.status))) {
-      notify('已有一个模拟实验进行中，请查看实验记录或取消后再运行。');
-      return;
-    }
     const error = validateExperiment(d);
     if (error) {
       notify(error);
-      return;
-    }
-    if (!d.checked) {
-      notify('请先检查输入与共享候选，再确认运行计划。');
       return;
     }
     const p = packPlan(d),
@@ -1206,6 +1200,7 @@ ${esc(step[key] || '')}</textarea
       intent: d.intent,
       reuseScope: d.reuseScope,
       shareOutput: d.shareOutput,
+      choices: copy(d.choices),
       inputSource: d.inputSource,
       inputArtifactId: d.inputArtifactId,
       inputMeta: copy(d.inputMeta),
@@ -1213,8 +1208,8 @@ ${esc(step[key] || '')}</textarea
       policyRules: copy(policySettings(d.policy)),
       plan: p,
       outputs: [],
-      log: ['模拟实验已启动；输入、流程、策略和候选选择已锁定。'],
-      status: 'running',
+      log: ['实验已创建；输入、流程和参数已保存，等待确认运行。'],
+      status: 'ready',
       fixture: false,
       createdAt: Date.now(),
       metrics: planMetrics(p),
@@ -1223,8 +1218,21 @@ ${esc(step[key] || '')}</textarea
     };
     product.experiments.push(e);
     delete product.drafts[activeWorkflow];
+    selectedPlanStep = steps[0]?.id || '';
     saveProduct();
     nav('experiment', e.id);
+  };
+  const startExperiment = function startExperiment(id = page.id) {
+    const e = experimentById(id);
+    if (!e || e.fixture || e.status !== 'ready') return;
+    if (product.experiments.some((run) => run !== e && !run.fixture && ['running', 'waiting'].includes(run.status))) {
+      notify('已有一个模拟实验进行中，请查看实验记录或取消后再运行。');
+      return;
+    }
+    e.log.push('模拟实验已启动；使用已保存的输入、候选选择和配置快照。');
+    e.status = 'running';
+    saveProduct();
+    render();
     runSimulation(e);
   };
   const runSimulation = async function runSimulation(e) {
@@ -2091,7 +2099,7 @@ ${esc(policyDraft.description)}</textarea
         .join('')}
     </select>`;
   };
-  const candidateRows = function candidateRows(s) {
+  const candidateRows = function candidateRows(s, from = '') {
     return s.candidates.length
       ? s.candidates
           .map(
@@ -2112,12 +2120,69 @@ ${esc(policyDraft.description)}</textarea
                         : !readable(a)
                           ? '文件不可读取'
                           : '匹配且可读取'}</span
-                  ><button class="btn" data-candidate-detail="${a.id}">来源</button>
+                  ><button class="btn" data-candidate-detail="${a.id}" data-from="${esc(from)}">来源</button>
                 </div>
               </div>`,
           )
           .join('')
       : '<div class="muted small">该范围内没有候选。</div>';
+  };
+  const stepParameterField = function stepParameterField(definition, d, readOnly) {
+    const value = d.config[definition.key],
+      name = `config.${definition.key}`;
+    if (readOnly)
+      return /* HTML */ `<div class="kv"><span>${esc(definition.label)}</span><strong>${esc(value)}</strong></div>`;
+    if (definition.type === 'select')
+      return choiceField(definition.label, name, value, definition.options || []);
+    return /* HTML */ `<label class="field">
+      <span>${esc(definition.label)}</span>
+      <input data-draft="${esc(name)}" type="${esc(definition.type || 'text')}"
+        value="${esc(value)}" ${Number.isFinite(definition.min) ? `min="${definition.min}"` : ''}
+        ${Number.isFinite(definition.max) ? `max="${definition.max}"` : ''}
+        ${definition.step ? `step="${definition.step}"` : ''} />
+    </label>`;
+  };
+  const nodeDetailPanel = function nodeDetailPanel(step, d, planStep = null, experiment = null) {
+    const dependencies = step.deps.map((id) => steps.find((item) => item.id === id)?.name || id),
+      input = dependencies.length ? dependencies.join('、') : d.inputMeta?.name || d.config.input || '未选择',
+      output = step.file ? `${step.file} · ${step.kind || '文件'}` : '未定义',
+      definitions = (step.parameters || []).map((definition) => stepParameterField(definition, d, !!experiment)).join(''),
+      result = experiment?.outputs.find((item) => item.stepId === step.id),
+      artifact = result && artifactById(result.artifactId);
+    return panel(
+      `节点详情 · ${esc(step.name)}`,
+      /* HTML */ `<div class="detail-body node-detail-body">
+        <div class="node-io-grid">
+          <div><span>输入</span><strong>${esc(input)}</strong></div>
+          <div><span>输出</span><strong>${esc(output)}</strong></div>
+        </div>
+        ${definitions
+          ? `<div class="node-parameter-fields">${definitions}</div>`
+          : '<p class="muted small">此节点没有单独登记的可调参数。</p>'}
+        <details class="node-description">
+          <summary>步骤说明与依赖</summary>
+          <p>${esc(step.description || '此节点按已登记工作流定义执行。')}</p>
+          <p class="muted small">依赖：${esc(dependencies.join('、') || '实验输入')}</p>
+        </details>
+        ${planStep
+          ? `<div class="node-reuse-summary">
+              <div class="kv"><span>本次计划</span><strong>${planStep.action === 'reuse' ? '复用已有结果' : planStep.action === 'wait' ? '等待共享结果' : '重新计算'}</strong></div>
+              <p class="callout">${esc(planStep.reason)}</p>
+              ${experiment?.status === 'ready'
+                ? `<label class="field"><span>执行方式</span>${candidateDecision(planStep, experiment)}</label>`
+                : ''}
+              <details class="node-candidates">
+                <summary>查看候选结果（${planStep.candidates.length}）</summary>
+                ${candidateRows(planStep, experiment?.id || '')}
+              </details>
+            </div>`
+          : ''}
+        ${artifact
+          ? `<div class="node-output-link"><span class="pill ${result.mode === 'compute' ? 'blue' : 'good'}">${result.mode === 'compute' ? '本次生成' : result.mode === 'wait' ? '等待后复用' : '复用已有结果'}</span>
+              <button class="link-btn" data-artifact-detail="${artifact.id}" data-from="${experiment.id}">查看产物 ${esc(artifact.id)}</button></div>`
+          : ''}
+      </div>`,
+    );
   };
   const reviewPanel = function reviewPanel(d) {
     const p = plan(d.config, d.policy, d),
@@ -2184,15 +2249,16 @@ ${esc(policyDraft.description)}</textarea
         </div>`,
     );
   };
-  const experimentDiagram = function experimentDiagram(p) {
+  const experimentDiagram = function experimentDiagram(p, selectedId = '') {
     const custom = workflowKind() === 'custom';
     const nodes = p
       .map(
         (s, i) =>
           /* HTML */ `<button
-            class="${custom ? 'custom-flow-node' : 'node'} ${s.action === 'reuse' ? '' : 'changed'}"
+            class="${custom ? 'custom-flow-node' : 'node'} ${s.action === 'reuse' ? '' : 'changed'} ${selectedId === s.id ? 'selected' : ''}"
             ${custom ? '' : `style="${s.position}"`}
             data-plan-step="${s.id}"
+            aria-pressed="${selectedId === s.id}"
             aria-label="查看${esc(s.name)}的依赖与计划"
           >
             <span class="node-top"
@@ -2221,11 +2287,11 @@ ${esc(policyDraft.description)}</textarea
           <path d="M734 93h53" />
         </svg>`;
     return panel(
-      '步骤依赖与本次计划',
+      '工作流',
       /* HTML */ `<div class="dag-wrap">
         <div class="dag-caption">
-          <span>${custom ? '自定义串行流程' : '演示步骤依赖；点击节点查看说明'}</span
-          ><span>实际决策见下方列表</span>
+          <span>${custom ? '自定义串行流程' : '步骤依赖与输入输出'}</span>
+          ><span>点击节点查看详情 · ${p.length} 个步骤</span>
         </div>
         <div class="${custom ? 'custom-flow' : 'dag'}">${edges}${nodes}</div>
       </div>`,
@@ -2233,29 +2299,20 @@ ${esc(policyDraft.description)}</textarea
   };
   const workflowPage = function () {
     const d = currentDraft() || createExperimentDraft(activeWorkflow);
-    const checked = d.checked;
+    const p = plan(d.config, d.policy, d),
+      selected = steps.find((step) => step.id === selectedPlanStep) || steps[0];
+    selectedPlanStep = selected?.id || '';
     return (
       heading(
         '创建实验',
-        '流程定义保持独立；本次输入、参数与产物选择保存为实验快照。',
-        routeButton('工作流列表', 'workflows'),
+        '配置本次输入和节点参数，创建后在实验详情中检查候选并运行。',
+        `${routeButton('我的实验', 'runs')}${button('创建实验', 'create-experiment', '', true)}`,
       ) +
-      flowRibbon(checked ? 1 : 0) +
-      /* HTML */ `<div class="scenario-bar">
-          <span>体验场景</span>${[
-            ['baseline', '相同配置与团队复用'],
-            ['model', '模型变化'],
-            ['waiting', '有人正在生成'],
-            ['fresh', '生成新样本'],
-            ['failure', '步骤失败'],
-          ]
-            .map(([id, name]) => button(name, 'scenario', id))
-            .join('')}
-        </div>
-        <div class="workspace-grid">
+      flowRibbon(0) +
+      /* HTML */ `<div class="workspace-grid experiment-create-grid">
           <div class="left-stack">
             ${panel(
-              '1. 实验信息与输入',
+              '实验信息与输入',
               /* HTML */ `<div class="create-body">
                 <div class="registration-grid">
                   ${field('实验名称', 'name', d.name)}<label class="field"
@@ -2264,50 +2321,36 @@ ${esc(policyDraft.description)}</textarea
                   >${inputPanel(d)}
                 </div>
               </div>`,
-            )}${checked
-              ? experimentDiagram(plan(d.config, d.policy, d)) + reviewPanel(d)
-              : panel(
-                  '2. 检查共享候选',
-                  /* HTML */ `<div class="empty">
-                    先填写输入与参数，再检查可复用的个人或团队产物。
-                    <div style="margin-top:15px">
-                      ${button('检查输入与共享候选', 'check', '', true)}
-                    </div>
-                  </div>`,
-                )}${checked
-              ? panel(
-                  '3. 确认并模拟运行',
-                  /* HTML */ `<div class="detail-body">
-                    <p class="small muted">
-                      计划确认后将锁定本次配置。模拟运行期间可以离开此页查看记录。
-                    </p>
-                    ${button('确认计划并模拟运行', 'start', '', true)}
-                    ${button('导出本次计划', 'export-plan')}
-                  </div>`,
-                )
-              : ''}
+            )}${experimentDiagram(p, selected?.id || '')}
           </div>
           <aside class="right-stack">
-            ${panel(
-              '本次实验参数',
-              /* HTML */ `<div class="config-body">
-                ${parameterPanel(d)}${button(
-                  checked ? '重新检查候选' : '检查输入与共享候选',
-                  'check',
-                  '',
-                  true,
-                )}
-              </div>`,
-            )}${panel(
-              '本次保存与模拟',
+            ${selected ? nodeDetailPanel(selected, d) : panel('节点参数', '<div class="empty">当前流程没有可配置的节点。</div>')}${panel(
+              '实验范围与策略',
               /* HTML */ `<div class="detail-body">
-                <div class="callout">
-                  实验草稿有浏览器备份，并保存到演示后端。团队共享、可读取状态与运行成本均为演示。
-                </div>
-                ${choiceField('模拟结果', 'simulation', d.simulation, [
-                  ['success', '正常完成'],
-                  ['fail', '在后续步骤模拟失败'],
-                ])}
+                <details class="settings-disclosure">
+                  <summary>共享与运行选项</summary>
+                  <div class="settings-disclosure-body">
+                    ${choiceField('本次实验意图', 'intent', d.intent, [
+                      ['replay', '复现实验 · 查找等价历史结果'],
+                      ['fresh', '生成新样本 · 不替代为旧样本'],
+                    ])}
+                    ${choiceField('复用查找范围', 'reuseScope', d.reuseScope, [
+                      ['team', '我的产物 + 团队共享'],
+                      ['mine', '仅我的产物'],
+                    ])}
+                    ${choiceField('新产物共享范围', 'shareOutput', d.shareOutput, [
+                      ['team', '团队共享（模拟）'],
+                      ['private', '仅自己（模拟）'],
+                    ])}
+                    ${choiceField('复用与保存策略', 'policy', d.policy, allPolicies().map((item) => [item.id, item.name]))}
+                    ${choiceField('模拟读取位置', 'config.remote', String(!!d.config.remote), [
+                      ['false', '本地读取（示例）'],
+                      ['true', '远端读取较慢（示例）'],
+                    ])}
+                  </div>
+                </details>
+                <p class="field-hint">参数仅保存为本次实验快照；共享范围、候选文件和运行耗时均为演示数据。</p>
+                <div class="create-page-action">${button('创建实验', 'create-experiment', '', true)}</div>
               </div>`,
             )}
           </aside>
@@ -2354,21 +2397,22 @@ ${esc(policyDraft.description)}</textarea
   };
   const runsPage = function () {
     const list = product.experiments
-      .filter((e) => (experimentScope === 'team' ? e.ownerId !== 'me' : e.ownerId === 'me'))
+      .filter((e) =>
+        experimentScope === 'team'
+          ? e.ownerId !== 'me'
+          : e.ownerId === 'me' && !e.fixture,
+      )
       .slice()
       .reverse();
     return (
       heading(
         '实验记录',
         '每次实验的输入、计划、产物和来源均可回看。',
-        routeButton('创建实验', 'workflows', '', true),
+        routeButton('创建实验', 'workflow', activeWorkflow, true),
       ) +
-      /* HTML */ `<div class="data-toolbar">
-        ${button('我的实验', 'experiment-scope', 'mine')}${button(
-          '团队示例',
-          'experiment-scope',
-          'team',
-        )}
+      /* HTML */ `<div class="data-toolbar scope-switch" role="group" aria-label="实验范围">
+        <button type="button" class="btn ${experimentScope === 'mine' ? 'active' : ''}" data-action="experiment-scope" data-value="mine" aria-pressed="${experimentScope === 'mine'}">我的实验</button>
+        <button type="button" class="btn ${experimentScope === 'team' ? 'active' : ''}" data-action="experiment-scope" data-value="team" aria-pressed="${experimentScope === 'team'}">团队示例</button>
       </div>` +
       experimentTable(list)
     );
@@ -2376,19 +2420,29 @@ ${esc(policyDraft.description)}</textarea
   const experimentPage = function experimentPage(e) {
     if (!e) return missingPage('找不到这次实验');
     const done = e.outputs.length,
-      live = ['running', 'waiting'].includes(e.status) && !e.fixture;
+      live = ['running', 'waiting'].includes(e.status) && !e.fixture,
+      p = e.plan.length
+        ? e.plan
+        : e.workflowSnapshot.steps.map((step) => ({ ...step, action: 'compute', time: step.cost || 0 })),
+      selected =
+        e.workflowSnapshot.steps.find((step) => step.id === selectedPlanStep) ||
+        e.workflowSnapshot.steps[0],
+      selectedPlan = !e.fixture && p.find((step) => step.id === selected?.id);
+    selectedPlanStep = selected?.id || '';
     return (
       heading(
         e.name,
         '实验快照 · ' + e.id + ' · ' + e.workflowSnapshot.name,
-        `${routeButton('全部实验', 'runs')}${button('复制配置创建实验', 'clone-experiment', e.id)}${live ? button('取消本次模拟', 'cancel', e.id) : ''}`,
+        `${routeButton('我的实验', 'runs')}${button('复制配置创建实验', 'clone-experiment', e.id)}${e.status === 'ready' ? button('确认候选并开始模拟', 'start', e.id, true) : ''}${live ? button('取消本次模拟', 'cancel', e.id) : ''}`,
       ) +
-      flowRibbon(live ? 2 : 3) +
+      flowRibbon(e.status === 'ready' ? 1 : live ? 2 : 3) +
       banner(
-        `${statusBadge(e.status)} <span style="margin-left:10px">${e.fixture ? '预置团队／个人示例，未执行真实计算。' : '所有步骤仅模拟执行，日志中的科学产物与用时为示例。'}</span>`,
+        `${statusBadge(e.status)} <span style="margin-left:10px">${e.fixture ? '预置示例仅用于共享候选，不计入我的实验。' : e.status === 'ready' ? '配置已保存；确认候选后可启动模拟。' : '所有步骤仅模拟执行，日志中的科学产物与用时为示例。'}</span>`,
       ) +
       /* HTML */ `<div class="workspace-grid">
         <div class="left-stack">
+          ${experimentDiagram(p, selected?.id || '')}
+          ${selected ? nodeDetailPanel(selected, e, selectedPlan, e) : ''}
           ${panel(
             '本次步骤与产物',
             /* HTML */ `<div class="run-progress">
@@ -2397,7 +2451,9 @@ ${esc(policyDraft.description)}</textarea
                   ><span
                     >${e.status === 'completed'
                       ? '模拟已完成'
-                      : Math.round((done / e.workflowSnapshot.steps.length) * 100) + '%'}</span
+                      : e.status === 'ready'
+                        ? '等待启动'
+                        : Math.round((done / e.workflowSnapshot.steps.length) * 100) + '%'}</span
                   >
                 </div>
                 <div class="progress-track">
@@ -2419,6 +2475,8 @@ ${esc(policyDraft.description)}</textarea
                             ? e.status === 'waiting'
                               ? '等待共享结果'
                               : '模拟中'
+                          : e.status === 'ready'
+                            ? '等待启动'
                             : '尚未执行';
                     return /* HTML */ `<div class="result-row">
                       <div class="registration-number">${i + 1}</div>
@@ -2516,11 +2574,16 @@ ${esc(policyDraft.description)}</textarea
                 <span>新产物共享</span
                 ><strong>${e.shareOutput === 'team' ? '团队共享' : '仅自己'}</strong>
               </div>
-              <div class="log">${esc(JSON.stringify(e.config, null, 2))}</div>
+              <details class="snapshot-json">
+                <summary>查看完整参数 JSON</summary>
+                <pre class="log">${esc(JSON.stringify(e.config, null, 2))}</pre>
+              </details>
             </div>`,
           )}${panel(
-            '预计成本与保存',
+            '计划与保存',
             /* HTML */ `<div class="detail-body">
+              <div class="kv"><span>步骤</span><strong>${p.length}</strong></div>
+              <div class="kv"><span>复用 / 等待 / 重算</span><strong>${e.metrics.reuse || 0} / ${e.metrics.wait || 0} / ${Math.max(0, p.length - (e.metrics.reuse || 0) - (e.metrics.wait || 0))}</strong></div>
               <div class="kv"><span>策略</span><strong>${esc(e.policyRules.name)}</strong></div>
               <div class="kv">
                 <span>计划总用时</span><strong>${fmt(e.metrics.total)}（估算）</strong>
@@ -2532,6 +2595,7 @@ ${esc(policyDraft.description)}</textarea
               <div class="callout">
                 估算用时不代表实际墙钟时间。中断或失败的实验未完成整个计划。
               </div>
+              ${e.status === 'ready' ? button('确认候选并开始模拟', 'start', e.id, true) : ''}
               ${button('导出实验快照', 'export-experiment', e.id)}
             </div>`,
           )}
@@ -3188,13 +3252,13 @@ ${esc(policyDraft.description)}</textarea
     return '#/' + (paths[name] || 'workflows') + (qs ? '?' + qs : '');
   };
   const readRoute = function readRoute() {
-    const raw = (location.hash || '#/workflows').slice(2),
+    const raw = (location.hash || '#/experiments').slice(2),
       [path, query = ''] = raw.split('?');
     let seg;
     try {
       seg = path.split('/').map(decodeURIComponent);
     } catch (error) {
-      seg = ['workflows'];
+      seg = ['experiments'];
     }
     page = { name: 'workflows', id: '', query: new URLSearchParams(query) };
     if (seg[0] === 'experiment' && seg[1] === 'new')
@@ -3354,7 +3418,8 @@ ${esc(policyDraft.description)}</textarea
       return;
     }
     if (action === 'check') return checkDraft();
-    if (action === 'start') return startExperiment();
+    if (action === 'create-experiment') return createExperiment();
+    if (action === 'start') return startExperiment(value);
     if (action === 'scenario') return scenarioProduct(value);
     if (action === 'new-draft') {
       if (product.drafts[value]) {
@@ -3705,14 +3770,11 @@ ${esc(policyDraft.description)}</textarea
       if (el.tagName === 'SELECT')
         el.onchange = () => {
           setDraftValue(el.dataset.draft, el.value);
+          render();
         };
       else {
         el.oninput = () => {
           setDraftValue(el.dataset.draft, el.value);
-          const confirmed = $('#main [data-action="start"]');
-          if (confirmed) confirmed.disabled = true;
-          const notice = $('#draft-stale');
-          if (notice) notice.hidden = false;
         };
         el.onchange = () => {
           setDraftValue(el.dataset.draft, el.value);
@@ -3722,8 +3784,17 @@ ${esc(policyDraft.description)}</textarea
     document.querySelectorAll('[data-choice]').forEach(
       (el) =>
         (el.onchange = () => {
-          const d = currentDraft();
-          d.choices[el.dataset.choice] = el.value;
+          const experiment = page.name === 'experiment' ? experimentById(page.id) : null;
+          if (experiment?.status === 'ready') {
+            experiment.choices ||= {};
+            experiment.choices[el.dataset.choice] = el.value;
+            experiment.plan = packPlan(experiment);
+            experiment.metrics = planMetrics(experiment.plan);
+          } else {
+            const d = currentDraft();
+            if (!d) return;
+            d.choices[el.dataset.choice] = el.value;
+          }
           saveProduct();
           render();
         }),
@@ -3733,7 +3804,11 @@ ${esc(policyDraft.description)}</textarea
       .forEach(
         (el) =>
           (el.onclick = () =>
-            nav('artifact', el.dataset.candidateDetail, { draft: activeWorkflow })),
+            nav(
+              'artifact',
+              el.dataset.candidateDetail,
+              el.dataset.from ? { from: el.dataset.from } : { draft: activeWorkflow },
+            )),
       );
     document
       .querySelectorAll('[data-artifact-detail]')
@@ -3770,20 +3845,8 @@ ${esc(policyDraft.description)}</textarea
     document.querySelectorAll('[data-plan-step]').forEach(
       (el) =>
         (el.onclick = () => {
-          const s = plan().find((s) => s.id === el.dataset.planStep);
-          if (!s) return;
-          openModal(
-            s.name,
-            /* HTML */ `<p>${esc(s.description)}</p>
-              <div class="callout">${esc(s.reason)}</div>
-              <h3>依赖步骤</h3>
-              <p>
-                ${s.deps.map((id) => esc(steps.find((x) => x.id === id).name)).join('、') ||
-                '本次输入数据'}
-              </p>
-              <h3>本次演示身份</h3>
-              <p class="mono">${esc(s.key)}</p>`,
-          );
+          selectedPlanStep = el.dataset.planStep;
+          render();
         }),
     );
     if ($('#tool-source'))
@@ -3888,10 +3951,7 @@ ${esc(policyDraft.description)}</textarea
     }
     $('#main').innerHTML =
       html +
-      /* HTML */ `<div id="draft-stale" class="info-banner" hidden>
-          输入或参数已修改，请重新检查共享候选。
-        </div>
-        <footer class="footnote">
+      /* HTML */ `<footer class="footnote">
           <span>研序 / AI4S 工作台 · 本地模拟体验</span
           ><span
             >${storageOK ? '浏览器备份可用' : '浏览器备份受限'} ·
