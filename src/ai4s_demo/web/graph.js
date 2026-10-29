@@ -32,8 +32,9 @@ export function createGraph(root, {onMove, onError}) {
   function fit() {
     if (!state || !viewport.clientWidth) return;
     const edges = [...state.draft.edges, ...(state.draft.visual?.relations || [])];
-    const hasReturn = edges.some(e => positions[e.target]?.x <= positions[e.source]?.x + CARD_WIDTH + 30);
-    const b = graphBounds(state.draft.nodes, positions, models, hasReturn ? 60+edges.length*18 : 0);
+    const returnLanes = edges.map((e,index) => positions[e.target]?.x <= positions[e.source]?.x + CARD_WIDTH + 30 ? 35+index*18 : 0);
+    const returnPadding = Math.max(0, ...returnLanes);
+    const b = graphBounds(state.draft.nodes, positions, models, Math.max(0,returnPadding-30));
     camera.zoom = bound(Math.min((viewport.clientWidth - 24) / b.width, (viewport.clientHeight - 24) / b.height, 1));
     camera.x = (viewport.clientWidth - b.width * camera.zoom) / 2 - b.x * camera.zoom;
     camera.y = (viewport.clientHeight - b.height * camera.zoom) / 2 - b.y * camera.zoom;
