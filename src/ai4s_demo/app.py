@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agent import AgentGateway
@@ -138,6 +138,6 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
 
     @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
     def index():
-        return FileResponse(web / "index.html")
+        return RedirectResponse("../#/workflows/new?mode=ai", status_code=307)
 
     return app

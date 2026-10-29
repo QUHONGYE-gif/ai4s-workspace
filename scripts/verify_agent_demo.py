@@ -12,7 +12,7 @@ import httpx
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--live", action="store_true", help="Explicitly enable real provider calls")
-    parser.add_argument("--url", default="http://127.0.0.1:3000")
+    parser.add_argument("--url", default="http://127.0.0.1:3000/agent/")
     parser.add_argument("--output", required=True, help="Private JSON report path (not a key file)")
     args = parser.parse_args()
     if not args.live:

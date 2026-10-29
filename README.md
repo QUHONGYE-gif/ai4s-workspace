@@ -12,7 +12,7 @@
 - [实验记录与复用讨论](docs/protein_reuse.md)：个人分支保留的 R001–R004 证据及讨论材料。
 - [成员协作](docs/collaboration.md)：个人工作区、预览与 PR 合并。
 
-- [智能体工作流接入 Demo](docs/agent_demo_run.md)：DeepSeek 对话、参数登记、请求生成与联合启动。
+- [AI 辅助生成](docs/agent_demo_run.md)：在“接入自定义流程”内使用 DeepSeek 对话、配置模型参数并回填接入草稿。
 
 ## 文档分工
 

@@ -2593,3 +2593,13 @@ svg {
 
 /* Links share navigation styling with in-page buttons. */
 a.nav-item { text-decoration: none; }
+
+/* One registration page, with native manual / AI modes. */
+.registration-mode-switch { display: flex; gap: 5px; padding: 5px; margin-bottom: 22px; width: fit-content; border: 1px solid #e1e4f0; border-radius: 11px; background: #eceef8; }
+.registration-mode-switch .btn { border: 0; background: transparent; color: #65708c; box-shadow: none; }
+.registration-mode-switch .btn.active { background: white; color: #5755b5; box-shadow: 0 2px 7px #343b6410; }
+.registration-ai { min-width: 0; }
+.registration-ai-summary { padding: 14px 16px; background: #f6f5fc; border: 1px solid #e3e0f5; border-radius: 9px; margin: 14px 0; }
+.registration-ai-summary strong { font-size: 12px; color: #5b528a; }
+.registration-ai-summary p { margin: 8px 0 0; }
+.registration-ai-summary code { display: inline-block; font-size: 11px; padding: 3px 6px; margin: 2px 3px 2px 0; border-radius: 5px; background: white; color: #5b528a; }

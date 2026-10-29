@@ -14,16 +14,16 @@ python scripts/serve_workbench.py --host 127.0.0.1 --port 3000 \
 
 然后打开工作区已有“开发预览”。需要真实 PyMOL 时，改用 [联合启动器](../tools/pymol_web/README.md)，不同时启动两个占用 3000 端口的服务。
 
-## 智能体接入
+## AI 辅助生成
 
 安装项目业务依赖后，可用一条命令同时运行现有工作台和 Agent：
 
 ```bash
 uv sync --frozen
-uv run python scripts/run_agent_demo.py --with-workbench --port 3000
+uv run python scripts/run_agent_demo.py --port 3000
 ```
 
-工作台左侧「智能体接入」进入 `./agent/`。原有模拟快照与 Agent 数据分开保存；先停止本人已有的 3000 端口服务。模型 API 设置、数据目录、单用户边界与验证范围见 [Agent 运行说明](../docs/agent_demo_run.md)。仅用普通启动命令时，不会自动启动 Agent；未启动时入口返回明确的不可用提示。
+从「工作流 → 接入自定义流程 → AI 辅助生成」使用对话、资料识别、流程图和参数配置；不再提供独立的智能体导航或页面。手动与 AI 模式可以切换，确认后将 AI 配置回填到接入表单。旧 `./agent/` 链接会跳到新位置，内部 API 和既有私有数据继续使用原命名空间。模型 API 设置、草稿边界与验证范围见 [运行说明](../docs/agent_demo_run.md)。使用普通标准库启动命令时不会启动 AI 服务；AI 暂不可用时仍可手动填写。
 
 ## 状态目录与启动切换
 

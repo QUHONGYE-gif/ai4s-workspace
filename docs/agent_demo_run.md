@@ -1,6 +1,6 @@
-# Agent 工作流接入 Demo：运行与验收
+# AI 辅助生成：运行与验收
 
-2026-10-24。本版依据用户已确认的 [设计稿](agent_demo_design.md) 实施；是单用户配置演示，科学执行与 AiiDA 尚未接通。
+当前入口于 2026-10-29 按用户要求整合到「工作流 → 接入自定义流程 → AI 辅助生成」，独立导航与页面已移除。初版依据 [设计稿](agent_demo_design.md) 实施；单用户配置演示，科学执行与 AiiDA 尚未接通。
 
 ## 1. 启动
 
@@ -11,7 +11,7 @@ uv sync --frozen
 uv run python scripts/run_agent_demo.py
 ```
 
-浏览器打开 [工作流页面](http://127.0.0.1:3000)。服务端口可通过 `--port` 调整，停止服务使用所在终端的 Ctrl+C。
+浏览器打开 [工作台](http://127.0.0.1:3000)，进入「接入自定义流程 → AI 辅助生成」。服务端口可通过 `--port` 调整，停止服务使用所在终端的 Ctrl+C。
 
 ### 与工作台共用 Coder 预览
 
@@ -19,10 +19,10 @@ uv run python scripts/run_agent_demo.py
 
 ```bash
 uv sync --frozen
-uv run python scripts/run_agent_demo.py --with-workbench --host 127.0.0.1 --port 3000
+uv run python scripts/run_agent_demo.py --host 127.0.0.1 --port 3000
 ```
 
-工作台首页保留，左侧「智能体接入」打开相对路径 `./agent/`；Agent 页面可返回工作台。工作台在 3000 端口代理仅监听回环地址的 Agent 服务（默认 3002），页面和 API 路径兼容 Coder 预览前缀。联合进程退出时一起停止服务，不需要修改 Coder 模板或新增预览入口。
+AI 功能直接嵌入工作台的接入页，手动与 AI 模式共用原导航和页面外壳。旧 `./agent/` 链接跳转至 `#/workflows/new?mode=ai`，不再呈现独立 UI。工作台在 3000 端口代理仅监听回环地址的 Agent 服务（默认 3002），页面和 API 路径兼容 Coder 预览前缀。联合进程退出时一起停止服务，不需要修改 Coder 模板或新增预览入口。
 
 工作台模拟快照继续使用用户状态目录中的 `ai4s-workbench-demo/api-state`；Agent 使用独立的 `.local/agent-demo/`，不会自动转换或覆盖原工作台快照。可分别通过 `--workbench-data-dir` 与 `--data-dir` 指定。此模式不启动 PyMOL；PyMOL 依赖和联合服务仍需另行准备。
 
@@ -30,7 +30,7 @@ uv run python scripts/run_agent_demo.py --with-workbench --host 127.0.0.1 --port
 
 ## 2. 配置 DeepSeek
 
-1. 点击顶部的 DeepSeek 状态或左侧「模型 API 设置」。
+1. 在「接入自定义流程 → AI 辅助生成」点击工具栏的「模型 API 设置」。
 2. 填写模型名称和 API key，点击「保存设置」。留空密钥表示保留原值；删除需显式勾选。
 3. 点击「测试已保存配置」。成功表示真实连接和结构化工具返回已通过，不表示科学模型已运行。
 
@@ -53,18 +53,25 @@ uv run python scripts/run_agent_demo.py --with-workbench --host 127.0.0.1 --port
 
 直接用上游输出时，应指定记录选择意图，例如骨架 `0`、设计序列 `sample=1`；适配层仍需在真实产物上解析和核验。Boltz 直接序列输入与 FASTA 单记录绑定也支持；已有 A3M 会检查首条查询序列一致性。FASTA→Boltz YAML 转换与科学执行尚未接入。
 
+### 将 AI 配置用于接入表单
+
+点击「应用到接入草稿」并确认后，进入手动表单继续核对。已填写的项目信息保留，步骤按 AI 图的串行依赖排序；参数、输入引用、模型定义及原始连接作为 AI 配置快照保存。项目路径、环境、输入输出路径和调用指令不猜造；必须补齐后才能通过原接入检查。参数变化后，不会自动沿用之前核对的旧指令。
+
+AI 草稿与接入草稿分别保存，回填是显式复制一个版本快照；手动编辑不会反向改写 AI 草稿。分支、循环、未连接的多节点不会被强行展平，仍可在 AI 模式保存、导出与生成引擎请求。当前实现的 Shadow DOM 仅用于隔离组件样式和同名控件，不是新的安全边界或 iframe。
+
 ## 4. 代码分工与数据
 
 | 入口 | 职责 |
 | --- | --- |
 | [启动脚本](../scripts/run_agent_demo.py) | 单进程服务启动；默认仅绑定本机 |
-| [API 应用](../src/ai4s_demo/app.py) | 页面、模型、文件、设置与工作流 API；可查看运行服务的 `/docs` |
+| [API 应用](../src/ai4s_demo/app.py) | 模型、文件、设置与工作流 API；内部命名空间为 `./agent/api/` |
 | [数据契约](../src/ai4s_demo/models.py) | 明确操作类型与请求字段，拒绝未知字段 |
 | [模型目录](../src/ai4s_demo/catalog.py) · [模型资料](../src/ai4s_demo/knowledge/) | 三个模型的支持范围、参数与依据；上限为演示限制 |
 | [配置服务](../src/ai4s_demo/service.py) · [存储](../src/ai4s_demo/storage.py) | 校验、整体保存、版本、撤销、登记、请求和原子 JSON 保存 |
 | [Agent](../src/ai4s_demo/agent.py) | 真实 DeepSeek 调用、受限工具、提案完整性复核、目标范围检查 |
 | [API 设置](../src/ai4s_demo/settings.py) · [输入检查](../src/ai4s_demo/files.py) | 服务端密钥管理；PDB、FASTA、A3M 的有限检查 |
-| [页面](../src/ai4s_demo/web/index.html) · [交互](../src/ai4s_demo/web/app.js) · [图](../src/ai4s_demo/web/graph.js) | 沿用用户提供 HTML 的布局和配色，自行连接真实服务端状态 |
+| [内嵌面板](../src/ai4s_demo/web/workspace.html) · [组件控制器](../src/ai4s_demo/web/app.js) · [图](../src/ai4s_demo/web/graph.js) | 原生组件嵌入工作台接入页，无独立菜单或 iframe；样式和控件事件限定在组件内部 |
+| [接入草稿转换](../web/demo/assets/agent-registration.js) | 保留步骤、参数、输入引用及原始连接；只对完整串行链回填，缺失部署信息不伪造 |
 | [依赖声明](../pyproject.toml) · [版本锁](../uv.lock) | 本 Demo 的业务依赖；不包含蛋白质科学模型环境 |
 
 默认数据目录为 `.local/agent-demo/`；可通过启动参数 `--data-dir` 或 `AI4S_DEMO_DATA` 更改。其下分别保存工作流 JSON、输入文件与元数据、私有 API 配置。工作流包内包含草稿、消息、工具结果、变更事件、导入候选、快照和请求；浏览器 localStorage 仅记录当前工作流 ID。

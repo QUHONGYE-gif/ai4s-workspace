@@ -33,6 +33,7 @@
   const customPolicies = [];
   let workflowDraft,
     policyDraft = { name: '', reuse: 'cost', storage: 'lru', description: '' };
+  let aiHost = null, aiController = null, aiMount = null;
   let workflowFormError = '',
     policyFormError = '',
     registrationCheck = '',
@@ -340,6 +341,7 @@
         environment: data.environment.trim(),
         inputPath: data.inputPath.trim(),
         steps: profiles,
+        ...(data.agentSource ? {agentSource: data.agentSource} : {}),
       }),
     );
     workflowInfo[id] = {
@@ -475,6 +477,11 @@ ${esc(step[key] || '')}</textarea
             '例如：FASTA 文件 / 上一步输出',
           )}${registrationField(index, 'output', '输出文件', '例如：results/structure.cif')}
         </div>
+        ${step.agentConfig ? /* HTML */ `<div class="registration-ai-summary">
+          <strong>AI 配置 · ${esc(step.agentConfig.modelName)}</strong>
+          <p>${Object.entries(step.agentConfig.parameters || {}).map(([key, value]) => `<code>${esc(key)} = ${esc(JSON.stringify(value))}</code>`).join(' ')}</p>
+          <p class="small muted">来源：AI 草稿 r${esc(workflowDraft.agentSource?.revision ?? '')} · 仅配置，部署路径与指令待核对</p>
+        </div>` : ''}
         <div class="registration-card-footer">
           <span>指令仅作为文本保存，不会执行。</span>${template === 'custom'
             ? /* HTML */ `<div>
@@ -515,25 +522,43 @@ ${esc(step[key] || '')}</textarea
     if ($('#workflow-form-error')) $('#workflow-form-error').hidden = true;
   };
   const showAIRegistration = function showAIRegistration() {
-    ensureRegistrationDraft();
-    openModal(
-      'AI 辅助接入 · 预留',
-      /* HTML */ `<p>后续可让 AI 阅读说明文件，整理运行环境、参数和输入输出，再生成调用配置。</p>
-        <div class="callout">说明文件 → AI 整理配置 → 研究者确认 → 小样本试运行</div>
-        <h3>当前状态</h3>
-        <p>
-          未接入 AI 服务，未读取文件，也未生成或执行命令。当前只可导出填写内容，作为未来 AI
-          接入的草稿。
-        </p>
-        <button class="btn primary" id="export-ai-draft">导出 AI 接入草稿</button>`,
-    );
-    $('#export-ai-draft').onclick = () =>
-      download('ai4s-integration-draft.json', {
-        demo: true,
-        aiConnected: false,
-        request: '请从说明中补齐环境、版本、输入输出和调用方式。缺失信息标记为待确认，不执行命令。',
-        draft: JSON.parse(JSON.stringify(workflowDraft)),
+    nav('newworkflow', '', {mode: 'ai'});
+  };
+  const mountAIRegistration = async function mountAIRegistration(target) {
+    if (!aiHost) {
+      aiHost = document.createElement('div');
+      target.replaceChildren(aiHost);
+      aiMount = Promise.all([
+        import(new URL('./agent/assets/app.js', document.baseURI).href),
+        import(new URL('./assets/agent-registration.js', document.baseURI).href),
+      ]).then(async ([{mountAssistant}, {registrationFromAgent}]) => {
+        aiController = await mountAssistant(aiHost, {onApply({draft, models}) {
+          workflowDraft = registrationFromAgent(draft, models, workflowDraft);
+          registrationOpen = 0;
+          registrationCheck = 'AI 步骤与参数已回填。请核对项目路径、环境、输入输出文件及调用指令；参数变化后的旧指令不会自动沿用。';
+          workflowFormError = '';
+          saveProduct();
+          nav('newworkflow');
+          notify('AI 配置已应用到接入草稿，请补齐部署信息。');
+        }});
       });
+    } else target.replaceChildren(aiHost);
+    try {
+      await aiMount;
+      if (target.isConnected) aiController.redraw();
+    } catch (error) {
+      console.error('AI assistance unavailable', error);
+      if (aiHost?.isConnected) {
+        target.replaceChildren();
+        const message = document.createElement('p');
+        message.setAttribute('role', 'alert');
+        message.textContent = 'AI 辅助暂时不可用，请稍后重试。你仍可切换到手动填写。';
+        const retry = document.createElement('button');
+        retry.className = 'btn'; retry.textContent = '重试';
+        retry.onclick = () => { aiController?.destroy(); aiHost = null; aiMount = null; render(); };
+        target.append(message, retry);
+      }
+    }
   };
   const reuseLabel = function reuseLabel(value) {
     return { cost: '读取更快时复用', lru: '结果可用就复用', none: '每次重新计算' }[value];
@@ -1630,13 +1655,18 @@ ${esc(step[key] || '')}</textarea
     ensureRegistrationDraft();
     const d = workflowDraft,
       profiles = d.registrations;
+    const ai = page.query.get('mode') === 'ai';
+    const intro = heading(
+      '接入自定义流程',
+      '手动整理接入信息，或通过 AI 对话生成步骤与参数。',
+      /* HTML */ `<button class="btn" data-nav="workflows">返回列表</button>`,
+    ) + /* HTML */ `<div class="registration-mode-switch" role="group" aria-label="接入方式">
+      <button type="button" class="btn ${ai ? '' : 'active'}" data-registration-mode="manual" aria-pressed="${!ai}">手动填写</button>
+      <button type="button" class="btn ${ai ? 'active' : ''}" data-registration-mode="ai" aria-pressed="${ai}">AI 辅助生成</button>
+    </div>`;
+    if (ai) return intro + /* HTML */ `<section id="workflow-ai" class="registration-ai" aria-label="AI 辅助生成"><p role="status">正在读取 AI 辅助配置…</p></section>`;
     return (
-      heading(
-        '接入自定义流程',
-        '登记模型、说明文件和调用方法，连接自己的科研步骤。',
-        /* HTML */ `<button type="button" class="btn" id="ai-registration">AI 辅助（预留）</button
-          ><button class="btn" data-nav="workflows">返回列表</button>`,
-      ) +
+      intro +
       /* HTML */ `<form id="create-workflow" novalidate>
         <div class="create-layout registration-layout">
           <div class="left-stack">
@@ -3461,6 +3491,7 @@ ${esc(policyDraft.description)}</textarea
       $('#workflow-template').onchange = (e) => {
         workflowDraft.template = e.target.value;
         workflowDraft.registrations = emptyWorkflowDraft(e.target.value).registrations;
+        delete workflowDraft.agentSource;
         registrationOpen = 0;
         registrationCheck = '';
         workflowFormError = '';
@@ -3562,6 +3593,10 @@ ${esc(policyDraft.description)}</textarea
     }
   };
   const bindRegistration = function bindRegistration() {
+    document.querySelectorAll('[data-registration-mode]').forEach(button => {
+      button.onclick = () => button.dataset.registrationMode === 'ai'
+        ? showAIRegistration() : nav('newworkflow');
+    });
     if (!$('#create-workflow')) return;
     ensureRegistrationDraft();
     document.querySelectorAll('[data-project-field]').forEach(
@@ -3664,7 +3699,6 @@ ${esc(policyDraft.description)}</textarea
         $('#registration-check').textContent = registrationCheck;
         $('#registration-check').hidden = false;
       };
-    if ($('#ai-registration')) $('#ai-registration').onclick = showAIRegistration;
     document.querySelectorAll('[data-project-field],[data-reg-field]').forEach((el) => {
       const original = el.oninput;
       el.oninput = (e) => {
@@ -3866,6 +3900,7 @@ ${esc(policyDraft.description)}</textarea
     bindProductActions();
   };
   const render = function () {
+    aiController?.pause();
     let html;
     try {
       html = (
@@ -3936,6 +3971,7 @@ ${esc(policyDraft.description)}</textarea
     bindPymolControls();
     bindCreation();
     bindRegistration();
+    if ($('#workflow-ai')) void mountAIRegistration($('#workflow-ai'));
   };
   const bootProduct = function bootProduct() {
     let restored = false;
