@@ -211,33 +211,10 @@ class DemoHandler(SimpleHTTPRequestHandler):
         super().log_message(format, *args)
 
 
-def model_catalog():
-    """Field definitions registered by the workflow editor (ai4s_demo.catalog).
-
-    The workbench reads them instead of keeping its own copy, so the parameter
-    names, ranges and options shown here are the same ones the workflow editor
-    registers for a model.
-    """
-    from ai4s_demo.catalog import CATALOG
-
-    return {
-        model_id: {
-            "name": model["name"],
-            "role": model["role"],
-            "fields": model["fields"],
-            "inputs": model["inputs"],
-            "outputs": model["outputs"],
-            "sample_params": model["sample_params"],
-        }
-        for model_id, model in CATALOG.items()
-    }
-
-
 def create_server(host="127.0.0.1", port=3000, data_dir=None, agent_port=3002):
     fixtures = json.loads(
         (ROOT / "configs/workbench-demo.json").read_text(encoding="utf-8")
     )
-    fixtures["modelCatalog"] = model_catalog()
     store = SnapshotStore(Path(data_dir) if data_dir else ROOT / ".local/workbench-api")
     handler = partial(
         DemoHandler, store=store, fixtures=fixtures, directory=ROOT / "web/demo",
