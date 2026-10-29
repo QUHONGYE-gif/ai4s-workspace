@@ -79,7 +79,9 @@ uv run python scripts/run_agent_demo.py --with-workbench --host 127.0.0.1 --port
 uv run pytest tests/test_agent_demo.py tests/test_protein_design_pipeline.py -q
 ```
 
-初版 **27 项通过**，其中本 Demo 18 项、既有科学流程脚本 9 项。当前 main 同步后的检查范围另见下方部署记录。Demo 检查包括整体保存、非法字段和类型、版本冲突、重复操作、撤销、快照不改写、请求过期、真实 PDB 的链信息、FASTA 记录、A3M 查询一致性、资料证据、密钥不回显、重启持久化、单进程锁和模型模拟返回的处理。
+初版 **27 项通过**，其中本 Demo 18 项、既有科学流程脚本 9 项。当前 main 同步后的检查范围另见下方部署记录。
+
+没有 `uv` 的机器可用 Python 3.12+ 虚拟环境并按 [依赖声明](../pyproject.toml) 安装依赖后执行同一命令。Windows 上已实跑 **37 项通过**：单进程锁由 [平台锁模块](../src/ai4s_demo/lock.py) 提供，Linux 仍使用 `fcntl.flock`，Windows 改用 `msvcrt.locking`，两种实现的“数据目录已被占用即报错”语义一致；密钥文件的 `0600` 权限位断言只在 POSIX 执行，Windows 改为校验密钥确实写入私有文件。Demo 检查包括整体保存、非法字段和类型、版本冲突、重复操作、撤销、快照不改写、请求过期、真实 PDB 的链信息、FASTA 记录、A3M 查询一致性、资料证据、密钥不回显、重启持久化、单进程锁和模型模拟返回的处理。
 
 测试中的 `TestModel` 仅验证集成机制，不作为真实语言理解证据。
 
