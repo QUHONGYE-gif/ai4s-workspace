@@ -1,6 +1,6 @@
 # Boltz：本版支持说明
 
-依据：已实跑 boltz==2.2.1 的 src/boltz/main.py；单蛋白输入形式参照官方 docs/prediction.md。接口对照日期 2026-10-24。
+依据：Boltz 2.2.1 的 src/boltz/main.py；单蛋白输入形式参照官方 docs/prediction.md。版本与原始来源见模型定义中的 code_identity、source_url。
 
 本版单蛋白预测配置：recycling_steps（整数、官方默认 3）、sampling_steps（整数、官方默认 200）、diffusion_samples（整数、官方默认 1）。本服务为演示设置了上限，不是普适科学推荐范围。
 
