@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -31,11 +32,14 @@ def workflow(client, template="protein"):
 def test_agent_assets_and_api_work_under_preview_prefix(tmp_path):
     # Uvicorn restores the mount prefix stripped by the workbench proxy.
     with TestClient(create_app(tmp_path), root_path="/agent") as client:
-        page = client.get("/agent/")
-        assert page.status_code == 200
-        assert 'href="./assets/styles.css"' in page.text
+        page = client.get("/agent/", follow_redirects=False)
+        assert page.status_code == 307
+        assert page.headers["location"] == "../#/workflows/new?mode=ai"
+        workspace = client.get("/agent/assets/workspace.html")
+        assert workspace.status_code == 200
+        assert 'class="sidebar"' not in workspace.text
+        assert 'id="apply-workflow"' in workspace.text
         assert client.get("/agent/assets/app.js").status_code == 200
-        assert client.head("/agent/").headers["content-length"] == page.headers["content-length"]
         assert client.get("/agent/api/health").json()["adapter"] == "not_connected"
         assert client.post("/agent/api/workflows", json={"template": "protein"}).status_code == 201
 
@@ -177,7 +181,14 @@ def test_api_key_never_returned_or_exported(tmp_path, monkeypatch):
         malformed = client.post("/api/settings/model", json={"model": "invalid model", "api_key": key})
         assert malformed.status_code == 422 and key not in malformed.text
         private = tmp_path / "settings/deepseek.json"
-        assert private.stat().st_mode & 0o777 == 0o600
+        if os.name == "posix":
+            # Windows maps chmod(0o600) to the readonly user attribute only, so the
+            # strict owner-only bit check is meaningful on POSIX systems alone.
+            assert private.stat().st_mode & 0o777 == 0o600
+        else:
+            # Windows chmod(0o600) only clears the readonly attribute; the file is
+            # still owner-only because it lives under the user profile directory.
+            assert private.exists() and json.loads(private.read_text(encoding="utf-8"))["api_key"] == key
         assert client.post("/api/settings/model", json={"model": "deepseek-v4-pro"}).json()["has_key"] is True
         assert client.post("/api/settings/model", json={"remove_key": True}).json()["has_key"] is False
         assert client.post("/api/settings/model", json={"api_key": key}, headers={"Origin": "https://other.example"}).status_code == 403
@@ -252,3 +263,44 @@ def test_multiple_model_instances_cannot_be_silently_chosen(client):
     assert result.status_code == 200
     assert result.json()["message"]["intent"] == "clarify"
     assert result.json()["state"]["draft"] == draft
+
+
+def test_visual_operations_preserve_science_and_registration(client):
+    draft = workflow(client)
+    base = f"/api/workflows/{draft['id']}"
+    reg = client.post(base + '/registrations', json={"expected_revision":0,"operation_id":"visual-reg","node_ids":["rfd-1"]}).json()['registration']
+    operations = [{"type":"move_node","node_id":"rfd-1","x":-100,"y":300},
+                  {"type":"set_layout","layout":"circle"}]
+    preview = client.post(base + '/changes/preview', json={"expected_revision":0,"operation_id":"preview","operations":operations})
+    assert preview.status_code == 200
+    assert read(client,draft)['draft'] == draft
+    result = change(client,draft,operations).json()['state']
+    assert result['draft']['nodes'] == draft['nodes']
+    assert result['draft']['edges'] == draft['edges']
+    assert result['draft']['visual'] == {"layout":"circle","positions":{}}
+    assert next(r for r in result['registrations'] if r['id'] == reg['id'])['current']
+    assert client.get('/api/graph-contract').json()['changes']['$defs']['AddRelation']
+
+
+def test_branch_and_feedback_are_distinct_and_atomic(client):
+    draft = workflow(client)
+    ops = [{"type":"add_node","node_id":"mpnn-branch","model_id":"proteinmpnn","label":"分支设计"},
+           {"type":"connect","source":"rfd-1","source_port":"backbone","target":"mpnn-branch","target_port":"backbone"},
+           {"type":"add_relation","relation_id":"review","source":"boltz-1","source_port":"confidence","target":"rfd-1","kind":"feedback","label":"评估后重新设计"}]
+    response = change(client,draft,ops)
+    assert response.status_code == 200
+    current = response.json()['state']['draft']
+    assert len([e for e in current['edges'] if e['source']=='rfd-1']) == 2
+    assert current['nodes'][0]['inputs'] == {}
+    base = f"/api/workflows/{draft['id']}"
+    registration = client.post(base + '/registrations',json={"expected_revision":1,"operation_id":"feedback-reg","node_ids":["rfd-1"]}).json()['registration']
+    request = client.post(base + '/requests',json={"registration_id":registration['id']}).json()['request']
+    assert request['design_relations'][0]['id'] == 'review'
+    assert 'design_relations_not_executable' in request['blocking_issues']
+    invalid = change(client,current,[{"type":"move_node","node_id":"rfd-1","x":20,"y":20},
+                                    {**ops[-1],"relation_id":"bad","source_port":"nonexistent"}],operation_id='invalid-visual')
+    assert invalid.status_code == 422
+    assert read(client,draft)['draft'] == current
+    removed = change(client,current,[{"type":"remove_node","node_id":"boltz-1"}],operation_id='remove-visual',confirmed=True)
+    assert removed.status_code == 200
+    assert removed.json()['state']['draft']['visual']['relations'] == []

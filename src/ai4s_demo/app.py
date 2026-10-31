@@ -1,6 +1,5 @@
 """Same-origin single-user web application; run with exactly one worker."""
 
-import fcntl
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -9,12 +8,13 @@ from urllib.parse import urlsplit
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agent import AgentGateway
 from .catalog import CATALOG, knowledge
 from .files import upload
+from .lock import acquire_lock, release_lock
 from .models import (ChangeRequest, ChatRequest, CreateWorkflow, GenerateRequest,
                      ImportRequest, RegisterRequest, RevisionRequest)
 from .service import WorkflowService
@@ -32,13 +32,14 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
     @asynccontextmanager
     async def lifespan(app):
         # A process lock makes the documented JSON/single-worker boundary real.
-        with (store.root / "server.lock").open("a") as lock:
+        # Read+write so the Windows byte-range lock is allowed on this handle.
+        with (store.root / "server.lock").open("a+") as lock:
             try:
-                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                acquire_lock(lock)
             except BlockingIOError:
                 raise RuntimeError("同一数据目录只允许一个服务进程；请使用 --workers 1") from None
             yield
-            fcntl.flock(lock, fcntl.LOCK_UN)
+            release_lock(lock)
 
     app = FastAPI(title="AI4S Workflow Demo", version="0.1.0", lifespan=lifespan)
     app.state.service, app.state.gateway = service, gateway
@@ -73,6 +74,13 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
     @app.get("/api/models")
     def models():
         return {"models": [{"id": key, **value, "documentation": knowledge(key)} for key, value in CATALOG.items()]}
+
+    @app.get("/api/graph-contract")
+    def graph_contract():
+        return {"schema_version": "ai4s-graph-1", "changes": ChangeRequest.model_json_schema(),
+                "execution_connected": False,
+                "relation_kinds": {"feedback": "设计反馈，不绑定输入", "reference": "产物参考，不绑定输入"},
+                "layouts": ["layered", "circle"], "models": CATALOG}
 
     @app.get("/api/settings/model")
     def get_settings():
@@ -112,6 +120,12 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
     def changes(workflow_id: str, request: ChangeRequest):
         return service.change(workflow_id, request)
 
+    @app.post("/api/workflows/{workflow_id}/changes/preview")
+    def preview_changes(workflow_id: str, request: ChangeRequest):
+        with store.lock:
+            service._revision(service._read(workflow_id), request.expected_revision)
+            return {"summary": service.preview_changes(workflow_id, request.operations)}
+
     @app.post("/api/workflows/{workflow_id}/undo")
     def undo(workflow_id: str, request: RevisionRequest):
         return service.undo(workflow_id, request)
@@ -138,6 +152,6 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
 
     @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
     def index():
-        return FileResponse(web / "index.html")
+        return RedirectResponse("../#/workflows/new?mode=ai", status_code=307)
 
     return app

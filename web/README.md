@@ -16,7 +16,7 @@ python scripts/serve_workbench.py --host 127.0.0.1 --port 3000 \
 
 ## Agent 工作流接入
 
-安装 `uv sync --frozen` 后，继续通过原 [PyMOL 联合启动入口](../tools/pymol_web/README.md) 运行；工作台左侧“智能体接入”进入 `./agent/`。普通服务入口保留，仅运行原工作台。模型 API、数据目录和验证边界见 [最小说明](../docs/agent_demo_run.md)。
+安装 `uv sync --frozen` 后，继续通过原 [PyMOL 联合启动入口](../tools/pymol_web/README.md) 运行；通过“工作流 → 接入自定义流程 → AI 辅助生成”编辑并回填；`./agent/` 兼容旧链接并跳转到该页。普通服务入口保留，仅运行原工作台。模型 API、数据目录和验证边界见 [最小说明](../docs/agent_demo_run.md)。
 
 ## 状态目录与启动切换
 

@@ -93,6 +93,34 @@ class Disconnect(Contract):
     target_port: str
 
 
+class MoveNode(Contract):
+    type: Literal["move_node"]
+    node_id: Identifier
+    x: float = Field(ge=-100000, le=100000)
+    y: float = Field(ge=-100000, le=100000)
+
+
+class SetLayout(Contract):
+    type: Literal["set_layout"]
+    layout: Literal["layered", "circle"]
+
+
+class AddRelation(Contract):
+    """Design relation only; never binds an executable model input."""
+    type: Literal["add_relation"]
+    relation_id: Identifier
+    source: Identifier
+    source_port: str
+    target: Identifier
+    kind: Literal["feedback", "reference"]
+    label: str = Field(min_length=1, max_length=80)
+
+
+class RemoveRelation(Contract):
+    type: Literal["remove_relation"]
+    relation_id: Identifier
+
+
 class Rename(Contract):
     type: Literal["rename"]
     name: str = Field(min_length=1, max_length=80)
@@ -106,7 +134,8 @@ class ApplyImport(Contract):
 
 
 Operation = Annotated[
-    UpdateParams | SetInput | SetChains | AddNode | RemoveNode | Connect | Disconnect | Rename | ApplyImport,
+    UpdateParams | SetInput | SetChains | AddNode | RemoveNode | Connect | Disconnect | Rename | ApplyImport
+    | MoveNode | SetLayout | AddRelation | RemoveRelation,
     Field(discriminator="type"),
 ]
 

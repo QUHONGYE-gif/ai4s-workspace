@@ -152,7 +152,34 @@ class WorkflowService:
                     if op.node_id in (edge["source"], edge["target"]):
                         self._disconnect(draft, edge["target"], edge["target_port"])
                 draft["nodes"].remove(item)
+                visual = draft.get("visual", {})
+                visual.get("positions", {}).pop(op.node_id, None)
+                visual["relations"] = [r for r in visual.get("relations", []) if op.node_id not in (r["source"], r["target"])]
                 summaries.append(f"删除 {item['label']} 及其连接")
+            elif op.type == "move_node":
+                node(draft, op.node_id)
+                draft.setdefault("visual", {}).setdefault("positions", {})[op.node_id] = {"x": op.x, "y": op.y}
+                summaries.append(f"移动 {op.node_id} 到 ({op.x:g}, {op.y:g})")
+            elif op.type == "set_layout":
+                visual = draft.setdefault("visual", {})
+                visual.update(layout=op.layout, positions={})
+                summaries.append(f"重新布局：{op.layout}")
+            elif op.type == "add_relation":
+                source, target = node(draft, op.source), node(draft, op.target)
+                if op.source_port not in CATALOG[source["model_id"]]["outputs"]:
+                    raise Problem(422, "关系的来源必须是实际输出端口")
+                relations = draft.setdefault("visual", {}).setdefault("relations", [])
+                if any(r["id"] == op.relation_id for r in relations):
+                    raise Problem(422, "关系 ID 已存在")
+                relations.append({"id": op.relation_id, "source": source["id"], "source_port": op.source_port,
+                                  "target": target["id"], "kind": op.kind, "label": op.label})
+                summaries.append(f"添加{op.kind}设计关系：{op.label}（不绑定执行输入）")
+            elif op.type == "remove_relation":
+                relations = draft.setdefault("visual", {}).setdefault("relations", [])
+                if not any(r["id"] == op.relation_id for r in relations):
+                    raise Problem(422, "关系不存在")
+                relations[:] = [r for r in relations if r["id"] != op.relation_id]
+                summaries.append(f"移除设计关系 {op.relation_id}")
             elif op.type == "update_params":
                 item = node(draft, op.node_id)
                 validate_params(item["model_id"], {**item["params"], **op.changes})
@@ -336,9 +363,14 @@ class WorkflowService:
             if not more:
                 break
             ancestors |= more
-        return {"steps": [n for n in draft["nodes"] if n["id"] in selected],
+        result = {"steps": [n for n in draft["nodes"] if n["id"] in selected],
                 "bindings": [e for e in draft["edges"] if e["target"] in selected],
                 "dependencies": [n for n in draft["nodes"] if n["id"] in ancestors]}
+        relations = [r for r in draft.get("visual", {}).get("relations", [])
+                     if r["source"] in selected | ancestors or r["target"] in selected | ancestors]
+        if relations:
+            result["design_relations"] = copy.deepcopy(relations)
+        return result
 
     def registration_current(self, envelope, registration):
         ids = registration["node_ids"]
@@ -377,6 +409,9 @@ class WorkflowService:
             if not registration or not self.registration_current(envelope, registration):
                 raise Problem(409, "登记不存在或相关配置已变化，请重新确认登记")
             issues = ["adapter_not_connected", "execution_profile_unverified"]
+            relations = registration["snapshot"].get("design_relations", [])
+            if relations:
+                issues.append("design_relations_not_executable")
             for item in registration["snapshot"]["steps"]:
                 checked = self.check_node(envelope["draft"], item)
                 if checked["missing"]:
@@ -391,7 +426,7 @@ class WorkflowService:
                       "scope": {"node_ids": registration["node_ids"]},
                       "steps": [{**n, "code_identity": CATALOG[n["model_id"]]["code_identity"], "execution_profile": None}
                                 for n in registration["snapshot"]["steps"]],
-                      "bindings": registration["snapshot"]["bindings"]}
+                      "bindings": registration["snapshot"]["bindings"], "design_relations": relations}
             envelope["requests"].append(result)
             self.store.write("workflows", workflow_id, envelope)
             return {"request": result, "state": self.view(envelope)}

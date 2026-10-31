@@ -51,6 +51,7 @@ CATALOG = {
                    field("rfd_steps", "扩散步数", min=1, max=50, step=1)],
         "sample_params": {"length": 80, "num_designs": 1, "rfd_steps": 50},
         "inputs": {}, "outputs": {"backbone": "PDB", "metadata": "TRB"},
+        "output_roles": {"backbone": "primary", "metadata": "auxiliary"},
         "mapping": {"length": "contigmap.contigs=[L-L]", "num_designs": "inference.num_designs", "rfd_steps": "diffuser.T"},
     },
     "proteinmpnn": {
@@ -63,6 +64,7 @@ CATALOG = {
                    field("seed", "随机种子", min=0, max=2147483647, step=1)],
         "sample_params": {"num_seq_per_target": 8, "sampling_temp": 0.1, "seed": 42},
         "inputs": {"backbone": "PDB"}, "outputs": {"sequences": "FASTA", "scores": "NPZ"},
+        "output_roles": {"sequences": "primary", "scores": "auxiliary"},
         "mapping": {"num_seq_per_target": "--num_seq_per_target", "sampling_temp": "--sampling_temp（单温度字符串）", "seed": "--seed"},
     },
     "boltz": {
@@ -76,6 +78,7 @@ CATALOG = {
                    field("msa_mode", "MSA 来源", "select", options=[["empty", "空 MSA · 单序列"], ["precomputed", "提供已有 A3M"]])],
         "sample_params": {"recycling_steps": 3, "sampling_steps": 200, "diffusion_samples": 1, "msa_mode": "empty"},
         "inputs": {"sequence": "FASTA", "msa": "A3M"}, "outputs": {"structure": "CIF", "confidence": "JSON"},
+        "output_roles": {"structure": "primary", "confidence": "auxiliary"},
         "mapping": {"recycling_steps": "--recycling_steps", "sampling_steps": "--sampling_steps", "diffusion_samples": "--diffusion_samples", "msa_mode": "输入 YAML 的 protein.msa（产品选项）"},
     },
 }
