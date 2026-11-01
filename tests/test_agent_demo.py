@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -121,11 +122,11 @@ def test_connections_delete_confirmation_and_node_reuse(client):
 
 def test_real_pdb_chain_validation_and_snapshot(client):
     draft = workflow(client)
-    pdb = Path(__file__).parents[1] / "experiments/R001-protein-design-smoke/evidence/backbone.pdb"
+    pdb = Path(__file__).parents[1] / "tests/fixtures/backbone.pdb"
     uploaded = client.post("/api/files", files={"file": ("backbone.pdb", pdb.read_bytes())})
     assert uploaded.status_code == 201
     info = uploaded.json()
-    assert sum(info["chains"].values()) == 80
+    assert info["chains"] == {"A": 2, "B": 1}
     ops = [{"type": "set_input", "node_id": "mpnn-1", "port": "backbone", "value": {"kind": "file", "file_id": info["id"]}},
            {"type": "set_chains", "node_id": "mpnn-1", "policy": {"mode": "selected", "chains": ["Z"]}}]
     assert change(client, draft, ops).status_code == 422
@@ -180,7 +181,14 @@ def test_api_key_never_returned_or_exported(tmp_path, monkeypatch):
         malformed = client.post("/api/settings/model", json={"model": "invalid model", "api_key": key})
         assert malformed.status_code == 422 and key not in malformed.text
         private = tmp_path / "settings/deepseek.json"
-        assert private.stat().st_mode & 0o777 == 0o600
+        if os.name == "posix":
+            # Windows maps chmod(0o600) to the readonly user attribute only, so the
+            # strict owner-only bit check is meaningful on POSIX systems alone.
+            assert private.stat().st_mode & 0o777 == 0o600
+        else:
+            # Windows chmod(0o600) only clears the readonly attribute; the file is
+            # still owner-only because it lives under the user profile directory.
+            assert private.exists() and json.loads(private.read_text(encoding="utf-8"))["api_key"] == key
         assert client.post("/api/settings/model", json={"model": "deepseek-v4-pro"}).json()["has_key"] is True
         assert client.post("/api/settings/model", json={"remove_key": True}).json()["has_key"] is False
         assert client.post("/api/settings/model", json={"api_key": key}, headers={"Origin": "https://other.example"}).status_code == 403

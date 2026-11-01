@@ -20,9 +20,10 @@ apt-get install -y --no-install-recommends \
   fonts-dejavu-core libgl1-mesa-dri nginx-light
 ```
 
-确认并结束本人已有的 3000 端口应用后，从仓库根目录启动：
+Agent 依赖使用 Python 3.12+、uv 和项目专用 `.venv`。确认并结束本人已有的 3000 端口应用后，从仓库根目录启动：
 
 ```bash
+uv sync --frozen
 bash tools/pymol_web/start-workspace.sh
 ```
 
@@ -34,14 +35,16 @@ bash tools/pymol_web/start-workspace.sh
 
 | 文件 | 职责 |
 | --- | --- |
-| [start-workspace.sh](start-workspace.sh) | 联合启动工作台、PyMOL 与路径代理 |
+| [start-workspace.sh](start-workspace.sh) | 联合启动工作台、Agent、PyMOL 与路径代理 |
 | [start.sh](start.sh) | 管理 Xvfb、窗口管理器、PyMOL 和 VNC 子进程 |
 | [workspace.py](workspace.py) | 在 PyMOL GUI 线程切换界面、执行命令并读取反馈 |
-| [workspace-nginx.conf](workspace-nginx.conf) | 3000 代理工作台内部 3001 及 noVNC 路径 |
+| [workspace-nginx.conf](workspace-nginx.conf) | 3000 代理工作台内部 3001、Agent 路径及 noVNC 路径 |
 | [后端接口](../../src/workbench/pymol.py) | 回环 RPC 与结构加载 |
 | [嵌入页面](../../web/demo/pymol.html) | 复用已有 noVNC 客户端 |
 
 内部端口仅监听回环地址，访问权限沿用个人预览。运行目录为 `${XDG_STATE_HOME:-$HOME/.local/state}/ai4s-workbench-demo`；`api-state/` 保存模拟快照，`pymol-inputs/` 保存上传文件，`server.log`、`server.pid` 用于管理启动进程。
+
+Agent 内部端口为回环地址 3002，模型 API 和数据目录见 [Agent 说明](../../docs/agent_demo_run.md)。
 
 关闭 PyMOL 不停止工作台；重新打开工具需重启本人启动的联合服务。工作区停止后需重新启动服务，容器重建后需重新安装系统依赖；需保留的文件放在持久卷。
 

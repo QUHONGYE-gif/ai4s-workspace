@@ -76,7 +76,7 @@ def main():
         def item(s, node_id):
             return next(n for n in s["draft"]["nodes"] if n["id"] == node_id)
 
-        pdb = Path(__file__).resolve().parents[1] / "experiments/R001-protein-design-smoke/evidence/backbone.pdb"
+        pdb = Path(__file__).resolve().parents[1] / "tests/fixtures/backbone.pdb"
         uploaded = client.post("/api/files", files={"file": ("acceptance-backbone.pdb", pdb.read_bytes())})
         uploaded.raise_for_status()
         mutate([{"type": "set_input", "node_id": "mpnn-1", "port": "backbone", "value": {"kind": "file", "file_id": uploaded.json()["id"]}}])

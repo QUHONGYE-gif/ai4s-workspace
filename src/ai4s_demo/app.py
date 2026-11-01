@@ -1,6 +1,5 @@
 """Same-origin single-user web application; run with exactly one worker."""
 
-import fcntl
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -15,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from .agent import AgentGateway
 from .catalog import CATALOG, knowledge
 from .files import upload
+from .lock import acquire_lock, release_lock
 from .models import (ChangeRequest, ChatRequest, CreateWorkflow, GenerateRequest,
                      ImportRequest, RegisterRequest, RevisionRequest)
 from .service import WorkflowService
@@ -32,13 +32,14 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
     @asynccontextmanager
     async def lifespan(app):
         # A process lock makes the documented JSON/single-worker boundary real.
-        with (store.root / "server.lock").open("a") as lock:
+        # Read+write so the Windows byte-range lock is allowed on this handle.
+        with (store.root / "server.lock").open("a+") as lock:
             try:
-                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                acquire_lock(lock)
             except BlockingIOError:
                 raise RuntimeError("同一数据目录只允许一个服务进程；请使用 --workers 1") from None
             yield
-            fcntl.flock(lock, fcntl.LOCK_UN)
+            release_lock(lock)
 
     app = FastAPI(title="AI4S Workflow Demo", version="0.1.0", lifespan=lifespan)
     app.state.service, app.state.gateway = service, gateway

@@ -34,7 +34,10 @@
       "load": 9,
       "size": 1.6,
       "position": "grid-column:2;grid-row:1",
-      "description": "依赖标准化序列及 embedding 模型。仅改变结构模型，不影响此结果。"
+      "description": "依赖标准化序列及 embedding 模型。仅改变结构模型，不影响此结果。",
+      "parameters": [
+        {"key": "embedding", "label": "Embedding 模型", "type": "select", "options": [["embed-v1", "DemoEmbed v1"], ["embed-v2", "DemoEmbed v2"]]}
+      ]
     },
     {
       "id": "msa",
@@ -49,7 +52,10 @@
       "load": 24,
       "size": 0.42,
       "position": "grid-column:2;grid-row:2",
-      "description": "依赖标准化序列和 MSA 数据库版本。数据库更新会影响此步骤及其下游。"
+      "description": "依赖标准化序列和 MSA 数据库版本。数据库更新会影响此步骤及其下游。",
+      "parameters": [
+        {"key": "database", "label": "MSA 数据库", "type": "select", "options": [["db-2025", "DemoDB 2025"], ["db-2026", "DemoDB 2026"]]}
+      ]
     },
     {
       "id": "structure",
@@ -65,7 +71,11 @@
       "load": 70,
       "size": 0.08,
       "position": "grid-column:3;grid-row:1 / 3",
-      "description": "示例预测器同时消费 embedding 与 MSA，依赖预测模型和随机种子。此依赖是演示约定，不代表所有蛋白质模型。"
+      "description": "示例预测器同时消费 embedding 与 MSA，依赖预测模型和随机种子。此依赖是演示约定，不代表所有蛋白质模型。",
+      "parameters": [
+        {"key": "predictor", "label": "结构预测模型", "type": "select", "options": [["fold-v1", "DemoFold v1"], ["fold-v2", "DemoFold v2"]]},
+        {"key": "seed", "label": "随机种子", "type": "number", "min": 0, "max": 999999, "step": 1}
+      ]
     },
     {
       "id": "analysis",
@@ -118,7 +128,10 @@
       "load": 8,
       "size": 0.1,
       "position": "grid-column:2;grid-row:1",
-      "description": "依赖标准化分子、生成模型和随机种子。仅改变对接引擎时，本步骤仍可复用。"
+      "description": "依赖标准化分子、生成模型和随机种子。仅改变对接引擎时，本步骤仍可复用。",
+      "parameters": [
+        {"key": "embedding", "label": "生成模型", "type": "select", "options": [["generate-v1", "DemoMolGen v1"], ["generate-v2", "DemoMolGen v2"]]}
+      ]
     },
     {
       "id": "target",
@@ -131,7 +144,10 @@
       "load": 3,
       "size": 0.08,
       "position": "grid-column:2;grid-row:2",
-      "description": "依赖所选靶点结构版本和准备算法。此分支独立于起始分子，输入分子变化不会使靶点准备结果失效。"
+      "description": "依赖所选靶点结构版本和准备算法。此分支独立于起始分子，输入分子变化不会使靶点准备结果失效。",
+      "parameters": [
+        {"key": "database", "label": "靶点版本", "type": "select", "options": [["target-v1", "DemoTarget v1"], ["target-v2", "DemoTarget v2"]]}
+      ]
     },
     {
       "id": "docking",
@@ -147,7 +163,11 @@
       "load": 10,
       "size": 0.03,
       "position": "grid-column:3;grid-row:1 / 3",
-      "description": "依赖候选分子、已准备靶点、对接引擎版本和随机种子。仅演示依赖与复用决策，不执行真实对接。"
+      "description": "依赖候选分子、已准备靶点、对接引擎版本和随机种子。仅演示依赖与复用决策，不执行真实对接。",
+      "parameters": [
+        {"key": "predictor", "label": "对接引擎", "type": "select", "options": [["dock-v1", "DemoDock v1"], ["dock-v2", "DemoDock v2"]]},
+        {"key": "seed", "label": "随机种子", "type": "number", "min": 0, "max": 999999, "step": 1}
+      ]
     },
     {
       "id": "analysis",
