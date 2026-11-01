@@ -16,10 +16,10 @@
         <div class="panel-heading"><h2><span class="section-number">01</span><span id="workflow-heading">正在载入工作流</span></h2><div class="flow-head-right"><span class="pill" id="revision">r0</span><button class="button compact" id="workflow-button">切换 / 新建</button><button class="button compact" id="add-button">＋ 步骤</button></div></div>
         <div class="canvas-toolbar" role="toolbar" aria-label="画布工具">
           <div><button class="button compact" id="zoom-out" data-view-control aria-label="缩小画布">−</button><output id="zoom-value" aria-live="polite">100%</output><button class="button compact" id="zoom-in" data-view-control aria-label="放大画布">＋</button><button class="button compact" id="fit-graph" data-view-control>适应画布</button><button class="button compact" id="focus-node" data-view-control>聚焦所选</button></div>
-          <div><button class="button compact" id="layout-tree">分层布局</button><button class="button compact" id="layout-circle">环形布局</button><button class="button compact" id="graph-json-button">图结构 / 操作</button><button class="button compact" id="expand-graph" data-view-control aria-pressed="false">展开画布</button></div>
+          <div><button class="button compact" id="graph-json-button">图结构 / 操作</button><button class="button compact" id="expand-graph" data-view-control aria-pressed="false">展开画布</button></div>
         </div>
         <div class="graph demo-graph" id="graph" tabindex="0" aria-label="工作流画布：拖动空白平移，Ctrl 或 Command 加滚轮缩放，方向键移动镜头，0 适应画布"><div id="graph-world"><svg class="wires" id="wires" aria-hidden="true"></svg><div id="pipeline"></div></div></div>
-        <p class="canvas-help">拖动卡片顶部移动节点 · 拖动空白平移 · Ctrl / ⌘ + 滚轮缩放 · 选中卡片可用方向键移动</p>
+        <p class="canvas-help">自由拖动节点，或通过对话让 AI 调整位置与连接。拖动空白平移 · Ctrl / ⌘ + 滚轮缩放 · 选中卡片可用方向键移动</p>
         <div class="graph-caption"><span id="flow-caption">所有步骤均未提交执行</span><div class="inline-actions"><button class="text-button" id="rename-button">重命名</button><button class="text-button" id="connect-button">连接步骤</button><button class="text-button" id="undo-button" disabled>撤销</button></div></div>
         <div class="panel-legend"><span><i class="legend-line"></i>配置依赖</span><span><i class="legend-line dashed"></i>需转换</span><span>点线：反馈／参考设计关系</span><span>端口为模型声明；尚未执行或生成文件</span><a href="https://github.com/zsviczian/obsidian-excalidraw-plugin/blob/master/docs/ea-script-docs/MindMapBuilderAPI.md" target="_blank" rel="noopener noreferrer">自动化设计参考 ↗</a></div>
       </section>

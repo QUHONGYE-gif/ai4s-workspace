@@ -442,9 +442,6 @@ export async function mountAssistant(host, {onApply}) {
       const result = await post(endpoint('changes'),{expected_revision:state.draft.revision,operation_id:operationId(),operations:[op]});
       acceptState(result.state,target); $('connect-dialog').close();
     },'connect-error'); });
-    for (const [id,layout] of [['layout-tree','layered'],['layout-circle','circle']]) $(id).addEventListener('click',async () => {
-      try { await saveGraphOperations([{type:'set_layout',layout}]); graph.fit(); } catch(error) { showError(error); }
-    });
     function showGraphDocument() {
       $('graph-json').textContent = JSON.stringify(graph.document(),null,2);
       $('graph-relations').innerHTML = (state.draft.visual?.relations || []).map(r=>`<div class="graph-relation-row"><span>${esc(r.source)}.${esc(r.source_port)} → ${esc(r.target)} · ${esc(r.label)}</span><button class="button compact" data-remove-relation="${esc(r.id)}">删除关系</button></div>`).join('');
