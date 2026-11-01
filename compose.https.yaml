@@ -1,0 +1,9 @@
+# HTTPS reverse-proxy settings for the Aliyun Coder entrypoint.
+# Apply after compose.yaml and compose.server.yaml for a public HTTPS reverse proxy.
+# Does not expose additional host ports or start an ingress connector.
+services:
+  coder:
+    environment:
+      CODER_ACCESS_URL: ${AI4S_PUBLIC_URL:?Set the actual public https:// URL}
+      CODER_SECURE_AUTH_COOKIE: "true"
+      CODER_DERP_FORCE_WEBSOCKETS: "true"

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyMOL 结构视图</title>
+  <style>
+    html, body, #screen { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body { background: #000; color: #ddd; font: 14px system-ui; }
+    #status { position: absolute; inset: 0; display: grid; place-items: center; }
+    #status[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <div id="screen"></div>
+  <div id="status" role="status">正在连接 PyMOL…</div>
+  <script type="module">
+    import RFB from './tools/pymol/core/rfb.js';
+
+    const websocket = new URL('tools/pymol/websockify', document.baseURI);
+    websocket.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const status = document.querySelector('#status');
+    const session = new RFB(document.querySelector('#screen'), websocket.href);
+    session.scaleViewport = true;
+    session.background = '#000';
+    session.addEventListener('connect', () => { status.hidden = true; });
+    session.addEventListener('disconnect', () => {
+      status.textContent = 'PyMOL 连接已断开，请刷新页面。';
+      status.hidden = false;
+    });
+    window.addEventListener('pagehide', () => session.disconnect(), { once: true });
+  </script>
+</body>
+</html>

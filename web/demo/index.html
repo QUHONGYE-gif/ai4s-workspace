@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:,">
+<title>研序 · AI4S 工作台（模拟体验）</title>
+<link rel="stylesheet" href="./assets/styles.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+<symbol id="i-flow" viewBox="0 0 24 24"><rect x="3" y="9" width="5" height="6" rx="1"/><rect x="16" y="3" width="5" height="6" rx="1"/><rect x="16" y="15" width="5" height="6" rx="1"/><path d="M8 12h4V6h4M12 12v6h4"/></symbol>
+<symbol id="i-data" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v7c0 4 16 4 16 0V5M4 12v7c0 4 16 4 16 0"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-tune" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="10" cy="18" r="2" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z"/></symbol>
+<symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 9a8 8 0 1 1 0 7M4 3v6h6"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+<symbol id="i-atom" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(45 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-45 12 12)"/><circle cx="12" cy="12" r="1"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M13 3H5v18h14V9Zm0 0v6h6M8 13h8M8 17h6"/></symbol>
+<symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-13-2 20"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="m12 3 9 5v9l-9 5-9-5V8Zm0 9 9-4M12 12 3 8m9 4v10M7 5.8l9 5"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+</defs></svg>
+<aside class="sidebar" aria-label="主导航">
+  <div class="brand"><svg class="brandmark" viewBox="0 0 36 40" fill="none" aria-hidden="true"><path d="m4 11 13-7 14 8-13 8Zm0 9 14 8 13-8M4 29l14 8 13-8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><div><div class="brand-name">研序</div><div class="brand-sub">SCIENCE WORKBENCH</div></div></div>
+  <div class="project-switch"><div class="eyebrow">当前项目</div><div class="project-name"><svg class="icon"><use href="#i-atom"/></svg> 分子设计探索 <span class="pill good" style="margin-left:auto;font-size:8px;padding:1px 5px">示例</span></div><div id="active-context" class="tiny" style="color:#939fbb;margin-top:9px">当前流程 · 蛋白质设计</div></div>
+  <div class="nav-label">WORKSPACE</div>
+  <nav><button class="nav-item active" data-nav="workflows"><svg class="icon"><use href="#i-flow"/></svg>工作流<span id="workflow-count" class="nav-count">02</span></button><button class="nav-item" data-nav="catalog"><svg class="icon"><use href="#i-data"/></svg>数据目录<span id="catalog-count" class="nav-count">5</span></button><button class="nav-item" data-nav="runs"><svg class="icon"><use href="#i-clock"/></svg>实验记录<span id="run-count" class="nav-count">0</span></button><button class="nav-item" data-nav="policy"><svg class="icon"><use href="#i-tune"/></svg>复用与存储</button><button class="nav-item" data-nav="tools"><svg class="icon"><use href="#i-box"/></svg>常用工具<span class="nav-count">02</span></button></nav>
+  <div class="sidebar-note"><div class="status"><span class="dot"></span>演示模式</div><div>科学流程仅作模拟</div></div>
+  <div class="user"><div class="avatar">研</div><div><div class="user-name">示例研究者</div><div class="user-role">演示账户</div></div><button class="help-button" id="help-btn" aria-label="查看原型说明">?</button></div>
+</aside>
+<div class="shell"><header class="topbar"><div class="breadcrumbs">项目空间 <span>/</span> 分子设计探索 <span>/</span> <strong id="breadcrumb">工作流</strong></div><div class="top-right"><label class="search-box"><svg class="icon"><use href="#i-search"/></svg><input id="global-search" aria-label="搜索数据目录" placeholder="搜索中间数据…"><span class="kbd">↵</span></label><span class="demo-badge">演示版</span></div></header><main id="main" class="main"><div class="panel empty" role="status">正在载入工作台…</div></main></div>
+<input type="file" id="state-import" accept=".json,application/json" hidden>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<div id="modal" class="modal-backdrop" hidden><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1"><div class="panel-head"><div id="modal-title" class="panel-title"></div><button class="modal-close" aria-label="关闭弹窗"><svg class="icon"><use href="#i-close"/></svg></button></div><div id="modal-content" class="modal-content"></div></section></div>
+<script src="./assets/api.js" defer></script>
+<script src="./assets/app.js" defer></script>
+</body>
+</html>

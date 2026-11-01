@@ -1,0 +1,18 @@
+[Unit]
+Description=AI4S Coder private reverse channel to Aliyun
+After=network-online.target
+
+[Service]
+Type=simple
+Slice=ai4s.slice
+WorkingDirectory=/data1/qhy/coder-relay
+ExecStart=/usr/bin/ssh -F /dev/null -NT -i /data1/qhy/coder-relay/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/data1/qhy/coder-relay/known_hosts -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ConnectTimeout=10 -R 127.0.0.1:27080:127.0.0.1:17080 ai4s-tunnel@47.109.63.27
+Restart=always
+RestartSec=5
+UMask=0077
+MemoryMax=128M
+CPUQuota=25%
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target
