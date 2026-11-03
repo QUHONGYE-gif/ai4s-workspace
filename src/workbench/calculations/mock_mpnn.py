@@ -1,31 +1,26 @@
+# Mock MPNN 计算任务，仅用于C模块逻辑调试，A侧交付真实CalcJob后替换
 from aiida.engine import CalcJob
 from aiida.orm import Dict, SinglefileData
-import random
-
 
 class MockMPNNCalcJob(CalcJob):
-    """轻量模拟MPNN任务，C模块调试用，A侧就绪后弃用"""
+    """模拟ProteinMPNN模型：输入PDB，输出3条带分数的候选序列"""
     @classmethod
     def define(cls, spec):
         super().define(spec)
+        # 输入端口（和队友A侧真实CalcJob保持一致，对接时不用改WorkChain）
         spec.input("pdb_file", valid_type=SinglefileData)
-        spec.input("model_params", valid_type=Dict)
-        spec.output("raw_data", valid_type=Dict)
-        spec.exit_code(300, "SIMULATED_FAILED", message="模拟MPNN计算失败")
+        spec.input("params", valid_type=Dict)
+        # 输出端口（同上，接口契约）
+        spec.output("result", valid_type=Dict, required=True)
 
-    def prepare_for_submission(self, folder):
-        # 30%概率失败，用来测试重试；调试时可以改成 return self.exit_codes.SIMULATED_FAILED 固定失败
-        if random.random() < 0.3:
-            return self.exit_codes.SIMULATED_FAILED
-
-        # 统一小样本：4条序列，对齐A侧规范
-        out = Dict(dict={
-            "sequences": [
-                {"seq": "AAAA", "score": 0.82},
-                {"seq": "LLLL", "score": 0.75},
-                {"seq": "WWWW", "score": 0.61},
-                {"seq": "RRRR", "score": 0.90},
-            ]
-        })
-        self.out("raw_data", out)
-        return None
+    def run(self):
+        # 模拟计算耗时，输出固定测试序列（3条，不同分数）
+        test_sequences = [
+            {"seq": "AAA", "score": 0.92},
+            {"seq": "BBB", "score": 0.81},
+            {"seq": "CCC", "score": 0.65},
+        ]
+        self.out("result", Dict({
+            "version": self.inputs.params["version"],
+            "sequences": test_sequences
+        }).store())
