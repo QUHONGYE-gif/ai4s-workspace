@@ -1,6 +1,5 @@
 from aiida.engine import CalcJob
 from aiida.orm import Dict, SinglefileData
-from aiida.engine.processes.calcjobs import CalcJobProcessSpec
 import random
 
 
