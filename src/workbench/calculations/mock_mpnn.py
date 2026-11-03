@@ -6,7 +6,7 @@ import random
 class MockMPNNCalcJob(CalcJob):
     """轻量模拟MPNN任务，C模块调试用，A侧就绪后弃用"""
     @classmethod
-    def define(cls, spec: CalcJobProcessSpec):
+    def define(cls, spec):
         super().define(spec)
         spec.input("pdb_file", valid_type=SinglefileData)
         spec.input("model_params", valid_type=Dict)
