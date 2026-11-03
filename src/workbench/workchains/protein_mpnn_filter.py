@@ -1,6 +1,6 @@
 from aiida.engine import WorkChain, ToContext, while_
 from aiida.orm import Dict, SinglefileData
-from aiida.common import ExitCode
+from aiida.engine.processes.exit_code import ExitCode
 
 # 现在调试用mock；等A侧交付后改成 from .calculations.mpnn import ProteinMPNNCalcJob
 from ..calculations.mock_mpnn import MockMPNNCalcJob
