@@ -1,16 +1,16 @@
-"""
-测试工具：生成测试 PDB、辅助统计
-"""
-from aiida.orm import SinglefileData
+from aiida.orm import SinglefileData, QueryBuilder
+from .calcjobs import LightMPNNCalcJob
+from .workflows import ProteinMPNNFilterWorkChain
 
 
 def make_test_pdb() -> SinglefileData:
-    """生成测试用 PDB 内容节点"""
-    pdb_content = (
-        "ATOM      1  N   ALA A   1       0.000   0.000   0.000  1.00  0.00\n"
-        "ATOM      2  CA  ALA A   1       1.400   0.000   0.000  1.00  0.00\n"
-        "ATOM      3  C   ALA A   1       2.000   1.300   0.000  1.00  0.00\n"
-        "ATOM      4  O   ALA A   1       1.400   2.300   0.000  1.00  0.00\n"
-        "END\n"
-    )
-    return SinglefileData.from_string(pdb_content)
+    """生成测试PDB节点，用于mock样例"""
+    return SinglefileData.from_string("TEST PDB\nATOM 1 N ALA A 1")
+
+
+def count_mpnn_launches(wc_pk: int):
+    """统计该workchain下真实提交的MPNN CalcJob数量，验收重算证据：重筛选返回0"""
+    qb = QueryBuilder()
+    qb.append(ProteinMPNNFilterWorkChain, filters={"id": wc_pk}, tag="wc")
+    qb.append(LightMPNNCalcJob, with_incoming="wc")
+    return qb.count()
