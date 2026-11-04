@@ -1,1 +1,0 @@
-from .protein_mpnn_filter import ProteinMPNNFilterWorkChain

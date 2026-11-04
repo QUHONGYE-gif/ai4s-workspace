@@ -18,7 +18,7 @@ def main():
         "version": ver,
         "task_id": "proteinmpnn",
         "contract_version": "1",
-        "validation": {"passed": True, "validator_version": "proteinmpnn-1"},
+        "validation": {"passed": True, "validator_version": "proteinmpnn-1.0"},
         "artifacts": [
             {
                 "port": "artifacts.sequences",
@@ -28,7 +28,7 @@ def main():
                     {"sample_id": "s001", "seq": "AAAA", "score": 0.95},
                     {"sample_id": "s002", "seq": "BBBB", "score": 1.00},
                     {"sample_id": "s003", "seq": "CCCC", "score": 1.08},
-                    {"sample_id": "s004", "seq": "DDDD", "score": 1.20}
+                    {"sample_id": "s004", "seq": "DDDD", "score": 1.20},
                 ]
             }
         ]

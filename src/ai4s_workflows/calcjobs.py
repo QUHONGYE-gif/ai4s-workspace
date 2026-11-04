@@ -14,6 +14,13 @@ class LightMPNNCalcJob(CalcJob):
         spec.input("code")
         spec.input("pdb_file", valid_type=SinglefileData)
         spec.input("params", valid_type=Dict)
+        spec.input(
+            "metadata.options.resources",
+            valid_type=dict,
+            default={"num_machines": 1, "num_mpiprocs_per_machine": 1}
+        )
+        spec.input("metadata.options.max_wallclock_seconds", valid_type=int, default=3600)
+
         spec.output("result", valid_type=Dict, required=True)
         spec.exit_code(101, "MOCK_RUNTIME_FAIL", message="Mock MPNN模拟运行失败")
 
@@ -29,3 +36,10 @@ class LightMPNNCalcJob(CalcJob):
         folder.create_file_from_object("params.json", self.inputs.params.get_dict())
         folder.create_file_from_object("input.pdb", self.inputs.pdb_file.get_content())
         return calcinfo
+
+    @classmethod
+    def outputs_from_node(cls, node):
+        import json
+        with node.open("result.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return {"result": Dict(data)}

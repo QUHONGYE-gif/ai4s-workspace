@@ -16,4 +16,7 @@ def count_mpnn_launches(wc_pk: int):
     qb = QueryBuilder()
     qb.append(ProteinMPNNFilterWorkChain, filters={"id": wc_pk}, tag="wc")
     qb.append(LightMPNNCalcJob, with_incoming="wc")
-    return qb.count()
+    try:
+        return qb.count()
+    except Exception:
+        return 0
