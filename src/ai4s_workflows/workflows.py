@@ -1,5 +1,6 @@
 from aiida.engine import WorkChain, ToContext
 from aiida.orm import Dict
+from aiida.engine import workchain
 from .calcjobs import LightMPNNCalcJob
 
 SUPPORTED_VERSIONS = ["v1.0", "v1.1"]
@@ -32,17 +33,29 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         spec.exit_code(203, "MISSING_MPNN_OUTPUT", message="MPNN输出缺失artifacts")
         spec.exit_code(204, "INVALID_ARTIFACT_SCHEMA", message="产物schema_version不匹配ai4s‑artifacts‑1")
 
-    def run(self):
+        # 执行大纲，AiiDA2.9标准写法，禁止重写run()
+        spec.outline(
+            cls.initialize_ctx,
+            cls.maybe_skip_inference,
+            cls.submit_mpnn,
+            cls.on_mpnn_done,
+            cls.run_filter,
+        )
+
+    @workchain.step
+    def initialize_ctx(self):
         self.ctx.retry_count = 0
         self.ctx.model_launches = 0
         self.ctx.mpnn_calc = None
 
+    @workchain.step
+    def maybe_skip_inference(self):
+        """如果传入existing_mpnn_result，直接保存结果，跳过submit_mpnn步骤"""
         if "existing_mpnn_result" in self.inputs:
             self.ctx.mpnn_result = self.inputs.existing_mpnn_result
-            return self.on_mpnn_done()
+            return self.next(self.on_mpnn_done)
 
-        return self.submit_mpnn()
-
+    @workchain.step
     def submit_mpnn(self):
         builder = LightMPNNCalcJob.get_builder()
         builder.code = self.inputs.code
@@ -51,6 +64,7 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         self.report(f"提交MPNN推理，第 {self.ctx.retry_count + 1} 次尝试")
         return ToContext(mpnn_calc=self.submit(builder))
 
+    @workchain.step
     def on_mpnn_done(self):
         if "existing_mpnn_result" not in self.inputs:
             calc = self.ctx.mpnn_calc
@@ -68,7 +82,7 @@ class ProteinMPNNFilterWorkChain(WorkChain):
                     return self.exit(self.exit_codes.MAX_RETRY_REACHED)
 
                 self.report(f"MPNN任务失败，发起第 {self.ctx.retry_count+1} 次重试")
-                return self.submit_mpnn()
+                return self.next(self.submit_mpnn)
 
             self.ctx.mpnn_result = calc.outputs.result
 
@@ -103,8 +117,7 @@ class ProteinMPNNFilterWorkChain(WorkChain):
             self.out("selection_report", Dict(rep))
             return self.exit(self.exit_codes.VERSION_NOT_SUPPORTED)
 
-        return self.run_filter()
-
+    @workchain.step
     def run_filter(self):
         mpnn_data = self.ctx.mpnn_result.get_dict()
         f_params = self.inputs.filter_params.get_dict()
