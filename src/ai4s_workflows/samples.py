@@ -9,7 +9,10 @@ def make_test_pdb() -> SinglefileData:
 
 
 def count_mpnn_launches(wc_pk: int):
-    """统计该workchain下真实提交的MPNN CalcJob数量，验收重算证据：重筛选返回0"""
+    """
+    统计该workchain下真实提交的LightMPNNCalcJob数量
+    验收重算证据：重筛选返回0，证明没有新启动MPNN
+    """
     qb = QueryBuilder()
     qb.append(ProteinMPNNFilterWorkChain, filters={"id": wc_pk}, tag="wc")
     qb.append(LightMPNNCalcJob, with_incoming="wc")

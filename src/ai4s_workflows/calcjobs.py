@@ -26,7 +26,6 @@ class LightMPNNCalcJob(CalcJob):
         calcinfo.codes_info = [codeinfo]
         calcinfo.retrieve_list = ["result.json"]
 
-        # 写入输入文件
         folder.create_file_from_object("params.json", self.inputs.params.get_dict())
         folder.create_file_from_object("input.pdb", self.inputs.pdb_file.get_content())
         return calcinfo

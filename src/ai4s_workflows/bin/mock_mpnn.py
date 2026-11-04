@@ -5,22 +5,20 @@ import random
 
 
 def main():
-    with open("params.json", "r", encoding="utf‑8") as f:
+    with open("params.json", "r", encoding="utf-8") as f:
         params = json.load(f)
 
-    # 40%概率模拟失败，用于验证重试逻辑
     if random.random() < 0.40:
         print("MOCK ERROR: MPNN runtime crash", file=sys.stderr)
         sys.exit(101)
 
     ver = params["version"]
-    # 严格按照文档的artifacts schema输出JSON
     output_data = {
         "schema_version": "ai4s-artifacts-1",
         "version": ver,
         "task_id": "proteinmpnn",
         "contract_version": "1",
-        "validation": {"passed": True, "validator_version": "proteinmpnn‑1"},
+        "validation": {"passed": True, "validator_version": "proteinmpnn-1"},
         "artifacts": [
             {
                 "port": "artifacts.sequences",
@@ -36,7 +34,7 @@ def main():
         ]
     }
 
-    with open("result.json", "w", encoding="utf‑8") as f:
+    with open("result.json", "w", encoding="utf-8") as f:
         json.dump(output_data, f)
 
 
