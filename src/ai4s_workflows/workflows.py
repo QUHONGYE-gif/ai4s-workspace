@@ -1,6 +1,5 @@
 from aiida.engine import WorkChain, ToContext
-from aiida.orm import Dict
-from aiida.engine import workchain
+from aiida.orm import Dict, SinglefileData
 from .calcjobs import LightMPNNCalcJob
 
 SUPPORTED_VERSIONS = ["v1.0", "v1.1"]
@@ -33,7 +32,7 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         spec.exit_code(203, "MISSING_MPNN_OUTPUT", message="MPNN输出缺失artifacts")
         spec.exit_code(204, "INVALID_ARTIFACT_SCHEMA", message="产物schema_version不匹配ai4s‑artifacts‑1")
 
-        # 执行大纲，AiiDA2.9标准写法，禁止重写run()
+        # AiiDA2.9.4标准outline，按顺序执行步骤，无装饰器
         spec.outline(
             cls.initialize_ctx,
             cls.maybe_skip_inference,
@@ -42,20 +41,17 @@ class ProteinMPNNFilterWorkChain(WorkChain):
             cls.run_filter,
         )
 
-    @workchain.step
     def initialize_ctx(self):
         self.ctx.retry_count = 0
         self.ctx.model_launches = 0
         self.ctx.mpnn_calc = None
 
-    @workchain.step
     def maybe_skip_inference(self):
-        """如果传入existing_mpnn_result，直接保存结果，跳过submit_mpnn步骤"""
+        """如果传入existing_mpnn_result，直接保存结果，跳转到on_mpnn_done"""
         if "existing_mpnn_result" in self.inputs:
             self.ctx.mpnn_result = self.inputs.existing_mpnn_result
             return self.next(self.on_mpnn_done)
 
-    @workchain.step
     def submit_mpnn(self):
         builder = LightMPNNCalcJob.get_builder()
         builder.code = self.inputs.code
@@ -64,7 +60,6 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         self.report(f"提交MPNN推理，第 {self.ctx.retry_count + 1} 次尝试")
         return ToContext(mpnn_calc=self.submit(builder))
 
-    @workchain.step
     def on_mpnn_done(self):
         if "existing_mpnn_result" not in self.inputs:
             calc = self.ctx.mpnn_calc
@@ -117,7 +112,6 @@ class ProteinMPNNFilterWorkChain(WorkChain):
             self.out("selection_report", Dict(rep))
             return self.exit(self.exit_codes.VERSION_NOT_SUPPORTED)
 
-    @workchain.step
     def run_filter(self):
         mpnn_data = self.ctx.mpnn_result.get_dict()
         f_params = self.inputs.filter_params.get_dict()
