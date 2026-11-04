@@ -56,6 +56,12 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         builder = LightMPNNCalcJob.get_builder()
         builder.code = self.inputs.code
         builder.pdb_file = self.inputs.pdb_file
+        builder.metadata.options = {
+            "resources": {
+                "num_machines": 1,
+                "num_mpiprocs_per_machine": 1,
+            }
+        }
         builder.params = self.inputs.mpnn_params
         self.report(f"提交MPNN推理，第 {self.ctx.retry_count + 1} 次尝试")
         return ToContext(mpnn_calc=self.submit(builder))
