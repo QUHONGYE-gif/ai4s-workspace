@@ -1,3 +1,5 @@
+import json
+
 from aiida.engine import CalcJob
 from aiida.orm import Dict, SinglefileData
 from aiida.common.datastructures import CalcInfo, CodeInfo
@@ -11,21 +13,19 @@ class LightMPNNCalcJob(CalcJob):
     @classmethod
     def define(cls, spec):
         super().define(spec)
-        spec.input("code")
         spec.input("pdb_file", valid_type=SinglefileData)
         spec.input("params", valid_type=Dict)
-        spec.input(
-            "metadata.options.resources",
-            valid_type=dict,
-            default={"num_machines": 1, "num_mpiprocs_per_machine": 1}
-        )
-        spec.input("metadata.options.max_wallclock_seconds", valid_type=int, default=3600)
+        spec.inputs["metadata"]["options"]["resources"].default = {
+            "num_machines": 1, "num_mpiprocs_per_machine": 1
+        }
+        spec.inputs["metadata"]["options"]["max_wallclock_seconds"].default = 3600
+        spec.inputs["metadata"]["options"]["parser_name"].default = "ai4s.light-mpnn"
 
         spec.output("result", valid_type=Dict, required=True)
-        spec.exit_code(101, "MOCK_RUNTIME_FAIL", message="Mock MPNN模拟运行失败")
+        spec.exit_code(101, "MOCK_RUNTIME_FAIL", message="Mock MPNN运行失败或未生成result.json")
+        spec.exit_code(102, "INVALID_RESULT_JSON", message="result.json不是有效的JSON对象")
 
     def prepare_for_submission(self, folder):
-        import json
         codeinfo = CodeInfo()
         codeinfo.code_uuid = self.inputs.code.uuid
         codeinfo.cmdline_params = []
@@ -34,22 +34,10 @@ class LightMPNNCalcJob(CalcJob):
         calcinfo.codes_info = [codeinfo]
         calcinfo.retrieve_list = ["result.json"]
 
-        # 写入 params.json
-        folder.create_file_from_filelike(
-            json.dumps(self.inputs.params.get_dict()).encode("utf-8"),
-            "params.json"
-        )
-        # 写入 input.pdb
-        folder.create_file_from_filelike(
-            self.inputs.pdb_file.get_content(),
-            "input.pdb"
-        )
+        with folder.open("params.json", "w", encoding="utf-8") as handle:
+            json.dump(self.inputs.params.get_dict(), handle)
+        with folder.open("input.pdb", "w", encoding="utf-8") as handle:
+            handle.write(self.inputs.pdb_file.get_content())
 
         return calcinfo
 
-    @classmethod
-    def outputs_from_node(cls, node):
-        import json
-        with node.open("result.json", "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return {"result": Dict(data)}

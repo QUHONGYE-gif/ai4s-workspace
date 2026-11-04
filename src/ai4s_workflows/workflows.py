@@ -1,26 +1,22 @@
-# C模块核心：两阶段（MPNN生成→筛选）WorkChain，带门禁、有限重试、上游数据复用
-from aiida.engine import WorkChain, ToContext, while_
-from aiida.orm import Dict, SinglefileData
+"""MPNN生成、产物校验和筛选；支持有限重试与上游结果复用。"""
+
+from aiida.engine import ToContext, WorkChain, while_
+from aiida.orm import AbstractCode, Dict, SinglefileData
+
 from .calcjobs import LightMPNNCalcJob
-from aiida.engine.processes.exit_code import ExitCode
+from .filtering import filter_sequences, record_failure_report
 
 SUPPORTED_VERSIONS = ["v1.0", "v1.1"]
 MAX_RETRY = 2
 
 
 class ProteinMPNNFilterWorkChain(WorkChain):
-    """
-    C模块：编排 生成→校验→筛选两阶段工作流
-    1.推理参数mpnn_params，筛选参数filter_params完全分离
-    2.可选输入existing_mpnn_result：重算场景直接复用上游输出，跳过MPNN提交
-    3.门禁校验通过后才进入筛选；最多2次重试
-    4.输出严格遵守公共接口：selected_sequences / sample_table / selection_report
-    """
+    """最多重试两次；已有上游结果也需通过同一套门禁。"""
+
     @classmethod
     def define(cls, spec):
         super().define(spec)
-        # 对外输入端口
-        spec.input("code")
+        spec.input("code", valid_type=AbstractCode)
         spec.input("pdb_file", valid_type=SinglefileData)
         spec.input("mpnn_params", valid_type=Dict)
         spec.input("filter_params", valid_type=Dict)
@@ -39,32 +35,28 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         spec.outline(
             cls.initialize_ctx,
             cls.maybe_skip_inference,
-            while_(cls.should_retry)(
-                cls.submit_mpnn,
-                cls.on_mpnn_done,
-            ),
+            while_(cls.should_retry)(cls.submit_mpnn, cls.on_mpnn_done),
+            cls.validate_mpnn_result,
             cls.run_filter,
         )
 
     def initialize_ctx(self):
         self.ctx.retry_count = 0
         self.ctx.model_launches = 0
-        self.ctx.mpnn_calc = None
-        self.ctx.skip_submit = False
         self.ctx.mpnn_success = False
+        self.ctx.skip_submit = False
 
     def maybe_skip_inference(self):
-        """如果给了已有MPNN结果，标记跳过推理"""
         if "existing_mpnn_result" in self.inputs:
             self.ctx.mpnn_result = self.inputs.existing_mpnn_result
             self.ctx.skip_submit = True
-            self.ctx.mpnn_success = True
 
     def should_retry(self):
-        """while循环条件：不跳过、还没成功、重试次数没到上限"""
-        if self.ctx.skip_submit or self.ctx.mpnn_success:
-            return False
-        return self.ctx.retry_count < MAX_RETRY
+        return (
+            not self.ctx.skip_submit
+            and not self.ctx.mpnn_success
+            and self.ctx.retry_count <= MAX_RETRY
+        )
 
     def submit_mpnn(self):
         builder = LightMPNNCalcJob.get_builder()
@@ -72,86 +64,55 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         builder.pdb_file = self.inputs.pdb_file
         builder.params = self.inputs.mpnn_params
         self.report(f"提交MPNN推理，第 {self.ctx.retry_count + 1} 次尝试")
-        return ToContext(mpnn_calc=self.submit(builder))
+        calculation = self.submit(builder)
+        self.ctx.model_launches += 1
+        return ToContext(mpnn_calc=calculation)
 
     def on_mpnn_done(self):
-        calc = self.ctx.mpnn_calc
-        self.ctx.model_launches += 1
-
-        if calc.is_failed:
-            self.ctx.retry_count += 1
-            self.report(f"MPNN任务失败，当前重试次数：{self.ctx.retry_count}")
+        calculation = self.ctx.mpnn_calc
+        # Excepted/Killed也不是成功；is_failed只覆盖Finished且非零退出。
+        if not calculation.is_finished_ok:
+            self.report(f"MPNN未成功，状态={calculation.process_state}")
             if self.ctx.retry_count >= MAX_RETRY:
-                rep = {
-                    "model_launches": self.ctx.model_launches,
-                    "retry_attempt": self.ctx.retry_count,
-                    "status": "failed_max_retry"
-                }
-                self.out("selection_report", Dict(rep))
-                return self.exit(self.exit_codes.MAX_RETRY_REACHED)
+                self.output_failure_report("failed_max_retry")
+                return self.exit_codes.MAX_RETRY_REACHED
+            self.ctx.retry_count += 1
             return
 
-        # 计算成功
-        self.ctx.mpnn_result = calc.outputs.result
+        if "result" not in calculation.outputs:
+            self.output_failure_report("missing_output")
+            return self.exit_codes.MISSING_MPNN_OUTPUT
+
+        self.ctx.mpnn_result = calculation.outputs.result
         self.ctx.mpnn_success = True
-        mpnn_dict = self.ctx.mpnn_result.get_dict()
 
-        # 门禁校验（英文减号，和mock脚本严格一致 ai4s-artifacts-1）
-        if mpnn_dict.get("schema_version") != "ai4s-artifacts-1":
-            rep = {
-                "model_launches": self.ctx.model_launches,
-                "retry_attempt": self.ctx.retry_count,
-                "status": "invalid_schema"
-            }
-            self.out("selection_report", Dict(rep))
-            return self.exit(self.exit_codes.INVALID_ARTIFACT_SCHEMA)
+    def validate_mpnn_result(self):
+        result = self.ctx.mpnn_result.get_dict()
+        if result.get("schema_version") != "ai4s-artifacts-1":
+            self.output_failure_report("invalid_schema")
+            return self.exit_codes.INVALID_ARTIFACT_SCHEMA
+        if not result.get("artifacts"):
+            self.output_failure_report("missing_output")
+            return self.exit_codes.MISSING_MPNN_OUTPUT
+        if result.get("version") not in SUPPORTED_VERSIONS:
+            self.output_failure_report("unsupported_version")
+            return self.exit_codes.VERSION_NOT_SUPPORTED
 
-        artifacts = mpnn_dict.get("artifacts", [])
-        if not artifacts:
-            rep = {
-                "model_launches": self.ctx.model_launches,
-                "retry_attempt": self.ctx.retry_count,
-                "status": "missing_output"
-            }
-            self.out("selection_report", Dict(rep))
-            return self.exit(self.exit_codes.MISSING_MPNN_OUTPUT)
-
-        ver = mpnn_dict.get("version")
-        if ver not in SUPPORTED_VERSIONS:
-            rep = {
-                "model_launches": self.ctx.model_launches,
-                "retry_attempt": self.ctx.retry_count,
-                "status": "unsupported_version"
-            }
-            self.out("selection_report", Dict(rep))
-            return self.exit(self.exit_codes.VERSION_NOT_SUPPORTED)
-
-    def run_filter(self):
-        mpnn_data = self.ctx.mpnn_result.get_dict()
-        f_params = self.inputs.filter_params.get_dict()
-        threshold = f_params["score_threshold"]
-        top_k = f_params["top_k"]
-
-        artifact_entry = mpnn_data["artifacts"][0]
-        sample_list = artifact_entry.get("samples", [])
-
-        valid_samples = [s for s in sample_list if s["score"] <= threshold]
-        valid_samples.sort(key=lambda x: (x["score"], x["sample_id"]))
-        selected = valid_samples[:top_k]
-
-        out_selected_sequences = {"entries": selected}
-        out_sample_table = {
-            "rows": selected,
-            "score_threshold": threshold,
-            "top_k": top_k
-        }
-        out_selection_report = {
+    def output_failure_report(self, status):
+        details = Dict(dict={
             "model_launches": self.ctx.model_launches,
             "retry_attempt": self.ctx.retry_count,
-            "selected_count": len(selected)
-        }
+            "status": status,
+        })
+        self.out("selection_report", record_failure_report(details))
 
-        self.out("selected_sequences", Dict(out_selected_sequences))
-        self.out("sample_table", Dict(out_sample_table))
-        self.out("selection_report", Dict(out_selection_report))
+    def run_filter(self):
+        execution_report = Dict(dict={
+            "model_launches": self.ctx.model_launches,
+            "retry_attempt": self.ctx.retry_count,
+        })
+        outputs = filter_sequences(
+            self.ctx.mpnn_result, self.inputs.filter_params, execution_report
+        )
+        self.out_many(outputs)
         self.report("两阶段workchain全部执行完成")

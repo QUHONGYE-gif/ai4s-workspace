@@ -30,7 +30,11 @@ pythonpath = ["src"]
 
 # ========== C模块新增AiiDA入口点 ==========
 [project.entry-points."aiida.calculations"]
-"ai4s.calculations:light-mpnn" = "ai4s_workflows.calcjobs:LightMPNNCalcJob"
+"ai4s.light-mpnn" = "ai4s_workflows.calcjobs:LightMPNNCalcJob"
 
 [project.entry-points."aiida.workflows"]
-"ai4s.workflows:protein-mpnn-filter" = "ai4s_workflows.workflows:ProteinMPNNFilterWorkChain"
+"ai4s.protein-mpnn-filter" = "ai4s_workflows.workflows:ProteinMPNNFilterWorkChain"
+
+
+[project.entry-points."aiida.parsers"]
+"ai4s.light-mpnn" = "ai4s_workflows.parsers:LightMPNNParser"
