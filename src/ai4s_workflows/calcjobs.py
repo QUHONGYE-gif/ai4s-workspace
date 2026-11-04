@@ -25,6 +25,7 @@ class LightMPNNCalcJob(CalcJob):
         spec.exit_code(101, "MOCK_RUNTIME_FAIL", message="Mock MPNN模拟运行失败")
 
     def prepare_for_submission(self, folder):
+        import json
         codeinfo = CodeInfo()
         codeinfo.code_uuid = self.inputs.code.uuid
         codeinfo.cmdline_params = []
@@ -33,8 +34,17 @@ class LightMPNNCalcJob(CalcJob):
         calcinfo.codes_info = [codeinfo]
         calcinfo.retrieve_list = ["result.json"]
 
-        folder.create_file_from_object("params.json", self.inputs.params.get_dict())
-        folder.create_file_from_object("input.pdb", self.inputs.pdb_file.get_content())
+        # 写入 params.json
+        folder.create_file_from_filelike(
+            json.dumps(self.inputs.params.get_dict()).encode("utf-8"),
+            "params.json"
+        )
+        # 写入 input.pdb
+        folder.create_file_from_filelike(
+            self.inputs.pdb_file.get_content(),
+            "input.pdb"
+        )
+
         return calcinfo
 
     @classmethod
