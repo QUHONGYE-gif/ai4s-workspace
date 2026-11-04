@@ -24,3 +24,22 @@ packages = ["src/ai4s_demo"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai4s-workflows"
+version = "0.1.0"
+description = "C 模块：ProteinMPNN 两阶段 WorkChain（编排、重算与恢复）"
+requires-python = ">=3.10"
+
+[project.entry-points."aiida.calculations"]
+"ai4s.calculations:light-mpnn" = "ai4s_workflows.calcjobs:LightMPNNCalcJob"
+
+[project.entry-points."aiida.workflows"]
+"ai4s.workflows:protein-mpnn-filter" = "ai4s_workflows.workflows:ProteinMPNNFilterWorkChain"
+
+[tool.setuptools]
+packages = ["ai4s_workflows"]
