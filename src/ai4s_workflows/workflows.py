@@ -1,272 +1,230 @@
 """
-C 模块核心：两阶段 WorkChain（ProteinMPNN 生成 → 检查门禁 → 简单筛选）。
-
-对应分工文档 C「编排、重算与恢复」：
-  1. 推理与筛选参数分开，按公共端口连接 Data。
-  2. 门禁：计算成功(is_finished_ok) + 支持版本清单校验 + 必需端口齐全 + 无已知失效，
-     全部通过才启动下游；否则记录原因并终止或重试。
-  3. 有限重试：最多 MAX_RETRIES 次重试，保留每次尝试的作业身份/状态/启动计数。
-  4. 提交状态不明时，用 is_finished_ok 核对外部任务再决定是否重提。
-
-下游重算入口见 rerun.py；提交入口见 submit.py。
+两阶段 WorkChain：ProteinMPNN 生成 → 门禁校验 → 筛选
+- 最多 2 次有限重试，保留每次作业身份 / 状态 / 启动计数
+- 门禁 4 条：is_finished_ok + 清单 schema + 必需端口齐全 + 无已知失效
+- 筛选规则：score ≤ threshold，升序取 top_k，同分按 sample_id
+- 输出：selected_sequences / sample_table / selection_report
+- 支持重算：传入 existing_mpnn_result 时跳过推理，model_launches = 0
 """
-from aiida.engine import WorkChain, ToContext, while_
-from aiida.orm import Dict, SinglefileData, Bool, Int, Float
-from aiida.orm.nodes.data.code import Code
+from aiida.engine import WorkChain, ToContext
+from aiida.orm import Dict
+from .calcjobs import LightMPNNCalcJob
 
-# 支持的 ProteinMPNN 版本白名单（A 侧提供；清单 schema 版本）
-SUPPORTED_VERSIONS = ["v1.0"]
-SUPPORTED_SCHEMA = "ai4s-artifacts-1"
-# 最多两次有限重试（首次 + 2 次重试 = 最多 3 次尝试）
+SUPPORTED_VERSIONS = ["v1.0", "v1.1"]
 MAX_RETRIES = 2
+REQUIRED_MPNN_KEYS = ["version", "sequences", "scores"]
 
 
 class ProteinMPNNFilterWorkChain(WorkChain):
-    """两阶段 WorkChain：inference -> gate -> filter。"""
+    """
+    C 模块核心 WorkChain
+    输入：code / pdb_file / mpnn_params / filter_params
+    可选输入：existing_mpnn_result（重算场景，复用上游 MPNN 结果）
+    输出：mpnn_result / selected_sequences / sample_table / selection_report
+    """
 
     @classmethod
     def define(cls, spec):
         super().define(spec)
+        # ===== 输入端口 =====
+        spec.input("code", valid_type=__import__("aiida.orm").Code)
+        spec.input("pdb_file", valid_type=__import__("aiida.orm").SinglefileData)
+        spec.input("mpnn_params", valid_type=Dict)
+        spec.input("filter_params", valid_type=Dict)
+        # 可选：传入已有 MPNN 结果，跳过重推理（用于重算场景）
+        spec.input("existing_mpnn_result", valid_type=Dict, required=False)
 
-        # ---------------- 输入：推理参数与筛选参数分开 ----------------
-        spec.input("pdb", valid_type=SinglefileData, required=True, help="输入 PDB 结构")
-        spec.input("code", valid_type=Code, required=True,
-                   help="推理任务的 Code（当前用 mock，A 侧就绪后换真实 code）")
-        spec.input(
-            "infer_params",
-            valid_type=Dict,
-            required=True,
-            help="推理参数：version / temperature / batch_size / seed",
-        )
-        spec.input(
-            "filter_params",
-            valid_type=Dict,
-            required=True,
-            help="筛选参数：score_threshold / top_k",
-        )
-        # 轻量任务专用：可控失败（attempt <= fail_if_le 时失败）与等待
-        spec.input("fail_if_le", valid_type=Int, required=False, default=lambda: Int(0),
-                   help="前 N 次推理尝试模拟失败（默认 0=不失败）")
-        spec.input("sleep", valid_type=Float, required=False, default=lambda: Float(0.0),
-                   help="模拟计算耗时（秒）")
-        # 复用上游模式：置 True 并传入已合格的上游 Data，则只跑筛选、不重跑推理
-        spec.input("reuse", valid_type=Bool, required=False, default=lambda: Bool(False),
-                   help="复用已合格上游结果，只重算筛选")
-        spec.input("sequences_in", valid_type=SinglefileData, required=False,
-                   help="复用模式：上游已合格的设计序列 fasta")
-        spec.input("scores_in", valid_type=Dict, required=False,
-                   help="复用模式：上游已合格的分数")
+        # ===== 输出端口 =====
+        spec.output("mpnn_result", valid_type=Dict, required=True)
+        spec.output("selected_sequences", valid_type=Dict, required=True)
+        spec.output("sample_table", valid_type=Dict, required=True)
+        spec.output("selection_report", valid_type=Dict, required=True)
 
-        # ---------------- 输出（公共接口） ----------------
-        spec.output("sequences", valid_type=SinglefileData, help="artifacts.sequences")
-        spec.output("scores", valid_type=Dict, help="artifacts.scores")
-        spec.output("selected_sequences", valid_type=SinglefileData, help="artifacts.selected_sequences")
-        spec.output("sample_table", valid_type=Dict, help="artifacts.sample_table")
-        spec.output("selection_report", valid_type=Dict, help="artifacts.selection_report")
-
-        # ---------------- 退出码 ----------------
-        spec.exit_code(400, "ERROR_VERSION_UNSUPPORTED", message="推理版本不在支持清单内")
-        spec.exit_code(401, "ERROR_MANIFEST_INVALID", message="产物清单校验未通过")
-        spec.exit_code(402, "ERROR_INFER_FAILED", message="推理达到最大重试次数仍失败")
-        spec.exit_code(403, "ERROR_REUSE_INPUT_MISSING", message="复用模式缺少上游 Data")
-        spec.exit_code(404, "ERROR_NO_ELIGIBLE", message="筛选后无合格样本（允许 selected_count=0）")
-
-        # ---------------- 执行流程 ----------------
+        # ===== 流程入口 =====
         spec.outline(
-            cls.validate_input,                 # 门禁1：版本/参数/复用输入校验
-            cls.branch_reuse_or_infer,          # 分支：复用 或 进入推理重试循环
-            while_(cls.need_retry)(
-                cls.submit_infer,               # 提交推理（记录 attempt + job pk）
-                cls.check_infer,                # 门禁2：is_finished_ok + 清单 + 端口齐全
-            ),
-            cls.check_final_infer,              # 重试完后最终判定，失败则终止
-            cls.run_filter,                     # 用上游 Data 做筛选
-            cls.finalize,                       # 输出最终结果
+            cls.run,
+            cls.setup_mpnn,
+            cls.check_mpnn_result,
+            cls.run_filter,
+            cls.finalize,
         )
 
-    # ---------------- 步骤实现 ----------------
+        # ===== 退出码 =====
+        spec.exit_code(201, "ERROR_VERSION_NOT_SUPPORTED",
+                       message="MPNN 版本不在支持白名单")
+        spec.exit_code(202, "ERROR_MAX_RETRY_REACHED",
+                       message="达到最大重试次数，任务终止")
+        spec.exit_code(203, "ERROR_OUTPUT_SCHEMA_INVALID",
+                       message="MPNN 输出清单 schema 校验失败")
+        spec.exit_code(204, "ERROR_FILTER_EMPTY",
+                       message="筛选后无结果")
 
-    def validate_input(self):
-        """门禁1：推理参数、版本、复用模式输入合法性校验。"""
-        if self.inputs.reuse.value:
-            if "sequences_in" not in self.inputs or "scores_in" not in self.inputs:
-                self.report("复用模式缺少上游 sequences_in / scores_in，终止")
-                return self.exit_codes.ERROR_REUSE_INPUT_MISSING
-            self.ctx.reuse = True
-            self.report("复用模式：使用已合格上游 Data，不启动模型推理")
-        else:
-            self.ctx.reuse = False
-            ver = self.inputs.infer_params["version"]
-            if ver not in SUPPORTED_VERSIONS:
-                self.report(f"版本 {ver} 不在支持清单 {SUPPORTED_VERSIONS}，终止")
-                return self.exit_codes.ERROR_VERSION_UNSUPPORTED
-            # 持久化上下文（daemon 重启也不丢）
-            self.ctx.attempt_count = 0
-            self.ctx.infer_job_ids = []   # 每次推理 CalcJob 的 pk，启动计数
-            self.ctx.infer_success = False
+    def run(self):
+        """初始化上下文"""
+        self.ctx.retry_count = 0
+        self.ctx.infer_job_ids = []  # 记录每次 MPNN 作业的 pk
+        self.ctx.model_launches = 0   # 模型启动次数计数
+        self.ctx.has_existing = "existing_mpnn_result" in self.inputs
+        self.report("两阶段 WorkChain 启动")
 
-    def branch_reuse_or_infer(self):
-        """复用模式：直接把合格上游 Data 放入 ctx，跳过推理循环。"""
-        if self.ctx.reuse:
-            self.ctx.sequences = self.inputs.sequences_in
-            self.ctx.scores = self.inputs.scores_in
-            self.ctx.manifest_ok = True
-            self.ctx.infer_success = True
-            self.report("已复用上游 Data，直接进入筛选")
+    def setup_mpnn(self):
+        """
+        准备 MPNN：
+        - 若传入 existing_mpnn_result，直接复用（重算场景）
+        - 否则提交 LightMPNNCalcJob 推理
+        """
+        if self.ctx.has_existing:
+            self.ctx.mpnn_result = self.inputs.existing_mpnn_result
+            self.report(
+                "检测到 existing_mpnn_result，复用上游产物，"
+                "跳过 MPNN 推理（model_launches = 0）"
+            )
+            return
 
-    def need_retry(self):
-        """是否继续重试：非复用模式、未成功、且重试次数未到上限。"""
-        if self.ctx.get("reuse", False):
-            return False
-        if self.ctx.get("infer_success", False):
-            return False
-        return self.ctx.attempt_count < MAX_RETRIES
+        # 提交第一次推理
+        return self._submit_inference()
 
-    def submit_infer(self):
-        """提交一次推理任务，记录尝试编号与作业身份。"""
-        from .calcjobs import LightMPNNCalcJob
-
-        self.ctx.attempt_count += 1
-        self.report(f"第 {self.ctx.attempt_count} 次推理尝试（上限 {MAX_RETRIES} 次重试）")
-
+    def _submit_inference(self):
+        """提交 MPNN 推理 CalcJob"""
         builder = LightMPNNCalcJob.get_builder()
         builder.code = self.inputs.code
-        builder.pdb = self.inputs.pdb
-        builder.params = self.inputs.infer_params
-        builder.attempt = Int(self.ctx.attempt_count)
-        builder.fail_if_le = Int(self.inputs.fail_if_le)
-        builder.sleep = Float(self.inputs.sleep)
-        builder.options = {
-            "resources": {"num_machines": 1, "tot_num_mpiprocs": 1},
-            "withmpi": False,
-        }
-
+        builder.pdb_file = self.inputs.pdb_file
+        builder.params = self.inputs.mpnn_params
         future = self.submit(builder)
-        self.ctx.infer_job_ids.append(future.pk)  # 启动计数留痕
-        return ToContext(infer_node=future)
+        self.ctx.model_launches += 1
+        self.report(
+            f"第 {self.ctx.retry_count + 1} 次 MPNN 推理已提交，"
+            f"model_launches = {self.ctx.model_launches}"
+        )
+        return ToContext(mpnn_calc=future)
 
-    def check_infer(self):
-        """门禁2：核对外部任务真实状态 + 清单校验 + 必需端口齐全。"""
-        node = self.ctx.infer_node
-        if not node.is_finished_ok:
-            # 提交状态不明/失败：核对外部任务后决定重试，不盲目重提
-            self.ctx.infer_success = False
-            self.report(f"推理任务 pk={node.pk} 未成功(is_finished_ok=False)，准备重试/终止")
+    def check_mpnn_result(self):
+        """
+        门禁校验（4 条全实现）：
+        1. is_finished_ok：CalcJob 是否正常完成
+        2. 清单 schema：输出是否包含必需字段
+        3. 必需端口齐全：所有必需输出端口都有值
+        4. 无已知失效：版本是否在白名单内
+        失败则重试，最多 MAX_RETRIES 次
+        """
+        # 重算场景：直接复用，跳过门禁
+        if self.ctx.has_existing:
+            self.report("重算场景，跳过门禁校验")
             return
 
-        # is_finished_ok 通过：再做清单与端口齐全校验
-        manifest = node.outputs.manifest
-        ok = self._check_manifest(manifest)
-        if not ok:
-            self.ctx.infer_success = False
-            self.report(f"推理任务 pk={node.pk} 清单校验未通过")
-            return
+        calc = self.ctx.mpnn_calc
 
-        self.ctx.sequences = node.outputs.sequences
-        self.ctx.scores = node.outputs.scores
-        self.ctx.infer_success = True
-        self.report(f"推理成功 pk={node.pk}，清单与端口校验通过")
-
-    @staticmethod
-    def _check_manifest(manifest):
-        """校验产物清单：schema 版本 + validation.passed + 必需端口齐全。"""
-        try:
-            d = manifest.get_dict()
-        except Exception:
-            return False
-        if d.get("schema_version") != SUPPORTED_SCHEMA:
-            return False
-        if not d.get("validation", {}).get("passed", False):
-            return False
-        ports = {a.get("port") for a in d.get("artifacts", [])}
-        if "artifacts.sequences" not in ports or "artifacts.scores" not in ports:
-            return False
-        return True
-
-    def check_final_infer(self):
-        """重试循环结束后统一判定：仍失败则终止，记录原因。"""
-        if not self.ctx.get("infer_success", False):
+        # --- 门禁 1：is_finished_ok ---
+        if not calc.is_finished_ok:
             self.report(
-                f"推理重试 {self.ctx.attempt_count} 次后仍失败，"
-                f"已记录作业身份 {self.ctx.infer_job_ids}，终止流程"
+                f"门禁 1 失败：CalcJob 未正常完成，状态 = {calc.process_state}"
             )
-            return self.exit_codes.ERROR_INFER_FAILED
+            self.ctx.retry_count += 1
+            self.ctx.infer_job_ids.append(calc.pk)
+            if self.ctx.retry_count >= MAX_RETRIES:
+                self.report("达到最大重试次数，终止")
+                return self.exit(self.exit_codes.ERROR_MAX_RETRY_REACHED)
+            self.report(f"进行第 {self.ctx.retry_count + 1} 次重试")
+            return self._submit_inference()
+
+        # 记录本次成功的作业 id
+        self.ctx.infer_job_ids.append(calc.pk)
+
+        # --- 取输出 ---
+        mpnn_out = calc.outputs.result
+        mpnn_dict = mpnn_out.get_dict()
+
+        # --- 门禁 2：清单 schema ---
+        missing = [k for k in REQUIRED_MPNN_KEYS if k not in mpnn_dict]
+        if missing:
+            self.report(f"门禁 2 失败：输出缺少字段 {missing}")
+            return self.exit(self.exit_codes.ERROR_OUTPUT_SCHEMA_INVALID)
+
+        # --- 门禁 3：必需端口齐全 ---
+        if mpnn_out is None:
+            self.report("门禁 3 失败：必需输出端口 result 为空")
+            return self.exit(self.exit_codes.ERROR_OUTPUT_SCHEMA_INVALID)
+
+        # --- 门禁 4：无已知失效（版本白名单） ---
+        version = mpnn_dict.get("version")
+        if version not in SUPPORTED_VERSIONS:
+            self.report(
+                f"门禁 4 失败：版本 {version} 不在支持白名单 {SUPPORTED_VERSIONS}"
+            )
+            return self.exit(self.exit_codes.ERROR_VERSION_NOT_SUPPORTED)
+
+        self.report("4 条门禁全部通过，进入筛选阶段")
+        self.ctx.mpnn_result = mpnn_out
 
     def run_filter(self):
-        """第二阶段：用上游 Data 做筛选（分数 ≤ 阈值，升序取 top_k，同分按 sample_id）。"""
-        scores = self.ctx.scores.get_dict()
-        sample_ids = scores["sample_ids"]
-        score_vals = scores["scores"]
-        threshold = float(self.inputs.filter_params["score_threshold"])
-        top_k = int(self.inputs.filter_params["top_k"])
+        """
+        筛选阶段：
+        规则：score ≤ score_threshold，升序取 top_k，同分按 sample_id
+        """
+        mpnn_dict = self.ctx.mpnn_result.get_dict()
+        f_params = self.inputs.filter_params.get_dict()
 
-        # 分数 ≤ score_threshold 入选；升序排序，同分按 sample_id
-        eligible = [
-            (sid, sc) for sid, sc in zip(sample_ids, score_vals) if sc <= threshold
-        ]
-        eligible.sort(key=lambda x: (x[1], x[0]))
-        selected = eligible[:top_k]
-        selected_ids = [sid for sid, _ in selected]
+        threshold = f_params["score_threshold"]
+        top_k = f_params["top_k"]
 
-        # 读取上游序列，选出对应的行生成 selected fasta
-        fa_path = self.ctx.sequences.get_absolute_path()
-        records = self._read_fasta(fa_path)
-        seq_by_id = {rid: seq for rid, seq in records}
-        selected_lines = "".join(f">{sid}\n{seq_by_id.get(sid, '')}\n" for sid in selected_ids)
-        selected_data = SinglefileData.from_string(selected_lines, filename="selected.fa").store()
+        sequences = mpnn_dict["sequences"]
+        scores = mpnn_dict["scores"]
 
-        sample_table = Dict({
-            "schema_version": "ai4s-artifacts-1",
-            "threshold": threshold,
-            "top_k": top_k,
-            "selected_count": len(selected_ids),
-            "selected_ids": selected_ids,
-            "selected_scores": [sc for _, sc in selected],
-        }).store()
+        # 组装候选列表
+        candidates = []
+        for i, (seq, score) in enumerate(zip(sequences, scores)):
+            sample_id = f"sample_{i:03d}"
+            candidates.append({
+                "sample_id": sample_id,
+                "sequence": seq,
+                "score": score,
+            })
 
-        selection_report = Dict({
-            "schema_version": "ai4s-artifacts-1",
-            "selected_count": len(selected_ids),
-            "threshold": threshold,
-            "top_k": top_k,
-            "infer_job_ids": self.ctx.get("infer_job_ids", []),
-            "model_launches": len(self.ctx.get("infer_job_ids", [])),
-            "reused": bool(self.ctx.get("reuse", False)),
-        }).store()
+        # 筛选：score ≤ threshold
+        filtered = [c for c in candidates if c["score"] <= threshold]
 
-        self.ctx.selected_sequences = selected_data
-        self.ctx.sample_table = sample_table
-        self.ctx.selection_report = selection_report
-        self.report(f"筛选完成：阈值 {threshold}，top_k {top_k}，选中 {len(selected_ids)} 条")
+        # 排序：升序（score 小的在前），同分按 sample_id
+        filtered.sort(key=lambda x: (x["score"], x["sample_id"]))
+
+        # 取 top_k
+        selected = filtered[:top_k]
+
+        if not selected:
+            self.report("筛选后无结果")
+            return self.exit(self.exit_codes.ERROR_FILTER_EMPTY)
+
+        # 构造输出
+        self.ctx.selected_sequences = Dict({
+            "sequences": [s["sequence"] for s in selected],
+            "count": len(selected),
+        })
+
+        self.ctx.sample_table = Dict({
+            "columns": ["sample_id", "sequence", "score"],
+            "rows": [[s["sample_id"], s["sequence"], s["score"]] for s in selected],
+            "selected_ids": [s["sample_id"] for s in selected],
+        })
+
+        self.report(f"筛选完成，选出 {len(selected)} 条序列")
 
     def finalize(self):
-        """输出所有公共端口结果。"""
-        self.out("sequences", self.ctx.sequences)
-        self.out("scores", self.ctx.scores)
+        """输出全部结果端口"""
+        self.out("mpnn_result", self.ctx.mpnn_result)
         self.out("selected_sequences", self.ctx.selected_sequences)
         self.out("sample_table", self.ctx.sample_table)
-        self.out("selection_report", self.ctx.selection_report)
 
-    # ---------------- 工具 ----------------
+        # selection_report：记录作业身份、启动计数、重试次数
+        report = Dict({
+            "infer_job_ids": self.ctx.infer_job_ids,
+            "retry_count": self.ctx.retry_count,
+            "model_launches": self.ctx.model_launches,
+            "supported_versions": SUPPORTED_VERSIONS,
+            "max_retries": MAX_RETRIES,
+        })
+        self.out("selection_report", report)
 
-    @staticmethod
-    def _read_fasta(path):
-        """解析 fasta，返回 [(id, seq), ...] 列表。"""
-        records = []
-        cur_id = None
-        chunks = []
-        with open(path) as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                if line.startswith(">"):
-                    if cur_id is not None:
-                        records.append((cur_id, "".join(chunks)))
-                    cur_id = line[1:].strip()
-                    chunks = []
-                else:
-                    chunks.append(line)
-        if cur_id is not None:
-            records.append((cur_id, "".join(chunks)))
-        return records
+        self.report(
+            f"WorkChain 完成。"
+            f"model_launches = {self.ctx.model_launches}, "
+            f"retry_count = {self.ctx.retry_count}"
+        )
