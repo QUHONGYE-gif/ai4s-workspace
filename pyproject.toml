@@ -9,8 +9,8 @@ dependencies = [
   "pydantic-ai-slim[openai]>=1,<3",
   "python-multipart>=0.0.20,<1",
   "python-dotenv>=1,<2",
+  "aiida-core>=2.9.4"
 ]
-
 [dependency-groups]
 dev = ["pytest>=8,<10", "httpx>=0.28,<1"]
 
@@ -19,27 +19,18 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ai4s_demo"]
+packages = [
+  "src/ai4s_demo",
+  "src/ai4s_workflows"
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
 
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "ai4s-workflows"
-version = "0.1.0"
-description = "C 模块：ProteinMPNN 两阶段 WorkChain（编排、重算与恢复）"
-requires-python = ">=3.10"
-
+# ========== C模块新增AiiDA入口点 ==========
 [project.entry-points."aiida.calculations"]
 "ai4s.calculations:light-mpnn" = "ai4s_workflows.calcjobs:LightMPNNCalcJob"
 
 [project.entry-points."aiida.workflows"]
 "ai4s.workflows:protein-mpnn-filter" = "ai4s_workflows.workflows:ProteinMPNNFilterWorkChain"
-
-[tool.setuptools]
-packages = ["ai4s_workflows"]
