@@ -1,94 +1,38 @@
 """
-C 模块提交入口：从真实 PDB + 参数提交两阶段 WorkChain。
+样例数据与验证辅助：生成测试 PDB、统计模型启动次数。
 
-提供：
-  - `submit_workchain(...)`：Python 函数入口，返回节点/结果
-  - `--main` 命令行入口：`python -m ai4s_workflows.submit --pdb x.pdb ...`
-
-示例（verdi shell）：
-    from ai4s_workflows.submit import submit_workchain
-    wc = submit_workchain(pdb_path="x.pdb", code_label="mock-mpnn@localhost")
+统计基于 AiiDA 原生节点（数据库中的子 CalcJob 节点数），符合
+「C 可用原生查询独立验收」。
 """
-import argparse
+import os
+import tempfile
 
-from aiida.engine import run, submit
-from aiida.orm import SinglefileData, Dict, Bool, Int, Float, load_code
-
-from .workflows import ProteinMPNNFilterWorkChain
-
-DEFAULT_INFER = {"version": "v1.0", "temperature": 0.1, "batch_size": 1, "seed": 42}
-DEFAULT_FILTER = {"score_threshold": 1.10, "top_k": 2}
+from aiida.orm import QueryBuilder, Node, CalcJobNode
 
 
-def submit_workchain(pdb_path, code_label, infer_params=None, filter_params=None,
-                     fail_if_le=0, sleep=0.0, background=False):
-    """提交两阶段 WorkChain。
-
-    Args:
-        pdb_path: 本地 PDB 文件路径。
-        code_label: 已注册 code 的 label，如 'mock-mpnn@localhost'。
-        infer_params: dict 覆盖默认推理参数。
-        filter_params: dict 覆盖默认筛选参数。
-        fail_if_le: 前 N 次推理尝试模拟失败（故障样例用）。
-        sleep: 模拟计算耗时（秒），daemon 恢复验证用。
-        background: True 用 submit(需 daemon)，False 用 run(同步)。
-    """
-    params = dict(DEFAULT_INFER)
-    params.update(infer_params or {})
-    fparams = dict(DEFAULT_FILTER)
-    fparams.update(filter_params or {})
-
-    pdb = SinglefileData(pdb_path).store()
-    infer = Dict(params).store()
-    filt = Dict(fparams).store()
-    code = load_code(code_label)
-
-    builder = ProteinMPNNFilterWorkChain.get_builder()
-    builder.pdb = pdb
-    builder.code = code
-    builder.infer_params = infer
-    builder.filter_params = filt
-    builder.reuse = Bool(False)
-    builder.fail_if_le = Int(fail_if_le)
-    builder.sleep = Float(sleep)
-
-    if background:
-        node = submit(builder)
-        print(f"[提交] 后台提交完成，WorkChain pk={node.pk}")
-        return node
-
-    results, wc = run(builder)
-    print(f"[提交] 完成，WorkChain pk={wc.pk}")
-    print(f"[提交] 筛选报告: {results['selection_report'].get_dict()}")
-    return results, wc
-
-
-def main():
-    ap = argparse.ArgumentParser(description="提交 C 模块两阶段 WorkChain")
-    ap.add_argument("--pdb", required=True, help="PDB 文件路径")
-    ap.add_argument("--code", default="mock-mpnn@localhost", help="推理 code label")
-    ap.add_argument("--top-k", type=int, default=None)
-    ap.add_argument("--threshold", type=float, default=None)
-    ap.add_argument("--fail-if-le", type=int, default=0)
-    ap.add_argument("--sleep", type=float, default=0.0)
-    ap.add_argument("--background", action="store_true", help="后台提交(需daemon)")
-    args = ap.parse_args()
-
-    fparams = {}
-    if args.top_k is not None:
-        fparams["top_k"] = args.top_k
-    if args.threshold is not None:
-        fparams["score_threshold"] = args.threshold
-
-    submit_workchain(
-        pdb_path=args.pdb,
-        code_label=args.code,
-        filter_params=fparams or None,
-        fail_if_le=args.fail_if_le,
-        sleep=args.sleep,
-        background=args.background,
+def make_test_pdb(path=None):
+    """生成一个最小可用的测试 PDB 文本，返回路径。"""
+    content = (
+        "ATOM      1  N   ALA A   1       1.000   1.000   1.000  1.00  0.00           N\n"
+        "ATOM      2  CA  ALA A   1       1.500   1.000   1.000  1.00  0.00           C\n"
+        "ATOM      3  C   ALA A   1       2.000   1.000   1.000  1.00  0.00           C\n"
+        "TER\nEND\n"
     )
+    if path is None:
+        fd, path = tempfile.mkstemp(suffix=".pdb")
+        os.close(fd)
+    with open(path, "w") as f:
+        f.write(content)
+    return path
 
 
-if __name__ == "__main__":
-    main()
+def count_infer_launches(wc_node):
+    """统计一个 WorkChain 下实际启动的推理 CalcJob 数量（模型外部启动次数）。
+
+    通过 WorkChain 的后代节点计数：从筛选结果反查模型是否再次启动，
+    是「只改筛选参数、模型启动次数不增加」这一验收点的量化证据。
+    """
+    qb = QueryBuilder()
+    qb.append(Node, tag="wc", filters={"id": wc_node.pk})
+    qb.append(CalcJobNode, tag="job", with_ancestors="wc")
+    return qb.count()
