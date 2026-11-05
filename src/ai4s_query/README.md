@@ -18,7 +18,8 @@ src/ai4s_query/
 ├── sample_calcs.py    # 原生两步样例（seq_stats -> filter_by_length）+ 故意失败样例
 ├── query.py           # 核心：节点描述、校验记录、血缘、四分类缺失信息
 ├── report.py          # JSON / 可读报告导出
-├── cli.py             # 命令行入口（show / trace / tree / cat）
+├── cli.py             # 命令行入口（show / trace / tree / cat / workbench）
+├── workbench.py       # 导出为「研序」工作台可导入的记录 JSON
 ├── DEMO.md            # 演示脚本（汇报用，六幕）
 └── examples/
     ├── run_demo.py          # 一键：造四类节点 + 生成全部报告
@@ -88,6 +89,9 @@ python -m ai4s_query.cli cat <UUID> scores/1CRN.npz --out 1CRN.npz
 - 缓存判定：`is_created_from_cache` + `get_cache_source()`（extras 的 `_aiida_cached_from`）。
 - **参数内联**：报告与轨迹里直接显示实际值（`Dict` 展开、`Int/Float/Str/Bool` 取值、
   文件类给出文件名 + 大小 + sha256），避免只看到 UUID。
+- **工作台导出**：`workbench` 子命令把轨迹映射为研序的实验记录 JSON
+  （产物带 `provenance.uuid` 与逐文件 sha256；过程步骤标注「真实执行」或「缓存命中」）。
+  只生成文件，不改动 `web/` 下任何代码；导入会替换研序当前记录，可用 `--base` 追加。
 
 ## 已知限制
 

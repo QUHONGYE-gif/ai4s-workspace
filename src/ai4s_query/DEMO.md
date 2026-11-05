@@ -45,14 +45,42 @@ PYTHONPATH=src $PY src/ai4s_query/examples/run_demo.py
 
 `show` 支持完整 UUID、≥8 位前缀、数字 PK 三种写法。
 
-## 3. 三个容易踩的点
+## 3. 在「研序」工作台里展示（可选）
+
+研序的实验记录读的是一份前端状态 JSON，不直接读 AiiDA。用导出命令把节点转成它认识的格式：
+
+```bash
+$PY -m ai4s_query.cli workbench <UUID1> <UUID2> --out ~/runs/yanxu-import.json
+```
+
+然后在研序页面右下角点「导入」，选择 `~/runs/yanxu-import.json`。
+
+导出内容与界面的对应关系：
+
+| AiiDA 里 | 研序里 |
+|---|---|
+| 一条主干轨迹（`trace`） | 一条实验记录 |
+| Data 节点 | 产物记录（名称、大小、`provenance.uuid`、逐文件 sha256） |
+| Process 节点 | 计划步骤；`action=compute` 为真实执行，`reuse` 为缓存命中 |
+| 失败的 Process | 实验状态 `failed`，且在日志与步骤说明里标出 |
+
+三点注意：
+
+1. **导入会替换当前记录**。要保留已有记录，先点「导出完整体验记录」，再用
+   `--base 旧导出.json --out 新.json` 追加；
+2. 研序界面本身是**模拟壳**（它自己的示例记录写着「未执行真实计算」），
+   导入进来的记录在 `log` 里明确写了「来自 AiiDA 真实节点」，汇报时要自己先说明这一点；
+3. 个别字段（如耗时、存储统计）在 AiiDA 侧没有对应值，导出的 `metrics` 里按 0 处理，
+   不要当成真实耗时。
+
+## 4. 三个容易踩的点
 
 1. **必须 `PYTHONPATH=$PWD/src`**，否则 `No module named ai4s_query`；
 2. **解释器是 `~/.venvs/aiida/bin/python`**，不是系统 `python`
    （`/usr/local/bin/verdi` 只是指向它的 shell 包装）；
 3. **UUID 现场用 8 位前缀**，写进文档用完整值。
 
-## 4. 真实模型接入后要改的两处
+## 5. 真实模型接入后要改的两处
 
 | 位置 | 现在 | 接真实节点后 |
 |---|---|---|

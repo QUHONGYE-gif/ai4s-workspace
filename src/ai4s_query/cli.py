@@ -40,6 +40,11 @@ def main(argv=None):
     p_cat.add_argument("path", help="仓库内路径，例如 run.json")
     p_cat.add_argument("--out", help="二进制文件的导出路径")
 
+    p_wb = sub.add_parser("workbench", help="导出为「研序」工作台可导入的记录 JSON")
+    p_wb.add_argument("identifiers", nargs="+", help="一个或多个入口节点（UUID 或 PK）")
+    p_wb.add_argument("--out", required=True, help="导出的 JSON 路径")
+    p_wb.add_argument("--base", help="已有的研序导出文件，先读入再把新记录追加进去")
+
     args = parser.parse_args(argv)
 
     # CLI 是独立进程，必须先加载默认 profile（Coder 上为 ai4s）
@@ -82,6 +87,23 @@ def main(argv=None):
         if args.text_path:
             report.trace_text(steps, args.text_path)
             print(f"[轨迹报告已写入 {args.text_path}]", file=sys.stderr)
+        return 0
+
+    if args.cmd == "workbench":
+        import json
+
+        from . import workbench
+
+        base = None
+        if args.base:
+            with open(args.base, encoding="utf-8") as fh:
+                base = json.load(fh)
+        state = workbench.export_state(args.identifiers, base=base)
+        with open(args.out, "w", encoding="utf-8") as fh:
+            fh.write(workbench.dumps(state))
+        print(f"[研序记录已写入 {args.out}："
+              f"{len(state['experiments'])} 条实验 / {len(state['catalog'])} 个产物]",
+              file=sys.stderr)
         return 0
 
     if args.cmd == "cat":
