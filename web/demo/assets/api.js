@@ -125,6 +125,13 @@ const DemoAPI = (() => {
     async bootstrap() {
       return (await request('api/demo/bootstrap')).fixtures;
     },
+    async experimentAgent(message, context) {
+      return request('api/demo/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, context }),
+      });
+    },
     async loadState() {
       const result = await request('api/demo/state');
       revision = result.revision;

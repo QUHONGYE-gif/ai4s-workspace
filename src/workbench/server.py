@@ -14,6 +14,7 @@ from xmlrpc.client import Error as PyMOLError
 
 from .storage import ConflictError, SnapshotStore
 from .pymol import PyMOLSession
+from .agent import respond as respond_to_agent
 
 ROOT = Path(__file__).resolve().parents[2]
 MAX_BODY = 2 * 1024 * 1024
@@ -131,6 +132,7 @@ class DemoHandler(SimpleHTTPRequestHandler):
         if path not in (
             "/api/tools/pymol/load", "/api/tools/pymol/style",
             "/api/tools/pymol/mode", "/api/tools/pymol/command",
+            "/api/demo/agent",
         ):
             return self.reply(404, {"error": "Unknown API endpoint"})
         if self.headers.get_content_type() != "application/json":
@@ -145,6 +147,8 @@ class DemoHandler(SimpleHTTPRequestHandler):
             payload = json.loads(self.rfile.read(length))
             if not isinstance(payload, dict):
                 raise ValueError("Request must be an object")
+            if path == "/api/demo/agent":
+                return self.reply(200, respond_to_agent(payload))
             if path.endswith("/load"):
                 result = self.pymol.load(
                     payload.get("filename"), payload.get("content"),

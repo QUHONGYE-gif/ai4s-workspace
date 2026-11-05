@@ -305,6 +305,9 @@
       cost: 60 * (i + 1),
       load: 2 * (i + 1),
       size: 0.01 * (i + 1),
+      model: p.model || null,
+      paramKeys: (p.parameters || []).map((item) => item.key),
+      parameters: p.parameters || [],
       description: '使用已登记的程序和调用指令。当前只演示执行顺序，不运行真实命令。',
     }));
   };
@@ -725,11 +728,18 @@ ${esc(step[key] || '')}</textarea
     const definition = workflowInfo[id].executionDefinition;
     const c = from ? copy(from.config) : { ...baseConfig };
     if (!from && definition) c.input = definition.inputPath;
+    for (const step of steps) {
+      for (const parameter of (step.parameters || [])) {
+        if (c[parameter.key] === undefined && parameter.default !== undefined) c[parameter.key] = parameter.default;
+      }
+    }
     const draft = {
       id: nextId('DRAFT'),
       workflowId: id,
       name: workflowInfo[id].name + ' · 新实验',
       config: c,
+      workflowDefaults: from ? copy(from.workflowDefaults || from.config) : copy(c),
+      parameterOverrides: from ? copy(from.parameterOverrides || {}) : {},
       policy: 'cost',
       intent: 'replay',
       reuseScope: 'team',
@@ -740,6 +750,7 @@ ${esc(step[key] || '')}</textarea
       choices: {},
       checked: false,
       simulation: 'success',
+      agentMessages: [],
       createdAt: Date.now(),
     };
     if (from) {
@@ -1001,6 +1012,11 @@ ${esc(step[key] || '')}</textarea
     if (name.startsWith('config.')) {
       const key = name.slice(7);
       d.config[key] = key === 'remote' ? value === 'true' : value;
+      d.parameterOverrides ||= {};
+      const defaultValue = d.workflowDefaults?.[key];
+      if (defaultValue === undefined || String(defaultValue) !== String(d.config[key]))
+        d.parameterOverrides[key] = d.config[key];
+      else delete d.parameterOverrides[key];
     } else d[name] = value;
     if (name === 'intent') {
       if (value === 'fresh') d.config.sampleToken = d.id;
@@ -1199,6 +1215,8 @@ ${esc(step[key] || '')}</textarea
       workflowId: activeWorkflow,
       workflowSnapshot: { ...copy(w), steps: copy(steps) },
       config: copy(d.config),
+      workflowDefaults: copy(d.workflowDefaults || baseConfig),
+      parameterOverrides: copy(d.parameterOverrides || {}),
       intent: d.intent,
       reuseScope: d.reuseScope,
       shareOutput: d.shareOutput,
@@ -2009,6 +2027,14 @@ ${esc(policyDraft.description)}</textarea
       </div>`;
     return input;
   };
+  const registeredParameters = function registeredParameters(step, workflow = workflowInfo[activeWorkflow]) {
+    const profile = workflow.executionDefinition?.steps?.find((item) => item.id === step.id);
+    return (step.parameters || profile?.parameters || []).map((item) => ({
+      category: item.category || (/filter|count|threshold|筛选|数量|阈值/i.test(`${item.key} ${item.label}`) ? 'filter' : 'inference'),
+      required: item.required !== false,
+      ...item,
+    }));
+  };
   const parameterPanel = function parameterPanel(d) {
     let fields = '';
     const c = d.config,
@@ -2080,7 +2106,7 @@ ${esc(policyDraft.description)}</textarea
     const choice = d.choices[s.id] || 'auto';
     return /* HTML */ `<select data-choice="${s.id}" aria-label="${esc(s.name)}的执行方式">
       <option value="auto" ${choice === 'auto' ? 'selected' : ''}>自动建议</option>
-      <option value="compute" ${choice === 'compute' ? 'selected' : ''}>重新计算</option>
+      <option value="compute" ${choice === 'compute' ? 'selected' : ''}>重新计算（即使参数相同）</option>
       ${ready
         .map(
           (a) =>
@@ -2130,18 +2156,19 @@ ${esc(policyDraft.description)}</textarea
       : '<div class="muted small">该范围内没有候选。</div>';
   };
   const stepParameterField = function stepParameterField(definition, d, readOnly) {
-    const value = d.config[definition.key],
+    const value = d.config[definition.key] ?? definition.default ?? '',
       name = `config.${definition.key}`;
     if (readOnly)
       return /* HTML */ `<div class="kv"><span>${esc(definition.label)}</span><strong>${esc(value)}</strong></div>`;
     if (definition.type === 'select')
-      return choiceField(definition.label, name, value, definition.options || []);
+      return choiceField(definition.label, name, value, definition.options || [], definition.default !== undefined ? `默认值：${definition.default}` : '');
     return /* HTML */ `<label class="field">
       <span>${esc(definition.label)}</span>
       <input data-draft="${esc(name)}" type="${esc(definition.type || 'text')}"
         value="${esc(value)}" ${Number.isFinite(definition.min) ? `min="${definition.min}"` : ''}
         ${Number.isFinite(definition.max) ? `max="${definition.max}"` : ''}
         ${definition.step ? `step="${definition.step}"` : ''} />
+      ${definition.default !== undefined ? `<div class="field-hint">默认值：${esc(definition.default)}${definition.required ? ' · 必填' : ''}</div>` : ''}
     </label>`;
   };
   const nodeDetailPanel = function nodeDetailPanel(step, d, planStep = null, experiment = null) {
@@ -2151,7 +2178,12 @@ ${esc(policyDraft.description)}</textarea
       dependencies = step.deps.map((id) => snapshotSteps.find((item) => item.id === id)?.name || id),
       input = dependencies.length ? dependencies.join('、') : d.inputMeta?.name || d.config.input || '未选择',
       output = step.file ? `${step.file} · ${step.kind || '文件'}` : '未定义',
-      definitions = (step.parameters || []).map((definition) => stepParameterField(definition, d, !!experiment)).join(''),
+      parameters = registeredParameters(step, definition),
+      definitions = ['inference', 'filter'].map((category) => {
+        const group = parameters.filter((item) => item.category === category);
+        if (!group.length) return '';
+        return `<div class="parameter-group"><div class="parameter-group-title">${category === 'filter' ? '筛选参数' : '推理参数'}</div>${group.map((item) => stepParameterField(item, d, !!experiment)).join('')}</div>`;
+      }).join(''),
       result = experiment?.outputs.find((item) => item.stepId === step.id),
       artifact = result && artifactById(result.artifactId);
     return panel(
@@ -2358,6 +2390,67 @@ ${esc(policyDraft.description)}</textarea
   const experimentDiagram = function experimentDiagram(p, selectedId = '') {
     return panel('工作流', liveFlow(p, selectedId));
   };
+  const creationSummaryPanel = function creationSummaryPanel(d, p) {
+    const defaults = d.workflowDefaults || {};
+    const changed = Object.entries(d.config || {}).filter(([key, value]) => defaults[key] !== undefined && String(defaults[key]) !== String(value));
+    const labels = Object.fromEntries(steps.flatMap((step) => registeredParameters(step).map((item) => [item.key, item.label])));
+    const missing = [];
+    if (!String(d.name || '').trim()) missing.push('实验名称');
+    if (!String(d.config?.input || '').trim() && d.inputSource !== 'upload' && d.inputSource !== 'artifact') missing.push('输入数据');
+    if (d.inputSource === 'upload' && !d.inputMeta) missing.push('上传文件');
+    if (d.inputSource === 'artifact' && !d.inputArtifactId) missing.push('可复用产物');
+    for (const item of steps.flatMap((step) => registeredParameters(step))) {
+      if (item.required && (d.config?.[item.key] === undefined || d.config?.[item.key] === '')) missing.push(item.label || item.key);
+    }
+    return panel('创建前摘要', `<div class="creation-summary-grid">
+      <div><span>输入</span><strong>${esc(d.inputMeta?.name || d.config.input || '待选择')}</strong></div>
+      <div><span>请求步骤</span><strong>${p.map((item) => esc(item.name)).join(' → ')}</strong></div>
+      <div><span>参数覆盖</span><strong>${changed.length ? changed.map(([key, value]) => `${esc(labels[key] || key)}：${esc(value)}`).join('；') : '沿用工作流默认值'}</strong></div>
+      <div><span>缺失项</span><strong class="${missing.length ? 'warning-text' : 'success-text'}">${missing.length ? missing.join('、') : '无'}</strong></div>
+    </div><p class="field-hint">工作流默认配置与本次实验覆盖值分开保存；修改参数不会改变已登记工作流。</p>`);
+  };
+  const agentContext = function agentContext(d, selected) {
+    const node = selected ? { id: selected.id, name: selected.name, values: d.config, config: d.config, parameters: registeredParameters(selected) } : null;
+    return { workflowId: d.workflowId, workflowName: workflowInfo[d.workflowId]?.name, inputArtifactId: d.inputArtifactId, input: d.config.input, status: 'draft', selectedNode: node };
+  };
+  const applyAgentOperations = function applyAgentOperations(d, operations) {
+    for (const operation of operations || []) {
+      if (operation.type === 'update_params') {
+        d.parameterOverrides ||= {};
+        for (const [key, value] of Object.entries(operation.changes || {})) { d.config[key] = value; d.parameterOverrides[key] = value; }
+        if (operation.node_id) selectedPlanStep = operation.node_id;
+      }
+      if (operation.type === 'create_experiment_draft') {
+        const next = createExperimentDraft(activeWorkflow, d);
+        if (next) {
+          next.intent = operation.intent || 'fresh'; next.inputSource = 'artifact';
+          next.inputArtifactId = operation.input_artifact_id || operation.source_artifact_id || '';
+          const artifact = artifactById(next.inputArtifactId);
+          next.config.input = artifact ? 'artifact:' + artifact.key : d.config.input;
+          next.inputMeta = artifact ? { name: artifact.name, kind: artifact.kind, note: 'Agent 引用已登记产物 ' + artifact.id } : d.inputMeta;
+          next.config.sampleToken = next.id; next.agentMessages ||= []; saveProduct();
+        }
+      }
+    }
+  };
+  const sendAgentMessage = async function sendAgentMessage(d, selected) {
+    const input = document.querySelector('[data-agent-input]');
+    const message = input?.value.trim();
+    if (!message) return;
+    d.agentMessages ||= []; d.agentMessages.push({ role: 'user', text: message }); input.value = ''; render();
+    try {
+      const result = await DemoAPI.experimentAgent(message, agentContext(d, selected));
+      applyAgentOperations(d, result.operations); (currentDraft() || d).agentMessages.push({ role: 'agent', text: result.reply }); saveProduct(); render();
+    } catch (error) {
+      d.agentMessages.push({ role: 'agent', text: 'Agent 暂不可用：' + error.message }); saveProduct(); render();
+    }
+  };
+  const agentPanel = function agentPanel(d, selected) {
+    const messages = d.agentMessages || [];
+    return panel('实验配置 Agent', `<div class="agent-context">当前节点：<strong>${esc(selected?.name || '未选择，请先点击流程图节点')}</strong><span>仅围绕当前实验、当前节点和当前输入回答</span></div>
+      <div class="agent-messages" aria-live="polite">${messages.length ? messages.map((item) => `<div class="agent-message ${item.role === 'user' ? 'user' : 'assistant'}"><span>${item.role === 'user' ? '你' : 'Agent'}</span><p>${esc(item.text)}</p></div>`).join('') : '<p class="muted small">可以问“这个温度参数是什么意思？”或“把筛选数量改成 3 条”。</p>'}</div>
+      <div class="agent-compose"><input data-agent-input type="text" placeholder="询问当前节点或修改当前实验配置" maxlength="500" /><button class="btn primary" type="button" data-agent-send>发送</button></div>`);
+  };
   const workflowPage = function () {
     const d = currentDraft() || createExperimentDraft(activeWorkflow);
     const p = plan(d.config, d.policy, d),
@@ -2373,7 +2466,7 @@ ${esc(policyDraft.description)}</textarea
       flowRibbon(0) +
       /* HTML */ `<div class="workspace-grid experiment-create-grid">
           <div class="left-stack">
-            ${panel(
+            ${creationSummaryPanel(d, p)}${panel(
               '实验信息与输入',
               /* HTML */ `<div class="create-body">
                 <div class="registration-grid">
@@ -2385,6 +2478,7 @@ ${esc(policyDraft.description)}</textarea
               </div>`,
             )}${experimentDiagram(p, selected?.id || '')}
             ${selected ? nodeDetailPanel(selected, d, p.find((item) => item.id === selected.id)) : ''}
+            ${agentPanel(d, selected)}
           </div>
           <aside class="right-stack">
             ${panel(
@@ -3827,6 +3921,20 @@ ${esc(policyDraft.description)}</textarea
           if (el.dataset.draft.startsWith('config.')) render();
         };
       }
+    });
+    document.querySelectorAll('[data-agent-send]').forEach((el) => {
+      el.onclick = () => {
+        const d = currentDraft();
+        if (!d) return;
+        void sendAgentMessage(d, steps.find((step) => step.id === selectedPlanStep));
+      };
+    });
+    document.querySelectorAll('[data-agent-input]').forEach((el) => {
+      el.onkeydown = (event) => {
+        if (event.key !== 'Enter' || event.shiftKey) return;
+        event.preventDefault();
+        el.closest('.panel')?.querySelector('[data-agent-send]')?.click();
+      };
     });
     document.querySelectorAll('[data-choice]').forEach(
       (el) =>

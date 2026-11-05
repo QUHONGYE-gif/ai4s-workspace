@@ -107,6 +107,33 @@ class HTTPTests(unittest.TestCase):
         status, _, _ = self.request("PUT", "/api/demo/state", {})
         self.assertEqual(status, 415)
 
+    def test_experiment_agent_uses_registered_context_and_real_logs(self):
+        headers = {"Content-Type": "application/json"}
+        context = {
+            "selectedNode": {
+                "id": "filter",
+                "name": "结果筛选",
+                "config": {"filter_count": 5},
+                "values": {"filter_count": 5},
+                "parameters": [{"key": "filter_count", "label": "筛选数量", "type": "number"}],
+            }
+        }
+        status, _, data = self.request(
+            "POST", "/api/demo/agent", {"message": "把筛选数量改成 3 条", "context": context}, headers
+        )
+        result = json.loads(data)
+        self.assertEqual(status, 200)
+        self.assertEqual(result["intent"], "change")
+        self.assertEqual(result["operations"][0]["changes"], {"filter_count": 3})
+
+        status, _, data = self.request(
+            "POST", "/api/demo/agent",
+            {"message": "为什么这一步失败了？", "context": {"status": "failed", "logs": ["结构预测超时"]}},
+            headers,
+        )
+        self.assertEqual(status, 200)
+        self.assertIn("结构预测超时", json.loads(data)["reply"])
+
     def test_oversize_request_is_rejected_without_consuming_body(self):
         status, _, _ = self.request(
             "PUT",
