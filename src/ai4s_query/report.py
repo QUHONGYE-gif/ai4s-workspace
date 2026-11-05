@@ -109,9 +109,11 @@ def to_text(info: dict, path: str | None = None) -> str:
     add("[血缘 · 上游]（反查来源：从本节点回溯到最初输入）")
     if info["lineage"]["upstream"]:
         for step in info["lineage"]["upstream"]:
+            port = step["via_port"]
+            port_txt = "由该过程创建" if port == "created_by" else f"端口 {port}"
             add("  " + "  " * step["depth"]
                 + f"^-- {_t(step['node_type'])} uuid={step['node_uuid'][:12]}…"
-                + f"（端口 {step['via_port']}）")
+                + f"（{port_txt}）")
     else:
         add("  （本节点是源头，无上游）")
     add("")

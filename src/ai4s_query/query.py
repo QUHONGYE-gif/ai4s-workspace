@@ -283,6 +283,7 @@ def _upstream(node: Node, max_depth: int = 10):
         if depth > max_depth or n.uuid in seen:
             return
         seen.add(n.uuid)
+        grew = False
         for triple in n.base.links.get_incoming():
             lt = _lt(triple.link_type)
             if lt in ("input_calc", "input_work",
@@ -297,6 +298,7 @@ def _upstream(node: Node, max_depth: int = 10):
                     "label": src.label,
                     "creator_uuid": _creator_uuid(src),
                 })
+                grew = True
                 walk(src, depth + 1)
             elif lt.startswith("call_"):
                 chain.append({
@@ -308,6 +310,26 @@ def _upstream(node: Node, max_depth: int = 10):
                     "label": triple.node.label,
                     "creator_uuid": _creator_uuid(triple.node),
                 })
+                grew = True
+        if grew:
+            return
+        # 数据节点的 incoming 是 create 链接（不在上面三类里），若不额外跟一步，
+        # 从产物反查会直接得到「本节点是源头，无上游」——这是错的，它明明有产出者。
+        try:
+            creator = n.creator
+        except (AttributeError, ValueError):
+            creator = None
+        if creator is not None and creator.uuid not in seen:
+            chain.append({
+                "depth": depth,
+                "via_port": "created_by",
+                "node_uuid": creator.uuid,
+                "node_pk": creator.pk,
+                "node_type": creator.node_type,
+                "label": creator.label,
+                "creator_uuid": _creator_uuid(creator),
+            })
+            walk(creator, depth + 1)
 
     walk(node, 0)
     return chain
