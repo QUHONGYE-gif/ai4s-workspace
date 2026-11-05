@@ -23,11 +23,13 @@
 | [运行要求](docs/environment.md) | 通用依赖和配置来源 |
 | [部署与运维](docs/operations.md) | 管理员操作入口及维护边界 |
 | [存储层原型说明](src/storage/README.md) | 运行复用验证原型，查看命令行与数据落地位置 |
+| [查询模块说明](src/ai4s_query/README.md) | AiiDA 运行结果与来源查询：状态、血缘、产物校验与复用区分 |
 
 ## 代码位置
 
 - `web/demo/`：页面、交互、API 客户端与嵌入式查看器。
 - `src/workbench/`：HTTP API、模拟快照和 PyMOL 接口。
+- `src/ai4s_query/`：AiiDA 运行结果与来源查询模块（只读），入口 `python -m ai4s_query.cli`。
 - `scripts/`：应用、蛋白质流程和管理入口。
 - `tools/pymol_web/`：PyMOL 启动与路径代理。
 - `configs/`、`coder/`、`docker/`、`compose*.yaml`：配置、模板与镜像定义。
@@ -38,3 +40,5 @@
 Agent 资料与对话配置接入见 [运行说明](docs/agent_demo_run.md)；继续使用已有工作台与 PyMOL 联合启动入口。
 
 `src/storage/` 为后端存储层验证原型（内容寻址对象存储 + SQLite 元数据），说明见 [存储层原型说明](src/storage/README.md)。
+
+`src/ai4s_query/` 为 AiiDA 运行结果与来源查询模块：给定节点 UUID 输出状态、输入参数、产物与校验记录、血缘与缺失信息，区分缓存命中与直接复用，说明见 [查询模块说明](src/ai4s_query/README.md)。

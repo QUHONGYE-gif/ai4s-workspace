@@ -11,6 +11,8 @@
 
 - 后端存储原型已放入 `src/storage/`：以「读取 FASTA → 规范化序列 → 长度统计」为例，验证内容寻址存储、5 张表的元数据记录与跨执行复用；运行方式见 [存储层原型说明](../src/storage/README.md)。
 
+- AiiDA 运行结果与来源查询模块已放入 `src/ai4s_query/`：给定节点 UUID 输出运行状态、输入与参数、产物与文件校验、血缘（上下游）及缺失信息，报告区分「正式产物 / 失败诊断 / 未记录信息 / 不可读文件」，并区分缓存命中复用与直接复用旧数据；说明见 [查询模块说明](../src/ai4s_query/README.md)。
+
 ## 限制
 
 - 工作流执行、科学产物目录、多人共享和复用策略仍为模拟；浏览器命名空间不等于真实成员鉴权。
@@ -22,4 +24,4 @@
 
 按 [实施计划](implementation_plan.md) 完成一条小规模真实蛋白质链路，登记产物与依赖，再验证查询和复用。
 
-入口：[工作台](../web/README.md) · [PyMOL](../tools/pymol_web/README.md) · [蛋白质设计](protein_pipeline.md) · [仓库](../README.md)。
+入口：[工作台](../web/README.md) · [PyMOL](../tools/pymol_web/README.md) · [蛋白质设计](protein_pipeline.md) · [查询模块](../src/ai4s_query/README.md) · [仓库](../README.md)。

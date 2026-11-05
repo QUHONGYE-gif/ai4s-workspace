@@ -1,0 +1,387 @@
+# -*- coding: utf-8 -*-
+"""查询模块核心：节点描述、血缘、产物与缺失信息。
+
+实现约定（对应任务书与共用引擎指南）：
+- 不使用 QueryBuilder 的 has_key / contains（SQLite profile 不支持）。
+- 节点查找：uuid 等值或 like 前缀；血缘遍历用 ORM 链接 API。
+- 只读，不修改任何节点。
+"""
+from __future__ import annotations
+
+import hashlib
+
+from aiida.orm import Node, QueryBuilder
+from aiida.orm.nodes.process.process import ProcessNode
+
+# 链接类型分组，用于报告归类
+_INPUT_LIKE = {"input_calc", "input_work", "create", "return", "input_calcfunction",
+               "input_workfunction", "call_calc", "call_work", "call_calcfunction",
+               "call_workfunction"}
+
+
+# ---------------------------------------------------------------- 节点定位
+
+def _exact_uuid(candidates) -> Node | None:
+    """按 uuid 精确匹配。数据库可能带或不带连字符存储，两种都试。"""
+    for c in candidates:
+        res = QueryBuilder().append(Node, filters={"uuid": {"==": c}}).all()
+        if res:
+            return res[0][0]
+    return None
+
+
+def resolve(identifier) -> Node:
+    """按 UUID（完整或 >=8 位前缀）或 PK 定位节点。"""
+    if isinstance(identifier, int):
+        return Node.load(identifier)
+    s = str(identifier).strip()
+    if s.isdigit():
+        return Node.load(int(s))
+    if len(s) == 32 or (len(s) == 36 and "-" in s):
+        node = _exact_uuid({s, s.replace("-", "")})
+        if node:
+            return node
+    if len(s) >= 8:
+        # 前缀匹配：like 按存储原样匹配，连字符原样保留与去掉两种模式都试
+        hits = {}
+        for pattern in {s + "%", s.replace("-", "") + "%"}:
+            for row in QueryBuilder().append(
+                    Node, filters={"uuid": {"like": pattern}},
+                    project=["uuid", "*"]).all():
+                hits[row[0]] = row[1]
+        unique = list(hits.values())
+        if len(unique) == 1:
+            return unique[0]
+        if len(unique) > 1:
+            raise ValueError(f"UUID 前缀 {s} 命中 {len(unique)} 个节点，请加长前缀")
+    raise ValueError(f"找不到节点：{identifier}")
+
+
+# ---------------------------------------------------------------- 基础信息
+
+def _lt(link_type) -> str:
+    """LinkType 枚举 -> 字符串。"""
+    return link_type.value if hasattr(link_type, "value") else str(link_type)
+
+
+def _creator_uuid(node):
+    """数据节点 creator；无 CREATE 链接的节点（外部输入）返回 None。"""
+    try:
+        c = node.creator
+    except AttributeError:
+        return None
+    return c.uuid if c is not None else None
+
+
+def _link_rows(links, direction: str):
+    """把链接列表转成报告行。direction: 'in'/'out'。"""
+    rows = []
+    for triple in links:
+        other = triple.node
+        rows.append({
+            "port": triple.link_label,
+            "link_type": _lt(triple.link_type),
+            "label": other.label,
+            "uuid": other.uuid,
+            "pk": other.pk,
+            "node_type": other.node_type,
+            "creator_uuid": _creator_uuid(other) if direction == "in" else None,
+        })
+    rows.sort(key=lambda r: (r["link_type"], r["port"]))
+    return rows
+
+
+def _process_info(node: Node):
+    """过程节点的运行状态信息（任务书要求 1：状态与成败原因）。"""
+    if not isinstance(node, ProcessNode):
+        return None
+    info = {
+        "process_state": str(node.process_state).split(".")[-1].lower(),
+        "process_state_raw": str(node.process_state),
+        "process_status": getattr(node, "process_status", None),
+        "is_finished_ok": node.is_finished_ok,
+        "is_terminated": node.is_terminated,
+        "exception": getattr(node, "exception", None),
+    }
+    ec = node.exit_code
+    if ec is not None:
+        info["exit_code"] = ec.status
+        info["exit_message"] = ec.message
+    else:
+        info["exit_code"] = None
+        info["exit_message"] = None
+    # 缓存信息（任务书要求 4）
+    caching = node.base.caching
+    info["is_created_from_cache"] = caching.is_created_from_cache
+    info["cache_source"] = caching.get_cache_source() if caching.is_created_from_cache else None
+    return info
+
+
+def _node_hash(node: Node):
+    """节点内容哈希（校验记录）：过程节点为输入 hash，数据节点为内容 hash。"""
+    try:
+        return node.base.caching.get_hash()
+    except Exception:
+        return None
+
+
+def _iter_files(repo, prefix: str = ""):
+    """递归列出仓库内所有文件（ProteinMPNN 的产物是 seqs/、scores/ 子目录）。"""
+    try:
+        names = repo.list_object_names(prefix or None)
+    except Exception:
+        return
+    for name in names:
+        path = f"{prefix}/{name}" if prefix else name
+        try:
+            children = repo.list_object_names(path)
+        except Exception:
+            children = None
+        if children:
+            yield from _iter_files(repo, path)
+        else:
+            yield path
+
+
+def _read_entry(node: Node, path: str) -> dict:
+    """单个仓库文件的读取入口（任务书要求 1：提供文件读取入口）。"""
+    return {
+        "cli": f"verdi node repo cat {node.uuid} {path}",
+        "python": f"node.base.repository.get_object_content({path!r})",
+        "export": f"ai4s-query cat {node.uuid} {path} --out {path.split('/')[-1]}",
+    }
+
+
+def _artifacts(node: Node):
+    """产物清单：仓库文件、大小、sha256、可读性与读取入口。
+
+    kind 取值：text（可按文本读）/ binary（二进制，可导出）/ error（读取失败）。
+    过程节点若没有仓库（如 calcfunction），返回 has_repository=False，不记为“不可读”。
+    """
+    info = {"has_repository": False, "error": None, "node_hash": _node_hash(node), "files": []}
+    try:
+        repo = node.base.repository
+        names = list(_iter_files(repo))
+    except AttributeError:
+        return info
+    except Exception as exc:
+        info["error"] = repr(exc)
+        return info
+    info["has_repository"] = True
+    for name in names:
+        entry = {"path": name, "read": _read_entry(node, name)}
+        try:
+            raw = repo.get_object_content(name, mode="rb")
+        except Exception as exc:
+            entry.update({"readable": False, "kind": "error", "error": repr(exc)})
+            info["files"].append(entry)
+            continue
+        entry.update({
+            "readable": True,
+            "kind": "text",
+            "size": len(raw),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+        })
+        try:
+            text = raw.decode("utf-8")
+            entry["preview"] = " / ".join(text.splitlines()[:2])[:160]
+        except UnicodeDecodeError:
+            entry["kind"] = "binary"
+            entry["note"] = "二进制，按文本不可读，可按字节导出"
+        info["files"].append(entry)
+    return info
+
+
+# ---------------------------------------------------------------- 血缘
+
+def _upstream(node: Node, max_depth: int = 10):
+    """沿输入方向回溯：本节点 <- 输入 <- 产生输入的过程 <- ..."""
+    seen = set()
+    chain = []
+
+    def walk(n, depth):
+        if depth > max_depth or n.uuid in seen:
+            return
+        seen.add(n.uuid)
+        for triple in n.base.links.get_incoming():
+            lt = _lt(triple.link_type)
+            if lt in ("input_calc", "input_work",
+                      "input_calcfunction", "input_workfunction"):
+                src = triple.node
+                chain.append({
+                    "depth": depth,
+                    "via_port": triple.link_label,
+                    "node_uuid": src.uuid,
+                    "node_pk": src.pk,
+                    "node_type": src.node_type,
+                    "label": src.label,
+                    "creator_uuid": _creator_uuid(src),
+                })
+                walk(src, depth + 1)
+            elif lt.startswith("call_"):
+                chain.append({
+                    "depth": depth,
+                    "via_port": triple.link_label + " (called)",
+                    "node_uuid": triple.node.uuid,
+                    "node_pk": triple.node.pk,
+                    "node_type": triple.node.node_type,
+                    "label": triple.node.label,
+                    "creator_uuid": _creator_uuid(triple.node),
+                })
+
+    walk(node, 0)
+    return chain
+
+
+_USE_LINKS = {"input_calc", "input_work"}
+_PRODUCE_LINKS = {"create", "return"}
+_CALL_LINKS = {"call_calc", "call_work"}
+
+
+def _relation(lt: str):
+    """把链接类型翻译成方向语义。
+
+    关键区别（易错点）：数据被过程使用走 input_calc / input_work，
+    create 只出现在「过程 -> 输出数据」方向，return 用于工作流返回值。
+    """
+    if lt in _USE_LINKS:
+        return "used_by"
+    if lt in _PRODUCE_LINKS:
+        return "produced"
+    if lt in _CALL_LINKS:
+        return "calls"
+    return None
+
+
+def _downstream(node: Node, max_depth: int = 10):
+    """沿使用方向追踪：本节点的数据被哪些后续过程使用（任务书要求 2 反向）。"""
+    rows = []
+    seen_edge = set()
+    visited = set()
+
+    def walk(n, depth):
+        if depth > max_depth or n.uuid in visited:
+            return
+        visited.add(n.uuid)
+        for triple in n.base.links.get_outgoing():
+            lt = _lt(triple.link_type)
+            relation = _relation(lt)
+            if relation is None:
+                continue
+            dst = triple.node
+            key = (dst.uuid, relation, triple.link_label)
+            if key not in seen_edge:
+                seen_edge.add(key)
+                rows.append({
+                    "depth": depth,
+                    "relation": relation,
+                    "via_port": triple.link_label,
+                    "link_type": lt,
+                    "node_uuid": dst.uuid,
+                    "node_pk": dst.pk,
+                    "node_type": dst.node_type,
+                    "label": dst.label,
+                })
+            walk(dst, depth + 1)
+
+    walk(node, 0)
+    rows.sort(key=lambda r: (r["depth"], r["relation"], r["node_uuid"]))
+    return rows
+
+
+# ---------------------------------------------------------------- 汇总
+
+def describe(identifier) -> dict:
+    """生成单个节点的完整描述字典。"""
+    node = resolve(identifier)
+    repository = _artifacts(node)
+    info = {
+        "uuid": node.uuid,
+        "pk": node.pk,
+        "node_type": node.node_type,
+        "label": node.label,
+        "description": node.description,
+        "ctime": str(node.ctime),
+        "mtime": str(node.mtime),
+        "creator_uuid": _creator_uuid(node),
+        "process": _process_info(node),
+        "inputs": _link_rows(node.base.links.get_incoming(), "in"),
+        "outputs": _link_rows(node.base.links.get_outgoing(), "out"),
+        "repository": repository,
+        "checksum": {
+            "node_hash": repository.get("node_hash"),
+            "files": [{"path": f["path"], "size": f.get("size"), "sha256": f.get("sha256")}
+                      for f in repository["files"] if f.get("sha256")],
+        },
+        "lineage": {
+            "upstream": _upstream(node),
+            "downstream": _downstream(node),
+        },
+        "attributes": {k: node.base.attributes.get(k)
+                       for k in node.base.attributes.keys()},
+        "extras": {k: node.base.extras.get(k)
+                   for k in node.base.extras.keys()
+                   if not k.startswith("_aiida_cached_from")},
+    }
+    info["issues"] = _issues(info, node)
+    return info
+
+
+def _log_tail(node: Node, limit: int = 800):
+    """从仓库里取日志文件尾部，作为失败诊断的第一手材料。"""
+    try:
+        names = list(_iter_files(node.base.repository))
+    except Exception:
+        return None
+    for name in names:
+        if not name.lower().endswith((".log", ".out", ".err")):
+            continue
+        try:
+            raw = node.base.repository.get_object_content(name, mode="rb")
+            return {"path": name, "tail": raw.decode("utf-8", "replace")[-limit:]}
+        except Exception:
+            continue
+    return None
+
+
+def _issues(info: dict, node: Node) -> dict:
+    """任务书要求 3：区分正式产物 / 失败诊断 / 未记录信息 / 不可读文件。"""
+    issues = {"failures": [], "unrecorded": [], "unreadable_files": []}
+    proc = info["process"]
+
+    if proc is None:
+        if info.get("creator_uuid") is None:
+            issues["unrecorded"].append("无产生过程（外部输入或手工创建），来源不可考")
+    else:
+        failed = proc["process_state"] in ("excepted", "killed") or \
+            (proc.get("exit_code") not in (None, 0))
+        if failed:
+            entry = {
+                "state": proc["process_state"],
+                "exit_code": proc.get("exit_code"),
+                "message": proc.get("exit_message"),
+                "exception": proc.get("exception"),
+            }
+            tail = _log_tail(node)
+            if tail:
+                entry["log"] = tail
+            issues["failures"].append(entry)
+        if proc["process_state"] == "running":
+            issues["unrecorded"].append("过程尚未结束（running），当前结果不完整")
+        if not info["inputs"]:
+            issues["unrecorded"].append("未记录输入（无输入链接）")
+        if "CalcJob" in info["node_type"] and not any(
+                r["port"] == "parameters" for r in info["inputs"]):
+            issues["unrecorded"].append("未记录计算参数（inputs 中没有 parameters）")
+
+    repo = info["repository"]
+    if repo.get("error"):
+        issues["unreadable_files"].append("仓库整体不可读：" + str(repo["error"]))
+    for f in repo["files"]:
+        if f["kind"] == "error":
+            issues["unreadable_files"].append(
+                f"{f['path']}：读取失败 {f.get('error', '')}")
+        elif f["kind"] == "binary":
+            issues["unreadable_files"].append(
+                f"{f['path']}：二进制产物，按文本不可读（{f.get('size')}B，可导出）")
+    return issues
