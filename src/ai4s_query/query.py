@@ -85,6 +85,12 @@ def _inline(node: Node) -> dict:
     序列（Str）、结构文件（SinglefileData / FolderData）。
     """
     nt = node.node_type.rstrip(".")  # AiiDA 的 node_type 带结尾点，如 data.core.str.Str.
+
+    # 过程节点没有“值”可内联。注意 CalcFunctionNode 的仓库里会有一份 source_file，
+    # 那是 AiiDA 为可复现保存的函数源码快照，不是该过程的取值，不能当成值显示。
+    if isinstance(node, ProcessNode):
+        return {"kind": "process", "text": ""}
+
     try:
         if nt.endswith("dict.Dict"):
             data = node.get_dict()
@@ -215,7 +221,8 @@ def _read_entry(node: Node, path: str) -> dict:
     return {
         "cli": f"verdi node repo cat {node.uuid} {path}",
         "python": f"node.base.repository.get_object_content({path!r})",
-        "export": f"ai4s-query cat {node.uuid} {path} --out {path.split('/')[-1]}",
+        "export": (f"python -m ai4s_query.cli cat {node.uuid} {path} "
+                   f"--out {path.split('/')[-1]}"),
     }
 
 
@@ -235,8 +242,14 @@ def _artifacts(node: Node):
         info["error"] = repr(exc)
         return info
     info["has_repository"] = True
+    is_function = isinstance(node, ProcessNode) and "function" in node.node_type
     for name in names:
         entry = {"path": name, "read": _read_entry(node, name)}
+        if is_function and name == "source_file":
+            # calcfunction 的仓库里只有 AiiDA 自动保存的函数源码，不是计算产物
+            entry["role"] = "function_source"
+            entry["note"] = ("calcfunction 源码快照（AiiDA 为可复现自动保存），"
+                             "不是本次计算的产物")
         try:
             raw = repo.get_object_content(name, mode="rb")
         except Exception as exc:
