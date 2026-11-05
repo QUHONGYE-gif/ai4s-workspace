@@ -25,6 +25,19 @@ WORKFLOW_NAME = "蛋白质设计流程"
 OWNER_ID = "me"
 OWNER_NAME = "我（演示研究者）"
 
+# 前端 experimentPage 直接读 e.policyRules.name / e.policyRules.storage，
+# 缺这个字段会让实验详情页抛 TypeError，整页回落到「页面暂时无法显示」。
+# 结构与 configs/workbench-demo.json 的 policies 保持一致。
+_POLICIES = {
+    "none": {"id": "none", "name": "每次重算", "reuse": "none", "storage": "none",
+             "description": "每一步都重新计算，不保存新结果。"},
+    "lru": {"id": "lru", "name": "最近使用优先（LRU）", "reuse": "lru", "storage": "lru",
+            "description": "结果可用就复用；空间不足时，清理最久没用的结果。"},
+    "cost": {"id": "cost", "name": "省时优先", "reuse": "cost", "storage": "cost",
+             "description": "比较读取和重算的时间，选择更快的方式。优先保留重算费时的结果。"},
+}
+DEFAULT_POLICY = "cost"
+
 _EXT_KIND = {
     "pdb": "PDB", "cif": "mmCIF", "fa": "FASTA", "fasta": "FASTA",
     "json": "JSON", "log": "LOG", "npz": "NumPy", "npy": "NumPy",
@@ -215,7 +228,8 @@ def build_experiment(identifier, seq: int = 1) -> tuple[dict, list]:
         "inputSource": "path",
         "inputArtifactId": "",
         "inputMeta": None,
-        "policy": "cost",
+        "policy": DEFAULT_POLICY,
+        "policyRules": dict(_POLICIES[DEFAULT_POLICY]),
         "plan": plan,
         "outputs": outputs,
         "log": [
