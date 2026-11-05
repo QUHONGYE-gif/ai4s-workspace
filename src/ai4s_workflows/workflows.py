@@ -2,12 +2,15 @@
 
 from aiida.engine import ToContext, WorkChain, while_
 from aiida.orm import AbstractCode, Dict, SinglefileData
+from aiida.plugins import CalculationFactory
 
-from .calcjobs import LightMPNNCalcJob
 from .filtering import filter_sequences, record_failure_report
 
-SUPPORTED_VERSIONS = ["v1.0", "v1.1"]
+# v1.0/v1.1 来自 mock；8907e667-... 为共用 ProteinMPNN 的真实版本（A 侧 ai4s.proteinmpnn）。
+SUPPORTED_VERSIONS = ["v1.0", "v1.1", "8907e667-py312-torch260cu124"]
 MAX_RETRY = 2
+# Code 未声明默认插件时使用真实 ProteinMPNN；mock Code 声明 ai4s.light-mpnn。
+DEFAULT_MPNN_CALCULATION = "ai4s.proteinmpnn"
 
 
 class ProteinMPNNFilterWorkChain(WorkChain):
@@ -59,7 +62,8 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         )
 
     def submit_mpnn(self):
-        builder = LightMPNNCalcJob.get_builder()
+        entry_point = self.inputs.code.default_calc_job_plugin or DEFAULT_MPNN_CALCULATION
+        builder = CalculationFactory(entry_point).get_builder()
         builder.code = self.inputs.code
         builder.pdb_file = self.inputs.pdb_file
         builder.params = self.inputs.mpnn_params
@@ -85,6 +89,8 @@ class ProteinMPNNFilterWorkChain(WorkChain):
 
         self.ctx.mpnn_result = calculation.outputs.result
         self.ctx.mpnn_success = True
+        # 缓存命中时模型没有真正运行，记录来源以免把它算作一次新的模型执行。
+        self.ctx.mpnn_cache_source = calculation.base.caching.get_cache_source()
 
     def validate_mpnn_result(self):
         result = self.ctx.mpnn_result.get_dict()
@@ -110,6 +116,7 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         execution_report = Dict(dict={
             "model_launches": self.ctx.model_launches,
             "retry_attempt": self.ctx.retry_count,
+            "mpnn_cache_source": self.ctx.get("mpnn_cache_source"),
         })
         outputs = filter_sequences(
             self.ctx.mpnn_result, self.inputs.filter_params, execution_report

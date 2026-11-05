@@ -127,6 +127,7 @@ runpy.run_path({str(cls.mock)!r},run_name="__main__")
         self.assertEqual([row["sample_id"] for row in selected], ["s001", "s002"])
         self.assertEqual(node.outputs.selection_report.get_dict(), {
             "model_launches": 1, "retry_attempt": 0, "selected_count": 2,
+            "mpnn_cache_source": None,
         })
         children = [n for n in node.called if isinstance(n, self.orm.CalcJobNode)]
         self.assertEqual(len(children), 1)
