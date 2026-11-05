@@ -240,7 +240,15 @@ def build_experiment(identifier, seq: int = 1) -> tuple[dict, list]:
         "status": "failed" if failed else "completed",
         "fixture": False,
         "createdAt": _now_ms(),
-        "metrics": {"total": 0, "compute": len(plan), "load": 0},
+        # 前端「复用 / 等待 / 重算」这一行读的是 metrics.reuse / metrics.wait，
+        # 不是从 plan 里数。缺字段会被 `|| 0` 兜成 0，界面上就永远显示"复用 0"。
+        "metrics": {
+            "total": 0,
+            "compute": sum(1 for s in plan if s.get("action") == "compute"),
+            "reuse": sum(1 for s in plan if s.get("action") == "reuse"),
+            "wait": sum(1 for s in plan if s.get("action") == "wait"),
+            "load": 0,
+        },
         "storage": {"saved": len(outputs), "evicted": 0, "skipped": 0},
     }
     return exp, catalog
