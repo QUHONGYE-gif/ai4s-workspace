@@ -54,7 +54,7 @@ def _kind_of(name: str) -> str:
     return _EXT_KIND.get(ext, ext.upper()[:8] or "数据")
 
 
-def _artifact(node, idx: int, run_id: str) -> dict:
+def _artifact(node, idx: int, run_id: str, step_id: str = "") -> dict:
     """Data 节点 -> catalog 产物记录。
 
     文件类节点（SinglefileData/FolderData）按仓库文件记录；
@@ -79,7 +79,7 @@ def _artifact(node, idx: int, run_id: str) -> dict:
         "workflowId": WORKFLOW_ID,
         "workflowName": WORKFLOW_NAME,
         "family": "protein",
-        "stepId": f"step-{idx:03d}",
+        "stepId": step_id,
         "name": name,
         "kind": _kind_of(name) if files else "值",
         "size": round(size_bytes / (1024 * 1024), 4),
@@ -108,7 +108,7 @@ def _artifact(node, idx: int, run_id: str) -> dict:
     }
 
 
-def _plan_step(proc_step: dict, idx: int, artifact_name: str | None) -> dict:
+def _plan_step(proc_step: dict, step_id: str, artifact_name: str | None) -> dict:
     """Process 节点 -> 实验 plan 里的一步。"""
     info = proc_step.get("process") or {}
     cached = bool(info.get("is_created_from_cache"))
@@ -129,7 +129,7 @@ def _plan_step(proc_step: dict, idx: int, artifact_name: str | None) -> dict:
         elif isinstance(val, dict):
             params.update(val)
     return {
-        "id": f"step-{idx:03d}",
+        "id": step_id,
         "name": label,
         "file": artifact_name or "",
         "kind": _kind_of(artifact_name or ""),
@@ -158,43 +158,69 @@ def _plan_step(proc_step: dict, idx: int, artifact_name: str | None) -> dict:
 
 
 def build_experiment(identifier, seq: int = 1) -> tuple[dict, list]:
-    """单条主干轨迹 -> (实验记录, 产物列表)。"""
+    """单条主干轨迹 -> (实验记录, 产物列表)。
+
+    关键点：研序的流程图用 `experiment.outputs` 判断一步是否完成
+    （见 app.js 的 flowStepState：outputs 里有该 stepId 才算 complete）。
+    所以每个过程步骤都必须登记自己的产物，且 mode 要与该步的
+    action（compute/reuse）一致；否则会出现「步骤显示尚未执行」
+    「缓存命中却写成本次生成」这类自相矛盾的界面。
+    """
     steps = query.trace(identifier)
     run_id = f"EXP-A4S-{seq:03d}"
+    base = (seq - 1) * 100
     catalog, plan, outputs = [], [], []
+    art_by_uuid: dict[str, dict] = {}
     art_seq = 0
-    last_artifact_id = None
-    last_step_id = None
 
+    def art_for(node, step_id: str = "") -> dict:
+        """同一节点只登记一次；被过程产出时补上它所属的 stepId。"""
+        nonlocal art_seq
+        art = art_by_uuid.get(node.uuid)
+        if art is None:
+            art_seq += 1
+            art = _artifact(node, base + art_seq, run_id, step_id)
+            art_by_uuid[node.uuid] = art
+            catalog.append(art)
+        elif step_id and not art["stepId"]:
+            art["stepId"] = step_id
+        return art
+
+    # 1) 数据步骤先登记为产物（第一个通常是外部输入，没有生产者）
     for step in steps:
         if step["kind"] == "data":
-            node = query.resolve(step["uuid"])
-            art_seq += 1
-            art = _artifact(node, (seq - 1) * 100 + art_seq, run_id)
-            catalog.append(art)
-            last_artifact_id = art["id"]
+            art_for(query.resolve(step["uuid"]))
+
+    # 2) 过程步骤 -> plan；产物按 create 链接挂到对应步骤上
+    step_seq = 0
+    prev_step_id = None
+    failed_step = None
+    for step in steps:
+        if step["kind"] != "process":
+            continue
+        step_seq += 1
+        step_id = f"step-{base + step_seq:03d}"
+        out_arts = []
+        for o in step.get("outputs") or []:
+            try:
+                out_arts.append(art_for(query.resolve(o["uuid"]), step_id))
+            except Exception:
+                continue
+        pstep = _plan_step(step, step_id, out_arts[0]["name"] if out_arts else None)
+        pstep["deps"] = [prev_step_id] if prev_step_id else []
+        pstep["artifact"] = out_arts[0]["id"] if out_arts else None
+        plan.append(pstep)
+
+        info = step.get("process") or {}
+        if str(info.get("process_state") or "").split(".")[-1].lower() in ("excepted", "killed"):
+            failed_step = step_id
         else:
-            # 过程步骤：拿它第一个产物名做展示
-            out_name = None
-            for o in step.get("outputs") or []:
-                try:
-                    out_node = query.resolve(o["uuid"])
-                    files = [f for f in query._artifacts(out_node).get("files", [])
-                             if f.get("readable")]
-                    if files:
-                        out_name = files[0]["path"]
-                        break
-                except Exception:
-                    continue
-            art_seq += 1
-            plan.append(_plan_step(step, (seq - 1) * 100 + art_seq, out_name))
-            last_step_id = plan[-1]["id"]
+            for art in out_arts:
+                outputs.append({"stepId": step_id, "artifactId": art["id"],
+                                "mode": pstep["action"]})
+        prev_step_id = step_id
 
-    failed = any((s.get("process") or {}).get("process_state") in ("excepted", "killed")
-                 for s in steps if s["kind"] == "process")
-
-    if last_step_id and last_artifact_id and not failed:
-        outputs.append({"stepId": last_step_id, "artifactId": last_artifact_id, "mode": "compute"})
+    failed = failed_step is not None
 
     head = steps[0] if steps else {}
     input_name = None
@@ -217,7 +243,8 @@ def build_experiment(identifier, seq: int = 1) -> tuple[dict, list]:
             "template": "protein",
             "steps": [
                 {"id": s["id"], "name": s["name"], "file": s.get("file", ""),
-                 "kind": s.get("kind", ""), "deps": [], "cost": 0, "load": 0, "size": 0}
+                 "kind": s.get("kind", ""), "deps": s.get("deps") or [], "cost": 0,
+                 "load": 0, "size": 0}
                 for s in plan
             ] or [{"id": "step-000", "name": "无计算步骤", "file": "", "kind": "", "deps": []}],
         },
@@ -236,8 +263,11 @@ def build_experiment(identifier, seq: int = 1) -> tuple[dict, list]:
             "本记录由 ai4s_query 从 AiiDA 节点导出，内容为真实运行数据（非模拟）。",
             f"入口节点 UUID：{entry_uuid}",
             "产物记录里保留了节点 UUID、节点哈希与逐文件 sha256，可在终端用 ai4s_query show 复核。",
+            "缓存命中的步骤标记为「复用已有结果」，其来源节点记录在 provenance.cached_from。",
         ],
         "status": "failed" if failed else "completed",
+        "currentStep": max(len(plan) - 1, 0),
+        "failedStep": failed_step,
         "fixture": False,
         "createdAt": _now_ms(),
         # 前端「复用 / 等待 / 重算」这一行读的是 metrics.reuse / metrics.wait，
