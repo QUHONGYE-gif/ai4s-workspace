@@ -18,8 +18,10 @@ src/ai4s_query/
 ├── sample_calcs.py    # 原生两步样例（seq_stats -> filter_by_length）+ 故意失败样例
 ├── query.py           # 核心：节点描述、校验记录、血缘、四分类缺失信息
 ├── report.py          # JSON / 可读报告导出
-├── cli.py             # 命令行入口（show / tree / cat）
+├── cli.py             # 命令行入口（show / trace / tree / cat）
+├── DEMO.md            # 演示脚本（汇报用，六幕）
 └── examples/
+    ├── run_demo.py          # 一键：造四类节点 + 生成全部报告
     ├── run_two_step.py      # 两步样例 + 演示「直接复用旧 Data」
     ├── run_cache_demo.py    # 演示「缓存命中复用」
     └── run_failure_case.py  # 生成失败节点 + 二进制产物节点（四分类真实样本）
@@ -38,6 +40,7 @@ python -m ai4s_query.cli --help
 先跑样例产生数据（任意一项即可，需在已配置 profile 的 AiiDA 环境中）：
 
 ```bash
+python src/ai4s_query/examples/run_demo.py           # 一键：四类节点 + 全部报告
 python src/ai4s_query/examples/run_two_step.py       # 两步计算 + 直接复用旧 Data
 python src/ai4s_query/examples/run_cache_demo.py     # 缓存命中对比
 python src/ai4s_query/examples/run_failure_case.py   # 失败节点 + 二进制产物
@@ -51,6 +54,9 @@ python -m ai4s_query.cli show <UUID或PK> --text 报告.txt
 
 # 机器可读
 python -m ai4s_query.cli show <UUID或PK> --json 报告.json
+
+# 主干轨迹：输入 → 计算 → 产物，一条竖线看完
+python -m ai4s_query.cli trace <UUID或PK> --text 轨迹.txt
 
 # 血缘树（上下游）
 python -m ai4s_query.cli tree <UUID或PK> --depth 5
@@ -80,6 +86,8 @@ python -m ai4s_query.cli cat <UUID> scores/1CRN.npz --out 1CRN.npz
   | 不可读文件 | 读取抛异常，或二进制（不可按文本读，可导出） |
 
 - 缓存判定：`is_created_from_cache` + `get_cache_source()`（extras 的 `_aiida_cached_from`）。
+- **参数内联**：报告与轨迹里直接显示实际值（`Dict` 展开、`Int/Float/Str/Bool` 取值、
+  文件类给出文件名 + 大小 + sha256），避免只看到 UUID。
 
 ## 已知限制
 

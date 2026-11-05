@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import hashlib
 
-from aiida.orm import Node, QueryBuilder
+from aiida.orm import Node, QueryBuilder, load_node
 from aiida.orm.nodes.process.process import ProcessNode
 
 # 链接类型分组，用于报告归类
@@ -33,10 +33,10 @@ def _exact_uuid(candidates) -> Node | None:
 def resolve(identifier) -> Node:
     """按 UUID（完整或 >=8 位前缀）或 PK 定位节点。"""
     if isinstance(identifier, int):
-        return Node.load(identifier)
+        return load_node(identifier)
     s = str(identifier).strip()
     if s.isdigit():
-        return Node.load(int(s))
+        return load_node(int(s))
     if len(s) == 32 or (len(s) == 36 and "-" in s):
         node = _exact_uuid({s, s.replace("-", "")})
         if node:
@@ -73,12 +73,76 @@ def _creator_uuid(node):
     return c.uuid if c is not None else None
 
 
+def _short(text, limit: int = 48) -> str:
+    text = str(text)
+    return text if len(text) <= limit else text[: limit - 3] + "..."
+
+
+def _inline(node: Node) -> dict:
+    """把节点的实际值内联成摘要，让报告里直接看到值而不是只有 UUID。
+
+    覆盖四类最常见的输入：参数字典（Dict）、阈值（Int/Float）、
+    序列（Str）、结构文件（SinglefileData / FolderData）。
+    """
+    nt = node.node_type.rstrip(".")  # AiiDA 的 node_type 带结尾点，如 data.core.str.Str.
+    try:
+        if nt.endswith("dict.Dict"):
+            data = node.get_dict()
+            pairs = []
+            for k, v in data.items():
+                if isinstance(v, (dict, list)):
+                    pairs.append(f"{k}=<{type(v).__name__}({len(v)})>")
+                else:
+                    pairs.append(f"{k}={_short(v, 24)}")
+            return {"kind": "dict", "value": data, "text": ", ".join(pairs)}
+        if nt.endswith("list.List"):
+            val = node.get_list()
+            return {"kind": "list", "value": val,
+                    "text": "[" + ", ".join(_short(v, 12) for v in val[:8]) + "]"}
+        if nt.endswith("bool.Bool"):
+            return {"kind": "bool", "value": bool(node.value), "text": str(node.value)}
+        if nt.endswith("int.Int"):
+            return {"kind": "int", "value": int(node.value), "text": str(node.value)}
+        if nt.endswith("float.Float"):
+            return {"kind": "float", "value": float(node.value), "text": str(node.value)}
+        if nt.endswith("str.Str"):
+            val = node.value
+            return {"kind": "str", "value": val,
+                    "text": f'"{_short(val)}"（{len(val)} 字符）'}
+    except Exception:
+        pass
+
+    # 文件类：任何带仓库的数据节点（PDB、序列文件、产物目录）
+    try:
+        files = list(_iter_files(node.base.repository))
+    except Exception:
+        files = []
+    if files:
+        entry = {"path": files[0], "size": None, "sha256": None, "count": len(files)}
+        try:
+            raw = node.base.repository.get_object_content(files[0], mode="rb")
+            entry["size"] = len(raw)
+            entry["sha256"] = hashlib.sha256(raw).hexdigest()
+        except Exception:
+            pass
+        text = entry["path"]
+        if entry["size"] is not None:
+            text += f"（{entry['size']}B"
+            if entry["sha256"]:
+                text += f", sha256={entry['sha256'][:12]}…"
+            text += "）"
+        if len(files) > 1:
+            text += f" 等 {len(files)} 个文件"
+        return {"kind": "file", "file": entry, "files": files[:10], "text": text}
+    return {"kind": "unknown", "text": nt}
+
+
 def _link_rows(links, direction: str):
     """把链接列表转成报告行。direction: 'in'/'out'。"""
     rows = []
     for triple in links:
         other = triple.node
-        rows.append({
+        row = {
             "port": triple.link_label,
             "link_type": _lt(triple.link_type),
             "label": other.label,
@@ -86,7 +150,10 @@ def _link_rows(links, direction: str):
             "pk": other.pk,
             "node_type": other.node_type,
             "creator_uuid": _creator_uuid(other) if direction == "in" else None,
-        })
+        }
+        if direction == "in":
+            row["value"] = _inline(other)
+        rows.append(row)
     rows.sort(key=lambda r: (r["link_type"], r["port"]))
     return rows
 
@@ -287,6 +354,85 @@ def _downstream(node: Node, max_depth: int = 10):
     walk(node, 0)
     rows.sort(key=lambda r: (r["depth"], r["relation"], r["node_uuid"]))
     return rows
+
+
+# ---------------------------------------------------------------- 主干轨迹
+
+def _creating_process(node: Node):
+    """数据节点是由哪个过程产出的（CREATE 链接）。"""
+    for triple in node.base.links.get_incoming():
+        if _lt(triple.link_type) == "create":
+            return triple.node
+    return None
+
+
+def _spine_input(proc):
+    """在过程的多个输入里挑出「主干」那一个：优先选本身由上游过程产生的。"""
+    ins = [t.node for t in proc.base.links.get_incoming()
+           if _lt(t.link_type).startswith("input_")]
+    if not ins:
+        return None
+    produced = [n for n in ins if _creator_uuid(n)]
+    return sorted(produced or ins, key=lambda n: n.pk)[0]
+
+
+def _step_process(proc) -> dict:
+    params = []
+    for triple in proc.base.links.get_incoming():
+        if not _lt(triple.link_type).startswith("input_"):
+            continue
+        params.append({
+            "port": triple.link_label,
+            "node_type": triple.node.node_type,
+            "uuid": triple.node.uuid,
+            "value": _inline(triple.node),
+        })
+    params.sort(key=lambda r: r["port"])
+    outs = [{"port": t.link_label, "node_type": t.node.node_type, "uuid": t.node.uuid}
+            for t in proc.base.links.get_outgoing()
+            if _lt(t.link_type) in ("create", "return")]
+    return {
+        "kind": "process",
+        "uuid": proc.uuid,
+        "pk": proc.pk,
+        "node_type": proc.node_type,
+        "label": proc.label,
+        "process": _process_info(proc),
+        "params": params,
+        "outputs": outs,
+    }
+
+
+def _step_data(node: Node) -> dict:
+    repo = _artifacts(node)
+    return {
+        "kind": "data",
+        "uuid": node.uuid,
+        "pk": node.pk,
+        "node_type": node.node_type,
+        "label": node.label,
+        "creator_uuid": _creator_uuid(node),
+        "value": _inline(node),
+        "file_count": len(repo.get("files") or []),
+        "node_hash": repo.get("node_hash"),
+    }
+
+
+def trace(identifier, max_depth: int = 12) -> list:
+    """把节点所在的主干重排成一条竖线：输入 → 计算 → 产物 → 计算 → 产物。"""
+    node = resolve(identifier)
+    steps, seen = [], set()
+    cur = node
+    while cur is not None and cur.uuid not in seen and len(steps) < max_depth:
+        seen.add(cur.uuid)
+        if isinstance(cur, ProcessNode):
+            steps.append(_step_process(cur))
+            cur = _spine_input(cur)
+        else:
+            steps.append(_step_data(cur))
+            cur = _creating_process(cur)
+    steps.reverse()
+    return steps
 
 
 # ---------------------------------------------------------------- 汇总

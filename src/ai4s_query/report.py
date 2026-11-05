@@ -5,6 +5,11 @@ from __future__ import annotations
 import json
 
 
+def _t(node_type) -> str:
+    """AiiDA 的 node_type 带结尾点（data.core.str.Str.），显示时去掉。"""
+    return str(node_type or "").rstrip(".")
+
+
 def to_json(info: dict, path: str | None = None) -> str:
     text = json.dumps(info, ensure_ascii=False, indent=2, default=str)
     if path:
@@ -22,7 +27,7 @@ def to_text(info: dict, path: str | None = None) -> str:
     add("=" * 62)
     add(f"UUID        : {info['uuid']}")
     add(f"PK          : {info['pk']}")
-    add(f"类型        : {info['node_type']}")
+    add(f"类型        : {_t(info['node_type'])}")
     add(f"标签        : {info['label'] or '(无)'}")
     add(f"创建时间    : {info['ctime']}")
     add("")
@@ -62,7 +67,10 @@ def to_text(info: dict, path: str | None = None) -> str:
     if info["inputs"]:
         for r in info["inputs"]:
             src = f" <- 由节点 {r['creator_uuid'][:12]}… 产生" if r.get("creator_uuid") else ""
-            add(f"  {r['port']:<14} {r['node_type']:<28} uuid={r['uuid'][:12]}…{src}")
+            add(f"  {r['port']:<14} {_t(r['node_type']):<28} uuid={r['uuid'][:12]}…{src}")
+            val = (r.get("value") or {}).get("text")
+            if val:
+                add(f"      值: {val}")
     else:
         add("  （无输入链接）")
     add("")
@@ -70,7 +78,7 @@ def to_text(info: dict, path: str | None = None) -> str:
     add("[输出 / 产物]")
     if info["outputs"]:
         for r in info["outputs"]:
-            add(f"  {r['port']:<14} {r['node_type']:<28} uuid={r['uuid'][:12]}…")
+            add(f"  {r['port']:<14} {_t(r['node_type']):<28} uuid={r['uuid'][:12]}…")
     else:
         add("  （无输出链接）")
     add("")
@@ -102,7 +110,7 @@ def to_text(info: dict, path: str | None = None) -> str:
     if info["lineage"]["upstream"]:
         for step in info["lineage"]["upstream"]:
             add("  " + "  " * step["depth"]
-                + f"^-- {step['node_type']} uuid={step['node_uuid'][:12]}…"
+                + f"^-- {_t(step['node_type'])} uuid={step['node_uuid'][:12]}…"
                 + f"（端口 {step['via_port']}）")
     else:
         add("  （本节点是源头，无上游）")
@@ -112,7 +120,7 @@ def to_text(info: dict, path: str | None = None) -> str:
     if info["lineage"]["downstream"]:
         for step in info["lineage"]["downstream"]:
             add("  " + "  " * step["depth"]
-                + f"--> [{step.get('relation', '?')}] {step['node_type']}"
+                + f"--> [{step.get('relation', '?')}] {_t(step['node_type'])}"
                 + f" uuid={step['node_uuid'][:12]}…（端口 {step['via_port']}）")
     else:
         add("  （暂无下游使用）")
@@ -132,6 +140,59 @@ def to_text(info: dict, path: str | None = None) -> str:
         add("  无：关键字段齐全，仓库可读")
     add("=" * 62)
 
+    text = "\n".join(lines)
+    if path:
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text)
+    return text
+
+
+def trace_text(steps: list, path: str | None = None) -> str:
+    """把主干轨迹渲染成一屏竖线：输入 → 计算 → 产物。"""
+    lines = []
+    add = lines.append
+
+    add("=" * 62)
+    add("计算轨迹（主干：输入 → 计算 → 产物）")
+    add("=" * 62)
+    for idx, step in enumerate(steps, 1):
+        mark = "数据" if step["kind"] == "data" else "过程"
+        add(f"[{idx}] {mark}  {_t(step['node_type'])}")
+        add(f"     uuid={step['uuid']}  pk={step['pk']}  label={step['label'] or '(无)'}")
+
+        if step["kind"] == "process":
+            proc = step.get("process") or {}
+            line = f"     状态：{proc.get('process_state')}"
+            if proc.get("exit_code") is not None:
+                line += f"  退出码：{proc['exit_code']}"
+            add(line)
+            if proc.get("is_created_from_cache"):
+                add(f"     缓存命中：是（实际计算在来源节点 {proc.get('cache_source')}）")
+            else:
+                add("     缓存命中：否（本次为真实执行）")
+            if step.get("params"):
+                for p in step["params"]:
+                    add(f"     参数 {p['port']} = {(p.get('value') or {}).get('text', '')}")
+            else:
+                add("     参数：（无输入，未记录）")
+            for o in step.get("outputs") or []:
+                add(f"     产出 {o['port']} -> {_t(o['node_type'])} {o['uuid'][:12]}…")
+        else:
+            add(f"     值：{(step.get('value') or {}).get('text', '')}")
+            if step.get("creator_uuid"):
+                add(f"     产生者：{step['creator_uuid']}")
+            else:
+                add("     产生者：（无——外部输入或手工创建，属「未记录信息」）")
+            if step.get("file_count"):
+                add(f"     仓库文件：{step['file_count']} 个")
+            if step.get("node_hash"):
+                add(f"     内容哈希：{step['node_hash'][:16]}…")
+
+        if idx < len(steps):
+            add("        |")
+            add("        v")
+
+    add("=" * 62)
     text = "\n".join(lines)
     if path:
         with open(path, "w", encoding="utf-8") as fh:

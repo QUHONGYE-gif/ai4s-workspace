@@ -2,9 +2,10 @@
 """命令行入口。
 
 用法（在已激活的 AiiDA 环境中）：
-  python -m ai4s_query.cli show <UUID或PK> [--json 出.json] [--text 出.txt]
-  python -m ai4s_query.cli tree <UUID或PK> [--depth 5]
-  python -m ai4s_query.cli cat  <UUID或PK> <仓库路径> [--out 导出文件]
+  python -m ai4s_query.cli show  <UUID或PK> [--json 出.json] [--text 出.txt]
+  python -m ai4s_query.cli trace <UUID或PK> [--depth 12] [--text 出.txt]
+  python -m ai4s_query.cli tree  <UUID或PK> [--depth 5]
+  python -m ai4s_query.cli cat   <UUID或PK> <仓库路径> [--out 导出文件]
 """
 from __future__ import annotations
 
@@ -27,6 +28,12 @@ def main(argv=None):
     p_tree = sub.add_parser("tree", help="打印血缘树（上游+下游）")
     p_tree.add_argument("identifier", help="UUID（完整或前缀）或 PK")
     p_tree.add_argument("--depth", type=int, default=5, help="递归深度（默认 5）")
+
+    p_trace = sub.add_parser("trace", help="打印主干轨迹（输入→计算→产物 一条竖线）")
+    p_trace.add_argument("identifier", help="UUID（完整或前缀）或 PK")
+    p_trace.add_argument("--depth", type=int, default=12, help="主干最大步数（默认 12）")
+    p_trace.add_argument("--json", dest="json_path", help="导出轨迹 JSON 到此路径")
+    p_trace.add_argument("--text", dest="text_path", help="导出轨迹报告到此路径")
 
     p_cat = sub.add_parser("cat", help="读取节点的仓库文件（文本直接打印，二进制用 --out 导出）")
     p_cat.add_argument("identifier", help="UUID（完整或前缀）或 PK")
@@ -63,6 +70,18 @@ def main(argv=None):
             print("  " + "  " * step["depth"]
                   + f"--> [{step.get('relation', '?')}] {step['node_type']}"
                   + f" uuid={step['node_uuid'][:12]}…（{step['via_port']}）")
+        return 0
+
+    if args.cmd == "trace":
+        steps = query.trace(args.identifier, max_depth=args.depth)
+        print(report.trace_text(steps))
+        if args.json_path:
+            report.to_json({"uuid": steps[-1]["uuid"] if steps else None, "trace": steps},
+                           args.json_path)
+            print(f"[轨迹 JSON 已写入 {args.json_path}]", file=sys.stderr)
+        if args.text_path:
+            report.trace_text(steps, args.text_path)
+            print(f"[轨迹报告已写入 {args.text_path}]", file=sys.stderr)
         return 0
 
     if args.cmd == "cat":
