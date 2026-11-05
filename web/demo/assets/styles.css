@@ -2920,6 +2920,13 @@ a.nav-item { text-decoration: none; }
 .agent-message p { margin:4px 0 0; font-size:12px; line-height:1.6; }
 .agent-compose { display:flex; gap:8px; }
 .agent-compose input { flex:1; min-width:0; }
+.panel:has(> .creation-summary-grid), .panel:has(> .agent-context) { padding-bottom: 18px; }
+.panel > .creation-summary-grid, .panel > .agent-context, .panel > .agent-messages,
+.panel > .agent-compose, .panel > [data-agent-status], .panel:has(> .agent-context) > a,
+.panel:has(> .creation-summary-grid) > .field-hint { margin-left: 20px; margin-right: 20px; }
+.panel > .creation-summary-grid { margin-top: 18px; }
+.agent-context { margin-top: 12px; }
+.agent-message p { white-space: pre-wrap; }
 @media(max-width:700px) {
   .node-parameter-fields,.settings-disclosure-body,.creation-summary-grid {
     grid-template-columns: 1fr;

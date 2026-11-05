@@ -126,11 +126,14 @@ const DemoAPI = (() => {
       return (await request('api/demo/bootstrap')).fixtures;
     },
     async experimentAgent(message, context) {
-      return request('api/demo/agent', {
+      return request('agent/api/experiments/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, context }),
       });
+    },
+    async agentStatus() {
+      return request('agent/api/health');
     },
     async loadState() {
       const result = await request('api/demo/state');

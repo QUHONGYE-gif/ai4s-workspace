@@ -72,6 +72,12 @@
     selectedPlanStep = '';
   let flowMotionEnabled = typeof matchMedia !== 'function' ||
     !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let experimentAgentStatus = '正在检查 Agent 服务', agentPending = false;
+  DemoAPI.agentStatus?.().then((result) => {
+    experimentAgentStatus = result.agent?.has_key ? `DeepSeek · ${result.agent.model} · 已配置` : 'Agent 已启动 · 尚未配置模型密钥';
+    const label = document.querySelector('[data-agent-status]');
+    if (label) label.textContent = experimentAgentStatus;
+  }).catch(() => { experimentAgentStatus = 'Agent 未连接，请使用联合服务启动'; });
 
   // Display helpers
   const $ = (s) => document.querySelector(s);
@@ -2436,20 +2442,34 @@ ${esc(policyDraft.description)}</textarea
   const sendAgentMessage = async function sendAgentMessage(d, selected) {
     const input = document.querySelector('[data-agent-input]');
     const message = input?.value.trim();
-    if (!message) return;
+    if (!message || agentPending) return;
+    const context = agentContext(d, selected), before = JSON.stringify(d.config);
+    agentPending = true;
     d.agentMessages ||= []; d.agentMessages.push({ role: 'user', text: message }); input.value = ''; render();
     try {
-      const result = await DemoAPI.experimentAgent(message, agentContext(d, selected));
-      applyAgentOperations(d, result.operations); (currentDraft() || d).agentMessages.push({ role: 'agent', text: result.reply }); saveProduct(); render();
+      const result = await DemoAPI.experimentAgent(message, context);
+      if (currentDraft() !== d || JSON.stringify(d.config) !== before) {
+        d.agentMessages.push({ role: 'agent', text: '草稿已在请求期间变化，本次建议未应用，请重新发送。' });
+      } else {
+        applyAgentOperations(d, result.operations);
+        const target = currentDraft() || d;
+        const changes = (result.operations || []).flatMap((op) => Object.entries(op.changes || {}).map(([key, value]) => `${key}：${op.old_values?.[key] ?? '未设置'} → ${value}`));
+        target.agentMessages.push({ role: 'agent', text: result.reply + (changes.length ? '\n' + changes.join('；') : '') });
+        target.checked = false;
+      }
+      saveProduct();
     } catch (error) {
-      d.agentMessages.push({ role: 'agent', text: 'Agent 暂不可用：' + error.message }); saveProduct(); render();
+      d.agentMessages.push({ role: 'agent', text: 'Agent 暂不可用：' + error.message }); saveProduct();
+    } finally {
+      agentPending = false;
+      render();
     }
   };
   const agentPanel = function agentPanel(d, selected) {
     const messages = d.agentMessages || [];
-    return panel('实验配置 Agent', `<div class="agent-context">当前节点：<strong>${esc(selected?.name || '未选择，请先点击流程图节点')}</strong><span>仅围绕当前实验、当前节点和当前输入回答</span></div>
+    return panel('实验配置 Agent', `<p class="small" data-agent-status>${esc(experimentAgentStatus)}</p><a href="./agent/" target="_blank" rel="noopener">打开 Agent / 模型 API 设置 ↗</a><div class="agent-context">当前节点：<strong>${esc(selected?.name || '未选择，请先点击流程图节点')}</strong><span>仅围绕当前实验、当前节点和当前输入回答</span></div>
       <div class="agent-messages" aria-live="polite">${messages.length ? messages.map((item) => `<div class="agent-message ${item.role === 'user' ? 'user' : 'assistant'}"><span>${item.role === 'user' ? '你' : 'Agent'}</span><p>${esc(item.text)}</p></div>`).join('') : '<p class="muted small">可以问“这个温度参数是什么意思？”或“把筛选数量改成 3 条”。</p>'}</div>
-      <div class="agent-compose"><input data-agent-input type="text" placeholder="询问当前节点或修改当前实验配置" maxlength="500" /><button class="btn primary" type="button" data-agent-send>发送</button></div>`);
+      <div class="agent-compose"><input data-agent-input type="text" placeholder="询问当前节点或修改当前实验配置" maxlength="500" /><button class="btn primary" type="button" data-agent-send ${agentPending ? 'disabled' : ''}>${agentPending ? '正在回复…' : '发送'}</button></div>`);
   };
   const workflowPage = function () {
     const d = currentDraft() || createExperimentDraft(activeWorkflow);

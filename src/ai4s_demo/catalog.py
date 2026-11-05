@@ -93,4 +93,4 @@ def validate_params(model_id, params, *, partial=False):
 
 
 def knowledge(model_id):
-    return (Path(__file__).parent / "knowledge" / f"{model_id}.md").read_text()
+    return (Path(__file__).parent / "knowledge" / f"{model_id}.md").read_text(encoding="utf-8")
