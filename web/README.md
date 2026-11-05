@@ -38,6 +38,7 @@ python scripts/serve_workbench.py --host 127.0.0.1 --port 3000 \
 | --- | --- |
 | [index.html](demo/index.html) | 页面外壳与资源引用 |
 | [app.js](demo/assets/app.js)、[styles.css](demo/assets/styles.css) | 页面交互、模拟规则与样式 |
+| [reuse-canvas.js](demo/assets/reuse-canvas.js) | 复用与存储的独立示例画布；仅页面内交互，不修改目录、实验或文件 |
 | [api.js](demo/assets/api.js) | 相对路径请求、快照保存与冲突恢复 |
 | [pymol.html](demo/pymol.html) | 无工具栏的嵌入式 noVNC 查看器 |
 | [server.py](../src/workbench/server.py) | 同源静态资源与 HTTP API |

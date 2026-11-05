@@ -34,6 +34,7 @@
   let workflowDraft,
     policyDraft = { name: '', reuse: 'cost', storage: 'lru', description: '' };
   let aiHost = null, aiController = null, aiMount = null;
+  let reuseCanvas = null;
   let workflowFormError = '',
     policyFormError = '',
     registrationCheck = '',
@@ -3063,7 +3064,7 @@ ${esc(policyDraft.description)}</textarea
         '决定哪些结果直接用、哪些重新算，以及保存哪些数据。',
         /* HTML */ `<button class="btn primary" data-nav="newpolicy">＋ 新增策略</button>`,
       ) +
-      /* HTML */ `<div class="info-banner">
+      /* HTML */ `<div id="reuse-explorer"></div><details class="reuse-policies"><summary>策略配置与对比</summary><div class="info-banner">
           用同一组任务，比较不同策略的预计用时。以下数据仅用于演示。
         </div>
         <div class="policy-grid">
@@ -3120,7 +3121,7 @@ ${esc(policyDraft.description)}</textarea
               <p>在数据目录中固定的结果，不会被自动清理。</p>
             </div>
           </div>
-        </div>`
+        </div></details>`
     );
   };
   const missingPage = function missingPage(message) {
@@ -3873,6 +3874,8 @@ ${esc(policyDraft.description)}</textarea
   };
   const render = function () {
     aiController?.pause();
+    reuseCanvas?.destroy();
+    reuseCanvas = null;
     let html;
     try {
       html = (
@@ -3937,6 +3940,7 @@ ${esc(policyDraft.description)}</textarea
     $('#catalog-count').textContent = product.catalog.filter(visible).length;
     $('#run-count').textContent = product.experiments.filter((e) => !e.fixture).length;
     bind();
+    if (route === 'policy') reuseCanvas = window.ReuseCanvas.mount($('#reuse-explorer'));
     bindPymolControls();
     bindCreation();
     bindRegistration();
