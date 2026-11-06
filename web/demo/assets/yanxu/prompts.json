@@ -75,6 +75,89 @@
       "prompt": "Flat vector illustration, clean scientific line art, 1.5px uniform stroke, limited palette: indigo #4F5FD2, soft lavender #EDF0FF, slate ink #282D40, warm sand accent #AF8D64 used sparingly, pure flat background with no gradients and no shadows, generous negative space, precise geometric construction, calm academic tone, no text, no letters, no watermark, no logos, high resolution, crisp edges. Wide banner: on the right half, a stylized workflow of five connected nodes leading from a protein ribbon to a data table card; left half is empty flat #F6F7FB for title text to be added later in code. Output a single standalone asset, 1200×630 pixels, aspect ratio 120:63. No caption, no contact sheet, no added labels.",
       "edit_prompt": "Keep the five connected workflow nodes and their contents, but shrink and reposition the entire diagram so EVERY node and connector is wholly in the RIGHT HALF, x=650..1160 in a 1200x630 canvas. The ENTIRE LEFT HALF x=0..600 must be empty and uniform solid #F6F7FB, reserved for later title text. No text. Pure solid fills, no paper grain, no gradient, no shadows.",
       "source": "/Users/quhongye/.codex/generated_images/01a1af44-d92a-75f0-9715-8ccb5d7df329/exec-d2723dee-927d-483d-afc8-e70fb3fdc8fb.png"
+    },
+    {
+      "name": "landing-hero",
+      "width": 1672,
+      "height": 941,
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "Hero background: on the right two thirds, a large glowing protein structure rendered as smooth translucent glass ribbons (alpha helices and beta sheets) floating in dark space; from it, thin luminous lines carry small glowing glass cubes and spheres (data artifacts) along a gentle curved pipeline toward the right edge, some branching and reconnecting like a dependency graph. The left 40 percent is calm, dark, nearly empty navy space for overlay headline text. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, subtle depth of field, clean and calm academic tone, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 78, resized to 1600 px wide"
+    },
+    {
+      "name": "landing-network",
+      "width": 1672,
+      "height": 941,
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "A shared research data network: several soft frosted-glass workstation tiles arranged in a loose arc, each connected by thin glowing lines to one central luminous glass crystal (a shared scientific artifact, containing a tiny protein ribbon). Some lines show small particles flowing toward the center, suggesting reuse instead of recomputation. Dark navy background, plenty of empty space at the top. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, subtle depth of field, clean and calm academic tone, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 78, resized to 1600 px wide"
+    },
+    {
+      "name": "landing-login",
+      "width": 1086,
+      "height": 1448,
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "Vertical abstract composition: layered translucent blue glass panels stacked in perspective, with a delicate protein ribbon and a few connected node dots glowing behind the glass, soft light from top left, dark navy to cobalt background. Calm, elegant, minimal. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, subtle depth of field, clean and calm academic tone, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 78, resized to 720 px wide"
+    },
+    {
+      "name": "scene-share",
+      "aspect": "4:3",
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "One glowing glass protein backbone scaffold on a pedestal in the middle, with two thin light paths branching from it to two small glass vials of new sequences on the left and right, suggesting one shared result reused by two researchers. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, clean and calm academic tone, centered subject with breathing room, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 76-78, resized to 640 px wide"
+    },
+    {
+      "name": "scene-iterate",
+      "aspect": "4:3",
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "A horizontal chain of four frosted glass blocks connected by light; the first two blocks glow steady blue (kept), a small warm sand dial on the second block suggests a parameter change, and the last two blocks are rebuilt with fresh violet light particles (recomputed). Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, clean and calm academic tone, centered subject with breathing room, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 76-78, resized to 640 px wide"
+    },
+    {
+      "name": "scene-storage",
+      "aspect": "4:3",
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "Layered translucent glass shelves stacked in depth holding small luminous data cubes; a few cubes are softly fading out while a pinned golden cube stays bright, suggesting careful cache cleanup with protected results. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, clean and calm academic tone, centered subject with breathing room, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 76-78, resized to 640 px wide"
+    },
+    {
+      "name": "scene-structure",
+      "aspect": "4:3",
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "A detailed translucent protein cartoon structure floating above a frosted glass tablet that emits soft light, like a molecular viewer, with a faint thin line linking the structure back to a small glowing data cube. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, clean and calm academic tone, centered subject with breathing room, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 76-78, resized to 640 px wide"
+    },
+    {
+      "name": "landing-architecture",
+      "aspect": "4:3",
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "Isometric layered platform: three stacked translucent glass slabs with soft gaps; bottom slab carries small compute node blocks, middle slab carries a glowing dependency graph of connected dots, top slab carries a minimal workbench panel and a small protein ribbon. Thin vertical light beams connect the layers. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, clean and calm academic tone, centered subject with breathing room, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 76-78, resized to 960 px wide"
     }
   ]
 }

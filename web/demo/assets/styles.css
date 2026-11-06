@@ -3548,3 +3548,13 @@ a.nav-item { text-decoration: none; }
     gap:16px
   }
 }
+
+/* Sidebar brand links back to the project page; the member line offers a switch. */
+a.brand {
+  text-decoration:none
+}
+.user-leave {
+  color:inherit;
+  text-decoration:underline;
+  text-underline-offset:2px
+}

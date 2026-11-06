@@ -12,7 +12,7 @@ python scripts/serve_workbench.py --host 127.0.0.1 --port 3000 \
   --data-dir "$workbench_state_dir"
 ```
 
-然后打开工作区已有“开发预览”。需要真实 PyMOL 时，改用 [联合启动器](../tools/pymol_web/README.md)，不同时启动两个占用 3000 端口的服务。
+然后打开工作区已有“开发预览”：根路径为项目介绍页，经“进入工作台”进入 `workbench.html`。入口只在浏览器保存显示名称，不校验账号或密码。需要真实 PyMOL 时，改用 [联合启动器](../tools/pymol_web/README.md)，不同时启动两个占用 3000 端口的服务。
 
 ## Agent 工作流接入
 
@@ -36,7 +36,8 @@ python scripts/serve_workbench.py --host 127.0.0.1 --port 3000 \
 
 | 文件 | 职责 |
 | --- | --- |
-| [index.html](demo/index.html) | 页面外壳与资源引用 |
+| [index.html](demo/index.html)、[landing.css](demo/assets/landing.css)、[landing.js](demo/assets/landing.js) | 项目介绍与成员入口；旧的 `./#/…` 链接自动转到工作台 |
+| [workbench.html](demo/workbench.html) | 工作台页面外壳与资源引用 |
 | [app.js](demo/assets/app.js)、[styles.css](demo/assets/styles.css) | 页面交互、模拟规则与样式；`styles.css` 顶部为工作台与 Agent 页面共用的设计变量（颜色、字号、间距、圆角、动效），新样式只取其中的值 |
 | [motion.js](demo/assets/motion.js) | 页面进入、计数和卡片高光等纯界面动效，遵循系统“减少动态效果”设置 |
 | [yanxu/](demo/assets/yanxu/README.md) | 流程封面、空状态插图、图标与分享图 |

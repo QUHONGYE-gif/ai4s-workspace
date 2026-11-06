@@ -168,6 +168,18 @@
       ${content}
     </section>`;
   };
+  // The entry page stores only a display name; it is not an account or a credential.
+  const showMember = function showMember() {
+    let name = '';
+    try {
+      name = (localStorage.getItem('yanxu-demo-member') || '').trim();
+    } catch {
+      // Without storage the sidebar keeps the sample researcher.
+    }
+    if (!name) return;
+    $('#member-name').textContent = name;
+    $('#member-avatar').textContent = Array.from(name)[0];
+  };
   const quietPanel = function quietPanel(title, content, meta = '') {
     return panel(title, content, meta, true);
   };
@@ -3955,6 +3967,7 @@ ${esc(policyDraft.description)}</textarea
         newpolicy: '新增策略',
       }[route] || '工作流';
     $('#active-context').textContent = '当前流程 · ' + workflowInfo[activeWorkflow].short;
+    showMember();
     $('#workflow-count').textContent = Object.keys(workflowInfo).length;
     $('#catalog-count').textContent = product.catalog.filter(visible).length;
     $('#run-count').textContent = product.experiments.filter((e) => !e.fixture).length;
