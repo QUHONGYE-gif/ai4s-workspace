@@ -13,12 +13,6 @@ import hashlib
 from aiida.orm import Node, QueryBuilder, load_node
 from aiida.orm.nodes.process.process import ProcessNode
 
-# 链接类型分组，用于报告归类
-_INPUT_LIKE = {"input_calc", "input_work", "create", "return", "input_calcfunction",
-               "input_workfunction", "call_calc", "call_work", "call_calcfunction",
-               "call_workfunction"}
-
-
 # ---------------------------------------------------------------- 节点定位
 
 def _exact_uuid(candidates) -> Node | None:

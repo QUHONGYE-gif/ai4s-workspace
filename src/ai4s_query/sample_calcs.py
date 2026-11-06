@@ -1,25 +1,6 @@
-# -*- coding: utf-8 -*-
-"""原生两步计算样例（不依赖真实模型）。
-
-镜像真实流程的形状：序列 -> 统计（seq_stats） -> 筛选（filter_by_length）。
-对应「自建原生两步计算例子」，纯 calcfunction，进程内即可运行，
-不需要 daemon 与外部程序。
-"""
+"""Query demo calculations; run in-process without a model or daemon."""
 from aiida.engine import calcfunction
 from aiida.orm import Bool, Dict, Int, Str
-
-# 验收小样本口径：单链、单温度、4 条序列之一即可用 Str 传入
-
-
-def unwrap_single(out, key: str = "result"):
-    """兼容 run() 的两种返回形态：{'result': node} 或直接返回节点。
-
-    AiiDA 2.9 对单输出 calcfunction 的 run() 直接返回输出节点；
-    多输出或其他 Process 仍返回按链接名索引的字典。
-    """
-    if isinstance(out, dict) and key in out:
-        return out[key]
-    return out
 
 
 @calcfunction

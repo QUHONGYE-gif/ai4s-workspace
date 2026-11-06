@@ -230,16 +230,17 @@ def build_experiment(identifier, seq: int = 1) -> tuple[dict, list]:
         plan.append(pstep)
 
         info = step.get("process") or {}
-        states.append(_status(info))
+        process_status = _status(info)
+        states.append(process_status)
         recorded_params[step["uuid"]] = {p["port"]: (p.get("value") or {}).get("value") for p in step.get("params", [])}
         for value in recorded_params[step["uuid"]].values():
             if isinstance(value, dict) and isinstance(value.get("seed"), (int, str)):
                 seeds.add(value["seed"])
         for art in out_arts:
             art["provenance"]["role"] = "diagnostic"
-            if _status(info) == "failed":
+            if process_status == "failed":
                 art["status"] = "failed"
-        if _status(info) == "failed":
+        if process_status == "failed":
             failed_step = step_id
         elif info.get("is_finished_ok") is True:
             for art in out_arts:
