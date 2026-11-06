@@ -73,7 +73,6 @@
   let flowMotionEnabled = typeof matchMedia !== 'function' ||
     !matchMedia('(prefers-reduced-motion: reduce)').matches;
   let experimentAgentStatus = '正在检查 Agent 服务', agentPending = false;
-  let handoffStatus = '正在读取已登记工作流';
   DemoAPI.agentStatus?.().then((result) => {
     experimentAgentStatus = result.agent?.has_key ? `DeepSeek · ${result.agent.model} · 已配置` : 'Agent 已启动 · 尚未配置模型密钥';
     const label = document.querySelector('[data-agent-status]');
@@ -1666,7 +1665,6 @@ ${esc(step[key] || '')}</textarea
   };
   const workflowsPage = function () {
     return (
-      panel('已登记工作流 → 本次实验', `<div class="detail-body"><p>${esc(handoffStatus)}</p><p class="field-hint">确认登记后点击刷新，工作流快照会出现在下方列表。实验参数覆盖不会改动登记值。</p><button class="btn" data-refresh-handoff>刷新登记工作流</button> <a href="./agent/" target="_blank" rel="noopener">打开工作流登记页 ↗</a></div>`) +
       heading(
         '工作流',
         '选用已接入流程创建实验，或登记自己的模型与脚本。',
@@ -1680,6 +1678,7 @@ ${esc(step[key] || '')}</textarea
         </div>
         <div class="entry-grid">
           ${Object.entries(workflowInfo)
+            .filter(([, w]) => !w.registrationSource)
             .map(
               ([id, w]) =>
                 /* HTML */ `<div class="entry-card">
@@ -4037,7 +4036,6 @@ ${esc(policyDraft.description)}</textarea
     });
   };
   const bind = function () {
-    document.querySelectorAll('[data-refresh-handoff]').forEach((el) => { el.onclick = () => void refreshRegisteredWorkflows(); });
     document.querySelectorAll('[data-agent-artifact]').forEach((el) => {
       el.onchange = () => {
         const target = page.name === 'experiment' ? experimentById(page.id) : currentDraft();
@@ -4455,10 +4453,9 @@ ${esc(policyDraft.description)}</textarea
     try {
       const result = await DemoAPI.registeredWorkflows();
       for (const workflow of result.workflows) workflowInfo[workflow.id] = workflow;
-      handoffStatus = `已读取 ${result.workflows.length} 个有效登记快照。`;
       readRoute();
       saveProduct();
-    } catch (error) { handoffStatus = '登记服务暂不可用：' + error.message; }
+    } catch (error) { console.warn('登记服务暂不可用：' + error.message); }
     render();
   };
   bootProduct();
