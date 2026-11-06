@@ -3,11 +3,23 @@ import copy
 from fastapi.testclient import TestClient
 
 from ai4s_demo.app import create_app
-from ai4s_demo.handoff import build_workflow, example_workflow
+from ai4s_demo.catalog import CATALOG
+from ai4s_demo.handoff import build_workflow
 
 
-def test_example_reads_model_types_defaults_and_namespaces():
-    workflow = example_workflow()
+def catalog_snapshot():
+    """Three-model chain whose parameters come from the registered catalog."""
+    nodes = []
+    for model_id, node_id in (("rfdiffusion", "rfd-1"), ("proteinmpnn", "mpnn-1"), ("boltz", "boltz-1")):
+        nodes.append({"id": node_id, "model_id": model_id, "label": CATALOG[model_id]["role"],
+                      "params": copy.deepcopy(CATALOG[model_id]["sample_params"]), "inputs": {}})
+    nodes[1]["inputs"] = {"backbone": {"kind": "node_output", "node_id": "rfd-1", "port": "backbone"}}
+    nodes[2]["inputs"] = {"sequence": {"kind": "node_output", "node_id": "mpnn-1", "port": "sequences"}}
+    return {"steps": nodes}
+
+
+def test_handoff_reads_model_types_defaults_and_namespaces():
+    workflow = build_workflow("模型参数体验流程", catalog_snapshot(), {"kind": "test"})
     mpnn = next(s for s in workflow['steps'] if s['model'] == 'proteinmpnn')
     temperature = next(p for p in mpnn['parameters'] if p['modelKey'] == 'sampling_temp')
     assert temperature['key'] == 'mpnn-1__sampling_temp'

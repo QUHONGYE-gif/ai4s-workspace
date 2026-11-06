@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .agent import AgentGateway
 from .experiment_agent import ExperimentChat, respond as experiment_response
-from .handoff import registrations, example_workflow
+from .handoff import registrations
 from .catalog import CATALOG, knowledge
 from .files import upload
 from .lock import acquire_lock, release_lock
@@ -83,7 +83,7 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
 
     @app.get("/api/experiments/workflows")
     def experiment_workflows():
-        return {"workflows": registrations(service), "example": example_workflow()}
+        return {"workflows": registrations(service)}
 
     @app.get("/api/settings/model")
     def get_settings():

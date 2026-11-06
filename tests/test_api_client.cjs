@@ -8,6 +8,7 @@ function setup(fetch, storage = null) {
   let scheduled;
   const context = vm.createContext({
     URL,
+    AbortSignal,
     crypto: require('node:crypto').webcrypto,
     Uint8Array,
     localStorage: storage || {

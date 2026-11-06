@@ -80,16 +80,6 @@ def build_workflow(name, snapshot, source):
                                     "steps": profiles}}
 
 
-def example_workflow():
-    nodes = []
-    for model_id, node_id in (("rfdiffusion", "rfd-1"), ("proteinmpnn", "mpnn-1"), ("boltz", "boltz-1")):
-        nodes.append({"id": node_id, "model_id": model_id, "label": CATALOG[model_id]["role"],
-                      "params": copy.deepcopy(CATALOG[model_id]["sample_params"]), "inputs": {}})
-    nodes[1]["inputs"] = {"backbone": {"kind": "node_output", "node_id": "rfd-1", "port": "backbone"}}
-    nodes[2]["inputs"] = {"sequence": {"kind": "node_output", "node_id": "mpnn-1", "port": "sequences"}}
-    return build_workflow("模型参数体验流程（模拟）", {"steps": nodes}, {"kind": "catalog_example", "version": 1})
-
-
 def registrations(service):
     result = []
     with service.store.lock:

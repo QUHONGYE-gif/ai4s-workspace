@@ -4454,8 +4454,8 @@ ${esc(policyDraft.description)}</textarea
   const refreshRegisteredWorkflows = async function () {
     try {
       const result = await DemoAPI.registeredWorkflows();
-      for (const workflow of [...result.workflows, result.example].filter(Boolean)) workflowInfo[workflow.id] = workflow;
-      handoffStatus = `已读取 ${result.workflows.length} 个有效登记快照；另提供模型参数体验流程（模拟）。`;
+      for (const workflow of result.workflows) workflowInfo[workflow.id] = workflow;
+      handoffStatus = `已读取 ${result.workflows.length} 个有效登记快照。`;
       readRoute();
       saveProduct();
     } catch (error) { handoffStatus = '登记服务暂不可用：' + error.message; }
