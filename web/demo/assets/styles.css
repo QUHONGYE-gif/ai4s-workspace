@@ -95,8 +95,9 @@
   --violet:var(--violet-500);
   --orange:var(--sand-500);
   --orange-bg:var(--sand-50);
-  --nav:#23324b;
-  --nav-muted:#aebbd0;
+  --nav:#263d6b;
+  --nav-background:linear-gradient(160deg,#2c4c86 0%,var(--nav) 48%,#29365e 100%);
+  --nav-muted:#c0cde4;
   --radius:var(--radius-xl)
 }
 * {
@@ -274,7 +275,7 @@ svg {
   position:fixed;
   inset:0 auto 0 0;
   width:212px;
-  background:var(--nav);
+  background:var(--nav-background);
   color:var(--gray-300);
   padding:32px 16px 16px;
   display:flex;
@@ -3303,11 +3304,11 @@ a.nav-item { text-decoration: none; }
   transition:background-color var(--duration-fast) var(--ease-out),color var(--duration-fast) var(--ease-out)
 }
 .nav-item.active {
-  background:#a8b7ff18;
-  box-shadow:inset 0 0 0 1px #a8b7ff2b
+  background:linear-gradient(100deg,#779cff38,#a18cff1c);
+  box-shadow:inset 0 0 0 1px #b4c8ff38
 }
 .nav-item.active .icon {
-  color:var(--accent-300)
+  color:#d0ddff
 }
 
 /* Glass top bar that stays in reach while scrolling */
