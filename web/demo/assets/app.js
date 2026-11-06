@@ -73,6 +73,7 @@
   let flowMotionEnabled = typeof matchMedia !== 'function' ||
     !matchMedia('(prefers-reduced-motion: reduce)').matches;
   let experimentAgentStatus = '正在检查 Agent 服务', agentPending = false;
+  let handoffStatus = '正在读取已登记工作流';
   DemoAPI.agentStatus?.().then((result) => {
     experimentAgentStatus = result.agent?.has_key ? `DeepSeek · ${result.agent.model} · 已配置` : 'Agent 已启动 · 尚未配置模型密钥';
     const label = document.querySelector('[data-agent-status]');
@@ -602,7 +603,12 @@ ${esc(step[key] || '')}</textarea
       definition = w.executionDefinition;
     for (const step of steps) {
       let args;
-      if (w.template === 'custom')
+      if (w.registrationSource)
+        args = [step.deps.length ? '' : c.input, step.model, step.codeIdentity,
+          (step.parameters || []).map((p) => [p.key, c[p.key]]),
+          step.model === 'proteinmpnn' || step.model === 'rfdiffusion' ? c.sampleToken || '' : '',
+          c.boundStepId === step.id ? c.input : ''];
+      else if (w.template === 'custom')
         args = [step.deps.length ? '' : c.input, c.seed || '42', c.sampleToken || ''];
       else if (w.template === 'protein')
         args =
@@ -675,6 +681,12 @@ ${esc(step[key] || '')}</textarea
   const usable = (a) => visible(a) && readable(a);
   const workflowById = (id) => (Object.hasOwn(workflowInfo, id) ? workflowInfo[id] : null);
   const inputKinds = function inputKinds(w) {
+    const d = product.drafts[w.id];
+    if (w.registrationSource) {
+      if (d?.requestedStepIds?.length) return ['FASTA'];
+      const inputs = w.steps.filter((s) => !s.deps.length).flatMap((s) => Object.values(s.inputRequirements || {}));
+      return inputs.length ? [...new Set(inputs)] : ['JSON'];
+    }
     if (w.template === 'protein') return ['FASTA'];
     if (w.template === 'molecule') return ['SMILES', 'SDF'];
     const p = w.executionDefinition?.steps[0];
@@ -716,7 +728,7 @@ ${esc(step[key] || '')}</textarea
     product.selectedWorkflow = id;
     steps = workflowInfo[id].steps || (workflowKind() === 'protein' ? proteinSteps : moleculeSteps);
     baseConfig =
-      workflowKind() === 'custom'
+      workflowInfo[id].defaults ? copy(workflowInfo[id].defaults) : workflowKind() === 'custom'
         ? { input: workflowInfo[id].executionDefinition.inputPath, seed: '42', remote: false }
         : workflowKind() === 'protein'
           ? proteinBase
@@ -750,13 +762,14 @@ ${esc(step[key] || '')}</textarea
       intent: 'replay',
       reuseScope: 'team',
       shareOutput: 'team',
-      inputSource: definition ? 'path' : 'sample',
+      inputSource: workflowInfo[id].registrationSource ? 'registered' : definition ? 'path' : 'sample',
       inputArtifactId: '',
       inputMeta: null,
       choices: {},
       checked: false,
       simulation: 'success',
       agentMessages: [],
+      requestedStepIds: from?.requestedStepIds ? copy(from.requestedStepIds) : null,
       createdAt: Date.now(),
     };
     if (from) {
@@ -890,7 +903,7 @@ ${esc(step[key] || '')}</textarea
     const d = draft || { reuseScope: 'team', choices: {}, intent: 'replay' },
       keys = identities(c),
       rules = policySettings(p);
-    return steps.map((step) => {
+    return steps.filter((step) => !d.requestedStepIds || d.requestedStepIds.includes(step.id)).map((step) => {
       const candidates = candidateList(step, keys[step.id], d),
         ready = candidates
           .filter((a) => a.match && usable(a))
@@ -973,6 +986,14 @@ ${esc(step[key] || '')}</textarea
     };
   };
   const validateExperiment = function validateExperiment(d) {
+    for (const step of steps.filter((s) => !d.requestedStepIds || d.requestedStepIds.includes(s.id))) {
+      for (const item of registeredParameters(step)) {
+        const value = d.config[item.key];
+        if (item.required && (value === undefined || value === '')) return `请填写${step.name}的${item.label}`;
+        if (item.type === 'number' && (!Number.isFinite(Number(value)) || Number(value) < (item.min ?? -Infinity) || Number(value) > (item.max ?? Infinity) || (item.step === 1 && !Number.isInteger(Number(value))))) return `${item.label}的值超出范围或类型不正确`;
+        if (item.modelKey === 'sampling_temp' && Number(value) <= 0) return '采样温度必须大于 0';
+      }
+    }
     if (!d.name.trim()) return '请填写实验名称。';
     if (!String(d.config.input || '').trim()) return '请选择或填写输入数据。';
     if (!/^\d{1,6}$/.test(String(d.config.seed))) return '随机种子须为 0–999999 的整数。';
@@ -985,10 +1006,24 @@ ${esc(step[key] || '')}</textarea
     return '';
   };
   const packPlan = function packPlan(d) {
-    return plan(d.config, d.policy, d).map((s) => ({
+    const selected = plan(d.config, d.policy, d);
+    return selected.map((s) => ({
       ...copy(s),
+      deps: s.deps.filter((id) => selected.some((item) => item.id === id)),
       version: versions(s.id, d.config),
     }));
+  };
+  const executionRequest = function executionRequest(d, p = packPlan(d)) {
+    return { schemaVersion: 'experiment-config-v1', mode: 'simulation',
+      workflowId: d.workflowId, registrationSource: copy(workflowInfo[d.workflowId].registrationSource || null),
+      input: { source: d.inputSource, artifactId: d.inputArtifactId || null, value: d.config.input, metadata: copy(d.inputMeta) },
+      samplingMode: d.intent === 'fresh' ? 'new_sample' : 'same_parameters',
+      workflowDefaults: copy(d.workflowDefaults || baseConfig), parameterOverrides: copy(d.parameterOverrides || {}),
+      steps: p.map((s) => ({ nodeId: s.id, modelId: s.model || null,
+        inferenceParams: Object.fromEntries(registeredParameters(s).filter((item) => item.category !== 'filter').map((item) => [item.modelKey || item.key, d.config[item.key]])),
+        filterParams: Object.fromEntries(registeredParameters(s).filter((item) => item.category === 'filter').map((item) => [item.modelKey || item.key, d.config[item.key]])),
+        reuseMode: d.choices?.[s.id] === 'compute' ? 'force_recompute' : s.action === 'reuse' ? 'reuse' : s.action === 'wait' ? 'wait' : 'auto',
+        action: s.action, candidateArtifactId: s.artifact?.id || null })) };
   };
   const checkDraft = function checkDraft() {
     const d = currentDraft(),
@@ -1017,7 +1052,10 @@ ${esc(step[key] || '')}</textarea
     if (!d) return;
     if (name.startsWith('config.')) {
       const key = name.slice(7);
-      d.config[key] = key === 'remote' ? value === 'true' : value;
+      const field = steps.flatMap(registeredParameters).find((item) => item.key === key);
+      d.config[key] = key === 'remote' ? value === 'true'
+        : field && ['number', 'integer', 'float'].includes(field.type) && value !== '' && Number.isFinite(Number(value))
+          ? Number(value) : value;
       d.parameterOverrides ||= {};
       const defaultValue = d.workflowDefaults?.[key];
       if (defaultValue === undefined || String(defaultValue) !== String(d.config[key]))
@@ -1219,10 +1257,13 @@ ${esc(step[key] || '')}</textarea
       ownerId: ME.id,
       ownerName: ME.name,
       workflowId: activeWorkflow,
-      workflowSnapshot: { ...copy(w), steps: copy(steps) },
+      workflowSnapshot: { ...copy(w), steps: copy(p.map(({ candidates, artifact, ...s }) => s)) },
       config: copy(d.config),
       workflowDefaults: copy(d.workflowDefaults || baseConfig),
       parameterOverrides: copy(d.parameterOverrides || {}),
+      requestedStepIds: copy(d.requestedStepIds || null),
+      executionRequest: executionRequest(d, p),
+      sourceExperimentId: d.sourceExperimentId || null,
       intent: d.intent,
       reuseScope: d.reuseScope,
       shareOutput: d.shareOutput,
@@ -1234,6 +1275,7 @@ ${esc(step[key] || '')}</textarea
       policyRules: copy(policySettings(d.policy)),
       plan: p,
       outputs: [],
+      stepEvents: [],
       log: ['实验已创建；输入、流程和参数已保存，等待确认运行。'],
       status: 'ready',
       fixture: false,
@@ -1267,6 +1309,7 @@ ${esc(step[key] || '')}</textarea
     for (let i = e.outputs.length; i < e.plan.length; i++) {
       if (token !== simulationToken || !['running', 'waiting'].includes(e.status)) break;
       e.currentStep = i;
+      (e.stepEvents ||= []).push({ stepId: e.plan[i].id, status: 'running', message: '模拟开始', at: Date.now() });
       e.status = e.plan[i].action === 'wait' ? 'waiting' : 'running';
       saveProduct();
       render();
@@ -1292,6 +1335,7 @@ ${esc(step[key] || '')}</textarea
     if (e.simulation === 'fail' && index === Math.min(e.workflowSnapshot.steps.length - 1, 3)) {
       e.status = 'failed';
       e.failedStep = s.id;
+      e.failure = { stepId: s.id, code: 'SIMULATED_FAILURE', message: '用户选择的失败模拟在此节点触发；没有真实模型错误日志。', simulated: true };
       e.log.push(s.name + ' · 模拟步骤失败。已完成产物保留，可复制配置重试。');
       saveProduct();
       return false;
@@ -1301,6 +1345,8 @@ ${esc(step[key] || '')}</textarea
       a = artifactById(s.artifact.id);
       if (!a || !a.accessible || !visible(a)) {
         e.status = 'failed';
+        e.failedStep = s.id;
+        e.failure = { stepId: s.id, code: 'ARTIFACT_UNAVAILABLE', message: '等待产物不存在、不可访问或不在可见范围内。', simulated: true };
         e.log.push('等待结果无法读取，模拟已停止。');
         saveProduct();
         return false;
@@ -1316,6 +1362,8 @@ ${esc(step[key] || '')}</textarea
     if (s.action !== 'compute') {
       if (!usable(a) || a.key !== s.key) {
         e.status = 'failed';
+        e.failedStep = s.id;
+        e.failure = { stepId: s.id, code: 'CANDIDATE_INVALID', message: '候选产物不可读取或标识与执行计划不一致。', simulated: true };
         e.log.push('所选结果已失效，模拟已停止；请重新检查候选。');
         saveProduct();
         return false;
@@ -1368,6 +1416,32 @@ ${esc(step[key] || '')}</textarea
         computeCost: s.cost,
       };
       product.catalog.push(a);
+      if (s.model === 'proteinmpnn') {
+        const countKey = s.parameters.find((p) => p.modelKey === 'num_seq_per_target')?.key;
+        a.records = Array.from({ length: Number(e.config[countKey]) || 8 }, (_, index) => ({
+          id: `sample-${index + 1}`, sequence: 'ACDEFGHIKLMNPQRSTVWY', simulated: true,
+        }));
+      }
+      if (s.model === 'sequence_filter') {
+        const source = artifactById(e.inputArtifactId) || artifactById(e.outputs.find((out) => s.deps.includes(out.stepId))?.artifactId);
+        const countKey = s.parameters.find((p) => p.modelKey === 'filter_count')?.key;
+        a.records = copy((source?.records || []).slice(0, Number(e.config[countKey]) || 5));
+        a.inputArtifactId = source?.id || '';
+        a.parentArtifactIds = source ? [source.id] : [];
+      }
+      if (s.model === 'result_analysis') {
+        a.summary = {
+          schemaVersion: 'simulation-result-summary-v1', simulated: true,
+          experimentId: e.id, workflowName: e.workflowSnapshot.name,
+          sources: e.outputs.map((out) => {
+            const source = artifactById(out.artifactId);
+            return { stepId: out.stepId, name: e.plan.find((item) => item.id === out.stepId)?.name,
+              artifactId: out.artifactId, file: source?.name, kind: source?.kind,
+              recordCount: source?.records?.length ?? null, mode: out.mode, readable: usable(source) };
+          }),
+          note: '本报告汇总模拟产物及来源；未执行真实科学评分、置信度计算或质量评估。',
+        };
+      }
       retainProduct(a, e);
       e.outputs.push({ stepId: s.id, artifactId: a.id, mode: 'compute' });
       e.log.push(
@@ -1377,6 +1451,7 @@ ${esc(step[key] || '')}</textarea
           (a.retained ? ' · 已登记到复用目录' : ' · 未保留模拟文件，仅保留来源记录'),
       );
     }
+    (e.stepEvents ||= []).push({ stepId: s.id, status: 'completed', message: `${s.action} ${a.id}`, at: Date.now() });
     e.status = 'running';
     saveProduct();
     return true;
@@ -1591,6 +1666,7 @@ ${esc(step[key] || '')}</textarea
   };
   const workflowsPage = function () {
     return (
+      panel('已登记工作流 → 本次实验', `<div class="detail-body"><p>${esc(handoffStatus)}</p><p class="field-hint">确认登记后点击刷新，工作流快照会出现在下方列表。实验参数覆盖不会改动登记值。</p><button class="btn" data-refresh-handoff>刷新登记工作流</button> <a href="./agent/" target="_blank" rel="noopener">打开工作流登记页 ↗</a></div>`) +
       heading(
         '工作流',
         '选用已接入流程创建实验，或登记自己的模型与脚本。',
@@ -1976,6 +2052,7 @@ ${esc(policyDraft.description)}</textarea
   const inputPanel = function inputPanel(d) {
     const w = workflowInfo[activeWorkflow],
       sources = product.catalog.filter((a) => usable(a) && accepts(w, a));
+    if (d.inputSource === 'registered') return `<div class="callout">使用登记快照中的输入绑定，模型参数沿用登记值。${Object.entries(w.registrationSource || {}).map(([key,value]) => `<div>${esc(key)}：${esc(value)}</div>`).join('')}</div>`;
     let input = choiceField('输入来源', 'inputSource', d.inputSource, [
       ['sample', '使用内置示例'],
       ['artifact', '选择已有产物'],
@@ -2182,7 +2259,7 @@ ${esc(policyDraft.description)}</textarea
       snapshotSteps = experiment?.workflowSnapshot.steps || steps,
       profile = definition.executionDefinition?.steps.find((item) => item.id === step.id),
       dependencies = step.deps.map((id) => snapshotSteps.find((item) => item.id === id)?.name || id),
-      input = dependencies.length ? dependencies.join('、') : d.inputMeta?.name || d.config.input || '未选择',
+      input = d.config.boundStepId === step.id ? d.inputMeta?.name || d.config.input : dependencies.length ? dependencies.join('、') : d.inputMeta?.name || d.config.input || '未选择',
       output = step.file ? `${step.file} · ${step.kind || '文件'}` : '未定义',
       parameters = registeredParameters(step, definition),
       definitions = ['inference', 'filter'].map((category) => {
@@ -2200,6 +2277,7 @@ ${esc(policyDraft.description)}</textarea
           <div><span>输入</span><strong>${esc(input)}</strong></div>
           <div><span>输出</span><strong>${esc(output)}</strong></div>
         </div>
+        ${step.inputRequirements ? `<div class="field-hint">登记输入要求：${Object.entries(step.inputRequirements).map(([port,kind]) => `${esc(port)}：${esc(kind)}`).join('；') || '无外部输入'}</div>` : ''}
         ${definitions
           ? `<div class="node-parameter-fields">${definitions}</div>`
           : '<p class="muted small">此节点没有单独登记的可调参数。</p>'}
@@ -2365,11 +2443,14 @@ ${esc(policyDraft.description)}</textarea
       const out = e?.outputs.find((o) => o.stepId === s.id), a = out && artifactById(out.artifactId);
       const action = (out?.mode || s.action) === 'reuse' ? '复用已有结果' : (out?.mode || s.action) === 'wait' ? '等待后复用' : '本次生成';
       const incoming = (s.deps || []).map((id) => byId.get(id)?.step.kind || '数据').join(' + ') || '实验输入';
+      const values = e?.config || currentDraft()?.config || {};
+      const parameterSummary = (s.parameters || []).map((item) => `${item.label} ${values[item.key] ?? item.default ?? '未填写'}`).join(' · ');
       return `<div class="flow-stage tone-${i % 4} ${state} ${selectedId === s.id ? 'selected' : ''}" style="left:${pos.x / width * 100}%;top:${pos.y}px;width:${176 / width * 100}%;--flow-delay:${-i * .37}s" data-flow-state="${state}" data-flow-step="${esc(s.id)}">
         <div class="flow-stage-head"><span>STEP ${String(i + 1).padStart(2, '0')}</span><span>${e ? labels[state] : s.action === 'reuse' ? '复用' : s.action === 'wait' ? '等待后复用' : '重新计算'}</span></div>
         <button type="button" class="flow-card" data-plan-step="${esc(s.id)}" aria-pressed="${selectedId === s.id}" ${state === 'active' || state === 'waiting' ? 'aria-current="step"' : ''} aria-label="查看${esc(s.name)} · ${e ? labels[state] : '参数与计划'}">
           <span class="flow-card-heading"><span class="flow-icon">${icon(s.icon)}</span><strong>${esc(s.name)}</strong></span>
           <span class="flow-file" title="${esc(a?.name || s.file || '待生成产物')}">${esc(a?.name || s.file || '待生成产物')}</span>
+          ${parameterSummary ? `<span class="flow-param-summary" title="${esc(parameterSummary)}">${esc(parameterSummary)}</span>` : ''}
           <span class="flow-state"><i aria-hidden="true"></i>${e ? state === 'complete' ? action : labels[state] : fmt(s.time || 0) + ' · 预计用时'}</span>
           <span class="flow-formats" title="${esc(incoming)} → ${esc(s.kind || '产物')}">${esc(incoming)} <span aria-hidden="true">→</span> ${esc(s.kind || '产物')}</span>
         </button>
@@ -2398,61 +2479,97 @@ ${esc(policyDraft.description)}</textarea
   };
   const creationSummaryPanel = function creationSummaryPanel(d, p) {
     const defaults = d.workflowDefaults || {};
-    const changed = Object.entries(d.config || {}).filter(([key, value]) => defaults[key] !== undefined && String(defaults[key]) !== String(value));
+    const changed = Object.entries(d.parameterOverrides || {}).filter(([key, value]) => String(defaults[key]) !== String(value));
     const labels = Object.fromEntries(steps.flatMap((step) => registeredParameters(step).map((item) => [item.key, item.label])));
     const missing = [];
     if (!String(d.name || '').trim()) missing.push('实验名称');
     if (!String(d.config?.input || '').trim() && d.inputSource !== 'upload' && d.inputSource !== 'artifact') missing.push('输入数据');
     if (d.inputSource === 'upload' && !d.inputMeta) missing.push('上传文件');
     if (d.inputSource === 'artifact' && !d.inputArtifactId) missing.push('可复用产物');
-    for (const item of steps.flatMap((step) => registeredParameters(step))) {
+    for (const item of p.flatMap((step) => registeredParameters(step))) {
       if (item.required && (d.config?.[item.key] === undefined || d.config?.[item.key] === '')) missing.push(item.label || item.key);
     }
     return panel('创建前摘要', `<div class="creation-summary-grid">
       <div><span>输入</span><strong>${esc(d.inputMeta?.name || d.config.input || '待选择')}</strong></div>
       <div><span>请求步骤</span><strong>${p.map((item) => esc(item.name)).join(' → ')}</strong></div>
-      <div><span>参数覆盖</span><strong>${changed.length ? changed.map(([key, value]) => `${esc(labels[key] || key)}：${esc(value)}`).join('；') : '沿用工作流默认值'}</strong></div>
+      <div><span>参数覆盖</span><strong>${changed.length ? changed.map(([key, value]) => `${esc(labels[key] || key)}：${esc(defaults[key] ?? '未设置')} → ${esc(value)}`).join('；') : '沿用工作流默认值'}</strong></div>
       <div><span>缺失项</span><strong class="${missing.length ? 'warning-text' : 'success-text'}">${missing.length ? missing.join('、') : '无'}</strong></div>
     </div><p class="field-hint">工作流默认配置与本次实验覆盖值分开保存；修改参数不会改变已登记工作流。</p>`);
   };
-  const agentContext = function agentContext(d, selected) {
-    const node = selected ? { id: selected.id, name: selected.name, values: d.config, config: d.config, parameters: registeredParameters(selected) } : null;
-    return { workflowId: d.workflowId, workflowName: workflowInfo[d.workflowId]?.name, inputArtifactId: d.inputArtifactId, input: d.config.input, status: 'draft', selectedNode: node };
+  const agentContext = function agentContext(d, selected, experiment = null) {
+    const workflow = experiment?.workflowSnapshot || workflowInfo[d.workflowId];
+    const node = selected ? { id: selected.id, name: selected.name, model: selected.model,
+      values: d.config, config: d.config, parameters: registeredParameters(selected, workflow) } : null;
+    const outputs = (experiment?.outputs || []).map((out) => artifactById(out.artifactId)).filter(usable);
+    const artifacts = [...new Map([...outputs, artifactById(d.inputArtifactId)].filter(usable).map((a) => [a.id, a])).values()];
+    const sequence = artifacts.find((a) => a.id === d.agentArtifactId) ||
+      artifacts.find((a) => a.stepId === (selected?.model === 'sequence_filter' ? selected.deps[0] : selected?.id) && a.kind === 'FASTA') || artifacts.find((a) => a.kind === 'FASTA');
+    return { workflowId: d.workflowId, workflowName: workflow.name, experimentId: experiment?.id,
+      registrationSource: workflow.registrationSource, inputArtifactId: sequence?.id || d.inputArtifactId,
+      currentArtifact: sequence ? { id: sequence.id, kind: sequence.kind, stepId: sequence.stepId, recordCount: sequence.records?.length, runId: sequence.runId, simulated: true } : null,
+      currentOutput: outputs.find((a) => a.stepId === selected?.id)?.summary || null,
+      artifacts: artifacts.map((a) => ({ id: a.id, kind: a.kind, readable: usable(a), name: a.name, recordCount: a.records?.length, stepId: a.stepId })),
+      availableFilterNodes: (workflow.steps || steps).filter((s) => s.model === 'sequence_filter').map((s) => ({ id: s.id, name: s.name })),
+      input: d.config.input, status: experiment?.status || 'draft', readOnly: !!experiment,
+      requestedStepIds: d.requestedStepIds || null,
+      executionPlan: (experiment?.plan || plan(d.config,d.policy,d)).map((s) => ({id:s.id,name:s.name,action:s.action})),
+      failedStep: experiment?.failedStep, failure: experiment?.failure,
+      logs: (experiment?.log || []).slice(-30), stepEvents: (experiment?.stepEvents || []).filter((event) => event.stepId === selected?.id),
+      history: (d.agentMessages || []).slice(-10), selectedNode: node };
   };
   const applyAgentOperations = function applyAgentOperations(d, operations) {
+    let target = d;
     for (const operation of operations || []) {
       if (operation.type === 'update_params') {
+        if (experimentById(d.id)) throw Error('实验快照只读，请复制为新实验草稿后修改');
+        const step = steps.find((s) => s.id === operation.node_id);
+        const allowed = new Set(registeredParameters(step || {}).map((p) => p.key));
+        if (Object.keys(operation.changes || {}).some((key) => !allowed.has(key))) throw Error('Agent 返回未登记参数');
         d.parameterOverrides ||= {};
-        for (const [key, value] of Object.entries(operation.changes || {})) { d.config[key] = value; d.parameterOverrides[key] = value; }
+        for (const [key, value] of Object.entries(operation.changes || {})) {
+          d.config[key] = value;
+          if (String(d.workflowDefaults?.[key]) === String(value)) delete d.parameterOverrides[key];
+          else d.parameterOverrides[key] = value;
+        }
+        d.choices = {};
         if (operation.node_id) selectedPlanStep = operation.node_id;
       }
       if (operation.type === 'create_experiment_draft') {
+        const artifact = artifactById(operation.input_artifact_id || operation.source_artifact_id);
+        const filter = workflowInfo[d.workflowId].steps.find((s) => s.id === operation.node_id && s.model === 'sequence_filter');
+        if (!usable(artifact) || artifact.kind !== 'FASTA' || !filter) throw Error('请选择可读取的序列产物及筛选节点');
+        const oldDraft = currentDraft();
+        if (oldDraft) (product.archivedDrafts ||= {})[oldDraft.id] = copy(oldDraft);
         const next = createExperimentDraft(activeWorkflow, d);
         if (next) {
-          next.intent = operation.intent || 'fresh'; next.inputSource = 'artifact';
-          next.inputArtifactId = operation.input_artifact_id || operation.source_artifact_id || '';
-          const artifact = artifactById(next.inputArtifactId);
-          next.config.input = artifact ? 'artifact:' + artifact.key : d.config.input;
-          next.inputMeta = artifact ? { name: artifact.name, kind: artifact.kind, note: 'Agent 引用已登记产物 ' + artifact.id } : d.inputMeta;
-          next.config.sampleToken = next.id; next.agentMessages ||= []; saveProduct();
+          next.intent = 'replay'; next.inputSource = 'artifact'; next.simulation = 'success';
+          next.name = '重新筛选 · ' + artifact.id;
+          next.inputArtifactId = artifact.id; next.sourceExperimentId = artifact.runId;
+          next.config.input = 'artifact:' + artifact.key; next.config.boundStepId = filter.id;
+          next.inputMeta = { name: artifact.name, kind: artifact.kind, note: '引用已有序列 ' + artifact.id + '，仅执行筛选' };
+          next.requestedStepIds = [filter.id]; next.choices = { [filter.id]: 'compute' };
+          delete next.config.sampleToken;
+          target = next; selectedPlanStep = filter.id;
+          saveProduct(); nav('workflow', activeWorkflow);
         }
       }
     }
+    return target;
   };
   const sendAgentMessage = async function sendAgentMessage(d, selected) {
     const input = document.querySelector('[data-agent-input]');
     const message = input?.value.trim();
     if (!message || agentPending) return;
-    const context = agentContext(d, selected), before = JSON.stringify(d.config);
+    const experiment = page.name === 'experiment' ? experimentById(page.id) : null;
+    const context = agentContext(d, selected, experiment), before = JSON.stringify(d.config), routeBefore = location.hash;
     agentPending = true;
     d.agentMessages ||= []; d.agentMessages.push({ role: 'user', text: message }); input.value = ''; render();
     try {
       const result = await DemoAPI.experimentAgent(message, context);
-      if (currentDraft() !== d || JSON.stringify(d.config) !== before) {
+      if ((!experiment && currentDraft() !== d) || location.hash !== routeBefore || JSON.stringify(d.config) !== before) {
         d.agentMessages.push({ role: 'agent', text: '草稿已在请求期间变化，本次建议未应用，请重新发送。' });
       } else {
-        applyAgentOperations(d, result.operations);
-        const target = currentDraft() || d;
+        const target = applyAgentOperations(d, result.operations);
         const changes = (result.operations || []).flatMap((op) => Object.entries(op.changes || {}).map(([key, value]) => `${key}：${op.old_values?.[key] ?? '未设置'} → ${value}`));
         target.agentMessages.push({ role: 'agent', text: result.reply + (changes.length ? '\n' + changes.join('；') : '') });
         target.checked = false;
@@ -2465,15 +2582,17 @@ ${esc(policyDraft.description)}</textarea
       render();
     }
   };
-  const agentPanel = function agentPanel(d, selected) {
+  const agentPanel = function agentPanel(d, selected, experiment = null) {
     const messages = d.agentMessages || [];
+    const context = agentContext(d, selected, experiment);
     return panel('实验配置 Agent', `<p class="small" data-agent-status>${esc(experimentAgentStatus)}</p><a href="./agent/" target="_blank" rel="noopener">打开 Agent / 模型 API 设置 ↗</a><div class="agent-context">当前节点：<strong>${esc(selected?.name || '未选择，请先点击流程图节点')}</strong><span>仅围绕当前实验、当前节点和当前输入回答</span></div>
-      <div class="agent-messages" aria-live="polite">${messages.length ? messages.map((item) => `<div class="agent-message ${item.role === 'user' ? 'user' : 'assistant'}"><span>${item.role === 'user' ? '你' : 'Agent'}</span><p>${esc(item.text)}</p></div>`).join('') : '<p class="muted small">可以问“这个温度参数是什么意思？”或“把筛选数量改成 3 条”。</p>'}</div>
+      <div class="agent-artifact-context">当前产物：${context.artifacts.filter((a) => a.kind === 'FASTA').length ? `<select data-agent-artifact aria-label="Agent 当前序列产物">${context.artifacts.filter((a) => a.kind === 'FASTA').map((a) => `<option value="${esc(a.id)}" ${context.currentArtifact?.id === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.id)} · ${a.recordCount ?? '?'} 条</option>`).join('')}</select>` : '暂无可读取的序列产物'}${experiment ? `<p class="field-hint">实验快照只读。可询问失败原因，或引用产物生成新的筛选草稿。</p>` : ''}</div>
+      <div class="agent-messages" aria-live="polite">${messages.length ? messages.map((item) => `<div class="agent-message ${item.role === 'user' ? 'user' : 'assistant'}"><span>${item.role === 'user' ? '你' : 'Agent'}</span><p>${esc(item.text)}</p></div>`).join('') : '<p class="muted small">点击序列设计询问温度；点击序列筛选修改数量；结果页选择序列后可重新筛选。</p>'}</div>
       <div class="agent-compose"><input data-agent-input type="text" placeholder="询问当前节点或修改当前实验配置" maxlength="500" /><button class="btn primary" type="button" data-agent-send ${agentPending ? 'disabled' : ''}>${agentPending ? '正在回复…' : '发送'}</button></div>`);
   };
   const workflowPage = function () {
     const d = currentDraft() || createExperimentDraft(activeWorkflow);
-    const p = plan(d.config, d.policy, d),
+    const p = packPlan(d),
       metrics = planMetrics(p),
       selected = steps.find((step) => step.id === selectedPlanStep);
     selectedPlanStep = selected?.id || '';
@@ -2675,6 +2794,7 @@ ${esc(policyDraft.description)}</textarea
         <div class="left-stack">
           ${experimentFlowPanel(e, p, selected?.id || '')}
           ${selected ? nodeDetailPanel(selected, e, selectedPlan, e) : ''}
+          ${agentPanel(e, selected, e)}
           ${panel(
             '运行日志',
             /* HTML */ `<div class="detail-body">
@@ -2772,6 +2892,7 @@ ${esc(policyDraft.description)}</textarea
       banner('这是模拟产物的元数据与来源；没有生成真实科学文件。') +
       /* HTML */ `<div class="workspace-grid">
         <div class="left-stack">
+          ${a.summary ? panel('结果分析报告', `<div class="detail-body result-analysis-report"><p>${esc(a.summary.note)}</p><table class="decision-table"><thead><tr><th>步骤</th><th>产物</th><th>格式</th><th>序列数</th><th>来源方式</th></tr></thead><tbody>${a.summary.sources.map((source) => `<tr><td>${esc(source.name || source.stepId)}</td><td>${routeButton(source.file || source.artifactId, 'artifact', source.artifactId)}</td><td>${esc(source.kind)}</td><td>${source.recordCount ?? '—'}</td><td>${esc(source.mode)}</td></tr>`).join('')}</tbody></table></div>`) : ''}
           ${panel(
             '身份、来源与有效性',
             /* HTML */ `<div class="detail-body">
@@ -3647,7 +3768,7 @@ ${esc(policyDraft.description)}</textarea
       return downloadProduct('yanxu-demo-experience.json', { ...persistable(), demo: true });
     if (action === 'export-plan') {
       const d = currentDraft();
-      return downloadProduct('yanxu-demo-plan.json', { demo: true, draft: d, plan: packPlan(d) });
+      return downloadProduct('yanxu-demo-plan.json', { demo: true, draft: d, plan: packPlan(d), request: executionRequest(d) });
     }
     if (action === 'export-experiment')
       return downloadProduct(value + '-demo.json', {
@@ -3916,6 +4037,13 @@ ${esc(policyDraft.description)}</textarea
     });
   };
   const bind = function () {
+    document.querySelectorAll('[data-refresh-handoff]').forEach((el) => { el.onclick = () => void refreshRegisteredWorkflows(); });
+    document.querySelectorAll('[data-agent-artifact]').forEach((el) => {
+      el.onchange = () => {
+        const target = page.name === 'experiment' ? experimentById(page.id) : currentDraft();
+        if (target) { target.agentArtifactId = el.value; saveProduct(); render(); }
+      };
+    });
     document
       .querySelectorAll('[data-nav]')
       .forEach((el) => (el.onclick = () => nav(el.dataset.nav)));
@@ -3944,9 +4072,9 @@ ${esc(policyDraft.description)}</textarea
     });
     document.querySelectorAll('[data-agent-send]').forEach((el) => {
       el.onclick = () => {
-        const d = currentDraft();
+        const d = page.name === 'experiment' ? experimentById(page.id) : currentDraft();
         if (!d) return;
-        void sendAgentMessage(d, steps.find((step) => step.id === selectedPlanStep));
+        void sendAgentMessage(d, (d.workflowSnapshot?.steps || steps).find((step) => step.id === selectedPlanStep));
       };
     });
     document.querySelectorAll('[data-agent-input]').forEach((el) => {
@@ -4323,7 +4451,18 @@ ${esc(policyDraft.description)}</textarea
     if (label) label.textContent = event.detail.label;
     if (event.detail.error) notify(event.detail.error);
   });
+  const refreshRegisteredWorkflows = async function () {
+    try {
+      const result = await DemoAPI.registeredWorkflows();
+      for (const workflow of [...result.workflows, result.example].filter(Boolean)) workflowInfo[workflow.id] = workflow;
+      handoffStatus = `已读取 ${result.workflows.length} 个有效登记快照；另提供模型参数体验流程（模拟）。`;
+      readRoute();
+      saveProduct();
+    } catch (error) { handoffStatus = '登记服务暂不可用：' + error.message; }
+    render();
+  };
   bootProduct();
+  void refreshRegisteredWorkflows();
 })().catch((error) => {
   console.error(error);
   const main = document.querySelector('#main');

@@ -21,10 +21,11 @@ class Gateway:
         return self.decision, {"provider": "test"}
 
 
-def invoke(decision):
+def invoke(decision, extra_context=None):
     request = ExperimentChat(message="把筛选数量改成3条", context={"selectedNode": {
         "id": "filter", "parameters": [{"key": "count", "type": "number", "min": 1, "max": 5, "step": 1}],
         "values": {"count": 5}}})
+    request.context.update(extra_context or {})
     with patch("ai4s_demo.experiment_agent.Agent"):
         return asyncio.run(respond(Gateway(DraftDecision.model_validate(decision)), request))
 
@@ -47,3 +48,20 @@ def test_answer_cannot_modify_draft():
     result = invoke({"intent": "answer", "reply": "解释", "operations": [
         {"type": "update_params", "node_id": "filter", "changes": {"count": 3}}]})
     assert result["operations"] == []
+
+
+def test_snapshot_is_read_only():
+    with pytest.raises(Problem):
+        invoke({'intent':'change','reply':'修改','operations':[
+            {'type':'update_params','node_id':'filter','changes':{'count':3}}]}, {'readOnly':True})
+
+
+def test_rescreen_targets_only_filter_and_selected_sequence():
+    decision = {'intent':'change','reply':'新筛选草稿','operations':[
+        {'type':'create_experiment_draft','node_id':'filter','input_artifact_id':'ART-1'}]}
+    context = {'currentArtifact':{'id':'ART-1','kind':'FASTA'},'availableFilterNodes':[{'id':'filter'}]}
+    result = invoke(decision, context)
+    assert result['operations'][0]['requestedStepIds'] == ['filter']
+    assert result['operations'][0]['intent'] == 'replay'
+    with pytest.raises(Problem):
+        invoke(decision, {**context, 'currentArtifact':{'id':'ART-other','kind':'FASTA'}})

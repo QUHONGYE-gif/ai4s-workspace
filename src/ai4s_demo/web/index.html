@@ -23,6 +23,7 @@
     <header class="topbar"><div class="breadcrumb"><span>分子设计探索</span><span>/</span><strong>工作流接入</strong></div><button class="text-button" id="top-settings">DeepSeek · <span id="api-status">未配置</span></button></header>
     <div class="page-heading"><div><h1>接入工作流</h1><p>整理科学步骤，与助手一起确认每一项配置。</p></div><div class="heading-actions"><button class="button" id="refresh-button">读取新配置</button><button class="button" id="export-button">导出草稿</button><button class="button primary" id="request-button">查看请求 ↗</button></div></div>
     <div id="global-error" class="global-error" role="alert" hidden></div>
+    <div class="panel" style="margin:0 28px 16px;padding:12px 16px"><button class="button" id="experiment-handoff">使用已登记配置创建实验 →</button><span class="field-hint">仅读取确认登记的快照；实验参数修改不会改变工作流。</span></div>
     <main class="workbench">
       <section class="panel flow-panel" aria-label="工作流设计">
         <div class="panel-heading"><h2><span class="section-number">01</span><span id="workflow-heading">正在载入工作流</span></h2><div class="flow-head-right"><span class="pill" id="revision">r0</span><button class="button compact" id="workflow-button">切换 / 新建</button><button class="button compact" id="add-button">＋ 步骤</button></div></div>

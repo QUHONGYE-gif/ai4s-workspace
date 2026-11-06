@@ -304,6 +304,16 @@ async function registerNodes(ids) {
   acceptState(result.state); toast('已确认登记当前配置'); return result.registration;
 }
 
+$('experiment-handoff').onclick = async () => {
+  try {
+    const response = await api('/api/experiments/workflows');
+    const candidates = response.workflows.filter(w => w.registrationSource.workflowId === state.draft.id);
+    const workflow = candidates.at(-1);
+    if (!workflow) { toast('请先确认登记要用于实验的节点，再创建实验'); return; }
+    location.href = new URL('../#/experiment/new/' + encodeURIComponent(workflow.id), document.baseURI).href;
+  } catch (error) { toast(error.message); }
+};
+
 function renderRequest() {
   if (!currentRequest) return;
   $('request-json').textContent = JSON.stringify(currentRequest, null, 2);

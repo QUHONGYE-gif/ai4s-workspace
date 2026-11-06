@@ -42,6 +42,7 @@ const DemoAPI = (() => {
   }
   async function request(path, options = {}) {
     const response = await fetch(new URL(path, document.baseURI), {
+      signal: AbortSignal.timeout(path.includes('/messages') ? 120000 : 15000),
       ...options,
       credentials: 'same-origin',
       cache: 'no-store',
@@ -134,6 +135,9 @@ const DemoAPI = (() => {
     },
     async agentStatus() {
       return request('agent/api/health');
+    },
+    async registeredWorkflows() {
+      return request('agent/api/experiments/workflows');
     },
     async loadState() {
       const result = await request('api/demo/state');

@@ -229,6 +229,55 @@ check('node dependencies use the experiment snapshot after workflow edits', () =
   assert.match(html, /Original snapshot input/);
 });
 
+check('registered parameter overrides affect only their node and downstream identity', () => {
+  const profiles = [
+    {id:'design',name:'Sequence design',model:'proteinmpnn',deps:[],file:'sequences.fasta',kind:'FASTA',cost:10,load:1,size:0.01,parameters:[{key:'design__sampling_temp',modelKey:'sampling_temp',label:'Temperature',type:'number',default:0.1,min:0,max:2}]},
+    {id:'screen',name:'Sequence screening',model:'sequence_filter',deps:['design'],file:'selected.fasta',kind:'FASTA',cost:1,load:1,size:0.01,parameters:[{key:'screen__filter_count',modelKey:'filter_count',label:'Count',category:'filter',type:'number',default:5,min:1,max:512,step:1}]}
+  ];
+  const id='registered-test';
+  workflowInfo[id]={id,name:'Registered test',template:'custom',custom:true,registrationSource:{kind:'test'},defaults:{input:'registered-input',seed:42,remote:false},steps:profiles,executionDefinition:{inputPath:'registered-input',environment:'simulation',steps:[]}};
+  const d=createExperimentDraft(id), defaults=JSON.stringify(d.workflowDefaults);
+  const before=identities(d.config);
+  applyAgentOperations(d,[{type:'update_params',node_id:'screen',changes:{screen__filter_count:3}}]);
+  const after=identities(d.config);
+  assert.equal(before.design,after.design);
+  assert.notEqual(before.screen,after.screen);
+  assert.equal(JSON.stringify(d.workflowDefaults),defaults);
+  assert.equal(workflowInfo[id].steps[1].parameters[0].default,5);
+  d.choices.screen='compute';
+  const request=executionRequest(d);
+  assert.equal(request.steps[1].filterParams.filter_count,3);
+  assert.equal(request.steps[1].reuseMode,'force_recompute');
+  assert.equal(request.samplingMode,'same_parameters');
+  assert.equal(request.steps[0].inferenceParams.sampling_temp,0.1);
+  const e={...copy(d),id:'EXP-reg-test',workflowSnapshot:copy(workflowInfo[id]),outputs:[],status:'failed',failedStep:'design',failure:{code:'SIMULATED_FAILURE',simulated:true},log:['explicit failure evidence'],stepEvents:[{stepId:'design',status:'failed'}]};
+  const context=agentContext(e,profiles[0],e);
+  assert.equal(context.readOnly,true);
+  assert.equal(context.failure.code,'SIMULATED_FAILURE');
+  assert.equal(context.logs[0],'explicit failure evidence');
+  assert.equal(context.selectedNode.parameters[0].key,'design__sampling_temp');
+});
+check('result analysis summarizes completed sources and stays out of screening-only requests', () => {
+  const id='registered-test';
+  workflowInfo[id].steps.push({id:'report',name:'Result analysis',model:'result_analysis',deps:['screen'],file:'summary.json',kind:'JSON',cost:1,load:1,size:0.001,parameters:[]});
+  const d=createExperimentDraft(id);
+  d.config.screen__filter_count=3;
+  createExperiment();
+  const e=product.experiments.at(-1);
+  e.status='running';
+  for(let i=0;i<e.plan.length;i++) assert.equal(completeSimulationStep(e,i),true);
+  const report=artifactById(e.outputs.at(-1).artifactId);
+  assert.equal(report.name,'summary.json');
+  assert.equal(report.summary.simulated,true);
+  assert.equal(report.summary.sources.length,2);
+  assert.equal(report.summary.sources.find((s)=>s.stepId==='screen').recordCount,3);
+  assert.equal(agentContext(e,e.workflowSnapshot.steps.at(-1),e).currentOutput.experimentId,e.id);
+  page.query=new URLSearchParams();
+  assert.match(artifactPage(report),/result-analysis-report/);
+  const onlyScreen=createExperimentDraft(id);
+  onlyScreen.requestedStepIds=['screen'];
+  assert.deepEqual(Array.from(packPlan(onlyScreen),(s)=>s.id),['screen']);
+});
 console.log(count + ' simulation checks passed.');
 
 `,
