@@ -37,7 +37,9 @@ python scripts/serve_workbench.py --host 127.0.0.1 --port 3000 \
 | 文件 | 职责 |
 | --- | --- |
 | [index.html](demo/index.html) | 页面外壳与资源引用 |
-| [app.js](demo/assets/app.js)、[styles.css](demo/assets/styles.css) | 页面交互、模拟规则与样式 |
+| [app.js](demo/assets/app.js)、[styles.css](demo/assets/styles.css) | 页面交互、模拟规则与样式；`styles.css` 顶部为工作台与 Agent 页面共用的设计变量（颜色、字号、间距、圆角、动效），新样式只取其中的值 |
+| [motion.js](demo/assets/motion.js) | 页面进入、计数和卡片高光等纯界面动效，遵循系统“减少动态效果”设置 |
+| [yanxu/](demo/assets/yanxu/README.md) | 流程封面、空状态插图、图标与分享图 |
 | [api.js](demo/assets/api.js) | 相对路径请求、快照保存与冲突恢复 |
 | [pymol.html](demo/pymol.html) | 无工具栏的嵌入式 noVNC 查看器 |
 | [server.py](../src/workbench/server.py) | 同源静态资源与 HTTP API |

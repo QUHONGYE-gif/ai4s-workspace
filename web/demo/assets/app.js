@@ -98,7 +98,6 @@
     const scoped = ['catalog', 'runs', 'policy'].includes(route);
     return /* HTML */ `<div class="page-heading">
       <div>
-        <div class="eyebrow">AI4S 工作台</div>
         <h1>${esc(title)}</h1>
         <p>${scoped ? esc(workflowInfo[activeWorkflow].short) + ' · ' : ''}${esc(subtitle)}</p>
       </div>
@@ -126,8 +125,37 @@
       ${label}
     </button>`;
   };
-  const banner = function banner(text) {
-    return /* HTML */ `<div class="info-banner">${text}</div>`;
+  // Page notes stay available but fold to one line once the reader has collapsed them.
+  const hintKey = (name) => 'ai4s-hint-collapsed:' + name;
+  const hintCollapsed = function hintCollapsed(name) {
+    try {
+      return localStorage.getItem(hintKey(name)) === '1';
+    } catch {
+      return false;
+    }
+  };
+  const rememberHint = function rememberHint(name, collapsed) {
+    try {
+      if (collapsed) localStorage.setItem(hintKey(name), '1');
+      else localStorage.removeItem(hintKey(name));
+    } catch {
+      // Without storage the note simply opens again on the next visit.
+    }
+  };
+  const banner = function banner(text, name = route) {
+    const preview = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return /* HTML */ `<details class="info-banner" data-hint="${esc(name)}" ${hintCollapsed(name) ? '' : 'open'}>
+      <summary>
+        <svg class="icon" aria-hidden="true"><use href="#i-info" /></svg>
+        <span class="hint-preview">${esc(preview)}</span>
+        <span class="hint-toggle" aria-hidden="true"></span>
+      </summary>
+      <div class="hint-body">${text}</div>
+    </details>`;
+  };
+  // Status lines carry run state, so they stay visible instead of folding.
+  const statusBar = function statusBar(html) {
+    return /* HTML */ `<div class="status-bar">${html}</div>`;
   };
   const panel = function panel(title, content, meta = '') {
     return /* HTML */ `<section class="panel">
@@ -1447,56 +1475,18 @@ ${esc(step[key] || '')}</textarea
   };
 
   // Page templates
+  // Generated cover art (web/demo/assets/yanxu); text stays in HTML on the empty left side.
   const workflowArt = function workflowArt(kind) {
-    if (kind === 'custom')
-      return /* HTML */ `<svg viewBox="0 0 560 172" fill="none" aria-hidden="true">
-        <g stroke="currentColor" opacity=".5" stroke-width="2">
-          <path d="M110 86h340" />
-          <rect x="80" y="56" width="60" height="60" rx="12" fill="#eff1f9" />
-          <rect x="250" y="56" width="60" height="60" rx="12" fill="#eff1f9" />
-          <rect x="420" y="56" width="60" height="60" rx="12" fill="#eff1f9" />
-          <path
-            d="m101 76-10 10 10 10m18-20 10 10-10 10m155-20-10 10 10 10m18-20 10 10-10 10m155-20-10 10 10 10m18-20 10 10-10 10"
-          />
-        </g>
-      </svg>`;
-    return kind === 'protein'
-      ? /* HTML */ `<svg viewBox="0 0 560 172" fill="none" aria-hidden="true">
-          <g opacity=".13" stroke="currentColor">
-            <path d="M10 135H550M10 115H550M10 95H550M10 75H550M10 55H550" />
-          </g>
-          <g stroke="currentColor" stroke-width="2.3" opacity=".75">
-            <path d="M287 4c-8 38 143 28 134 65S277 92 291 132s101 17 129 41" />
-            <path d="M414 4c8 38-143 28-134 65s144 23 130 63-101 17-129 41" />
-          </g>
-          <g stroke="currentColor" opacity=".36">
-            <path
-              d="m294 22 111 0m-91 15h74m-48 15h23m-37 17h50m-83 17h116m-105 16h101m-78 17h47m-50 17h58m-90 16h118"
-            />
-          </g>
-          <circle cx="281" cy="69" r="4" fill="currentColor" />
-          <circle cx="411" cy="132" r="4" fill="currentColor" />
-        </svg>`
-      : /* HTML */ `<svg viewBox="0 0 560 172" fill="none" aria-hidden="true">
-          <g opacity=".1" stroke="currentColor">
-            <path d="M10 135H550M10 115H550M10 95H550M10 75H550M10 55H550" />
-          </g>
-          <g stroke="currentColor" stroke-width="2" stroke-linejoin="round" opacity=".8">
-            <path
-              d="m313 35 38 22v44l-38 22-38-22V57Zm38 22 38-22 38 22v44l-38 22-38-22m76-44 38-22 38 22v44l-38 22-38-22M275 79h-34M503 79h24M389 35V13M313 123v30"
-            />
-            <path
-              d="m284 62 29-17 29 17m55-17 21 13v37m-59 0 30 17m66-67 29 17v33"
-              stroke-width="1.2"
-            />
-          </g>
-          <g fill="currentColor" opacity=".75">
-            <circle cx="241" cy="79" r="5" />
-            <circle cx="527" cy="79" r="5" />
-            <circle cx="389" cy="13" r="5" />
-            <circle cx="313" cy="153" r="5" />
-          </g>
-        </svg>`;
+    const cover = { protein: 'protein-workflow', molecule: 'molecule-workflow' }[kind] || 'custom-workflow';
+    return /* HTML */ `<img class="entry-cover" src="./assets/yanxu/${cover}.webp" alt="" width="1280" height="720" loading="lazy" decoding="async" />`;
+  };
+  // Composed empty states: picture, one calm sentence and the next step.
+  const emptyState = function emptyState(picture, text, action = '') {
+    return /* HTML */ `<div class="empty empty-state">
+      <img src="./assets/yanxu/${picture}.webp" alt="" width="400" height="400" loading="lazy" />
+      <p>${text}</p>
+      ${action}
+    </div>`;
   };
   const toolDrawing = function toolDrawing() {
     const surface = toolStyle === 'surface',
@@ -1562,11 +1552,8 @@ ${esc(step[key] || '')}</textarea
         '选用已接入流程创建实验，或登记自己的模型与脚本。',
         routeButton('＋ 接入自定义流程', 'newworkflow'),
       ) +
-      banner(
-        '演示体验：创建实验 → 检查个人／团队候选 → 模拟运行 → 查看产物与来源 → 用指定产物打开工具。',
-      ) +
       /* HTML */ `<div class="section-label">
-          <span>已接入的演示流程</span><span class="small muted">流程配置与每次实验分开保存</span>
+          <span>已接入的流程</span><span class="small muted">流程配置与每次实验分开保存</span>
         </div>
         <div class="entry-grid">
           ${Object.entries(workflowInfo)
@@ -1586,9 +1573,7 @@ ${esc(step[key] || '')}</textarea
                   <div class="entry-copy">
                     <div class="entry-title">
                       <h2>${esc(w.name)}</h2>
-                      <span class="pill ${w.custom ? 'blue' : 'good'}"
-                        >${w.custom ? '仅登记，未真实验证' : '模拟可用'}</span
-                      >
+                      ${w.custom ? '<span class="pill blue">仅登记，未真实验证</span>' : ''}
                     </div>
                     <p>${esc(w.description)}</p>
                     <div class="entry-tags">
@@ -1808,10 +1793,7 @@ ${esc(d.workflowCommand)}</textarea
             </div>
           </aside>
         </div>
-      </form>` +
-      banner(
-        '保存后可创建模拟实验。参考步骤继续使用演示输入输出；真实可运行状态需要另外完成接入检查。',
-      )
+      </form>`
     );
   };
   const newPolicyPage = function newPolicyPage() {
@@ -1934,15 +1916,31 @@ ${esc(policyDraft.description)}</textarea
       </form>`
     );
   };
-  const flowRibbon = function flowRibbon(stage) {
-    return /* HTML */ `<div class="journey">
-      ${['创建实验', '检查共享候选', '确认并模拟运行', '结果与工具']
-        .map(
-          (s, i) =>
-            /* HTML */ `<span class="${i === stage ? 'current' : ''}"><b>${i + 1}</b>${s}</span>`,
-        )
-        .join('')}
-    </div>`;
+  // Wizard header: finished steps get a check, the current one says what to do next,
+  // and the single primary action of the page sits on the right.
+  const flowRibbon = function flowRibbon(stage, action = '') {
+    const nextHints = [
+      '填写名称与输入，确认后创建实验。',
+      '在流程图中检查各节点的共享候选，然后开始模拟。',
+      '模拟运行中，可随时查看节点状态与日志。',
+      '查看产物与来源，或用结构工具打开。',
+    ];
+    return /* HTML */ `<nav class="journey" aria-label="实验步骤">
+      <ol>
+        ${['创建实验', '检查共享候选', '确认并模拟运行', '结果与工具']
+          .map(
+            (s, i) =>
+              /* HTML */ `<li class="${i < stage ? 'done' : i === stage ? 'current' : ''}" ${i === stage ? 'aria-current="step"' : ''}>
+                <b>${i < stage ? '<svg class="icon" aria-hidden="true"><use href="#i-check" /></svg>' : i + 1}</b><span>${s}</span>
+              </li>`,
+          )
+          .join('')}
+      </ol>
+      <div class="journey-next">
+        <span><strong>第 ${stage + 1} 步，共 4 步</strong>${nextHints[stage]}</span>
+        ${action}
+      </div>
+    </nav>`;
   };
   const inputPanel = function inputPanel(d) {
     const w = workflowInfo[activeWorkflow],
@@ -2172,7 +2170,7 @@ ${esc(policyDraft.description)}</textarea
     return { width: Math.max(224, columns * 224 - 16), height, positions };
   };
   const liveFlow = function liveFlow(p, selectedId, e = null) {
-    if (!p.length) return '<div class="empty">当前流程没有步骤。</div>';
+    if (!p.length) return emptyState('empty-canvas', '当前流程没有步骤。');
     const { width, height, positions } = flowLayout(p);
     const view = !e || e.status === 'ready' ? 'preview' :
       e.status === 'completed' ? 'replay' :
@@ -2228,8 +2226,12 @@ ${esc(policyDraft.description)}</textarea
       </div>
     </div>`;
   };
+  // Numbered section titles let the create page read as a short sequence of steps.
+  const stepTitle = function stepTitle(number, text, note = '') {
+    return `<span class="step-tag">${number}</span>${esc(text)}${note ? `<span class="step-note">${esc(note)}</span>` : ''}`;
+  };
   const experimentDiagram = function experimentDiagram(p, selectedId = '') {
-    return panel('工作流', liveFlow(p, selectedId));
+    return panel(stepTitle(2, '检查流程与节点', '可选'), liveFlow(p, selectedId));
   };
   const workflowPage = function () {
     const d = currentDraft() || createExperimentDraft(activeWorkflow);
@@ -2241,13 +2243,13 @@ ${esc(policyDraft.description)}</textarea
       heading(
         '创建实验',
         '配置本次输入和节点参数，创建后在实验详情中检查候选并运行。',
-        `${routeButton('我的实验', 'runs')}${button('创建实验', 'create-experiment', '', true)}`,
+        routeButton('我的实验', 'runs'),
       ) +
-      flowRibbon(0) +
+      flowRibbon(0, button('创建实验', 'create-experiment', '', true)) +
       /* HTML */ `<div class="workspace-grid experiment-create-grid">
           <div class="left-stack">
             ${panel(
-              '实验信息与输入',
+              stepTitle(1, '实验信息与输入'),
               /* HTML */ `<div class="create-body">
                 <div class="registration-grid">
                   ${field('实验名称', 'name', d.name)}<label class="field"
@@ -2261,7 +2263,7 @@ ${esc(policyDraft.description)}</textarea
           </div>
           <aside class="right-stack">
             ${panel(
-              '实验范围与策略',
+              stepTitle(3, '范围与策略', '可选 · 已有默认值'),
               /* HTML */ `<div class="detail-body">
                 <details class="settings-disclosure">
                   <summary>共享与运行选项</summary>
@@ -2299,8 +2301,6 @@ ${esc(policyDraft.description)}</textarea
                     ${button('导出本次计划', 'export-plan')}
                   </div>
                 </details>
-                <p class="field-hint">参数仅保存为本次实验快照；共享范围、候选文件和运行耗时均为演示数据。</p>
-                <div class="create-page-action">${button('创建实验', 'create-experiment', '', true)}</div>
               </div>`,
             )}
           </aside>
@@ -2309,8 +2309,8 @@ ${esc(policyDraft.description)}</textarea
   };
   const experimentTable = function experimentTable(list) {
     return !list.length
-      ? /* HTML */ `<div class="panel empty">
-          还没有实验。${routeButton('选择流程创建实验', 'workflows')}
+      ? /* HTML */ `<div class="panel">
+          ${emptyState('empty-experiments', '还没有实验。', routeButton('选择流程创建实验', 'workflows'))}
         </div>`
       : /* HTML */ `<div class="panel table-scroller">
           <table class="decision-table">
@@ -2327,7 +2327,7 @@ ${esc(policyDraft.description)}</textarea
               ${list
                 .map(
                   (e) =>
-                    /* HTML */ `<tr>
+                    /* HTML */ `<tr class="row-link" data-route="experiment" data-id="${esc(e.id)}">
                       <td>
                         <b>${esc(e.name)}</b>
                         <div class="reason">
@@ -2404,7 +2404,7 @@ ${esc(policyDraft.description)}</textarea
       ${liveFlow(graphSteps, selectedId, results ? e : null)}
       <div class="experiment-flow-actions">
         <span class="muted small">${e.source === 'aiida' ? '只读快照，不控制真实任务；运行状态以 AiiDA 查询为准。' : results ? e.status === 'ready' ? '确认候选后启动，查看当前步骤与数据流。' : '节点状态、产物和日志随本次模拟更新。' : '点击节点检查参数、候选与复用原因，然后进入运行与结果。'}</span>
-        ${results ? e.status === 'ready' ? button('确认候选并开始模拟', 'start', e.id, true) : '' : button('查看运行与结果 →', 'experiment-flow-view', 'results', true)}
+        ${results ? e.status === 'ready' ? button('确认候选并开始模拟', 'start', e.id) : '' : button('查看运行与结果 →', 'experiment-flow-view', 'results', e.status !== 'ready')}
       </div>
       ${results ? experimentOutputDetails(e) : ''}`,
       viewSwitch,
@@ -2426,9 +2426,12 @@ ${esc(policyDraft.description)}</textarea
         '实验快照 · ' + e.id + ' · ' + e.workflowSnapshot.name,
         `${routeButton('我的实验', 'runs')}${e.source === 'aiida' ? '' : button('复制配置创建实验', 'clone-experiment', e.id)}${live ? button('取消本次模拟', 'cancel', e.id) : ''}`,
       ) +
-      flowRibbon(e.status === 'ready' ? 1 : live ? 2 : 3) +
-      banner(
-        `${statusBadge(e.status, e.source)} <span style="margin-left:10px">${e.source === 'aiida' ? 'AiiDA 只读查询快照；刷新网页不会查询引擎，请重新导出以更新状态。文件仍在来源 Repository。' : e.fixture ? '预置示例仅用于共享候选，不计入我的实验。' : e.status === 'ready' ? '配置已保存；确认候选后可启动模拟。' : '所有步骤仅模拟执行，日志中的科学产物与用时为示例。'}</span>`,
+      flowRibbon(
+        e.status === 'ready' ? 1 : live ? 2 : 3,
+        e.status === 'ready' && e.source !== 'aiida' ? button('确认候选并开始模拟', 'start', e.id, true) : '',
+      ) +
+      statusBar(
+        `${statusBadge(e.status, e.source)} <span style="margin-left:12px">${e.source === 'aiida' ? 'AiiDA 只读查询快照；刷新网页不会查询引擎，请重新导出以更新状态。文件仍在来源 Repository。' : e.fixture ? '预置示例仅用于共享候选，不计入我的实验。' : e.status === 'ready' ? '配置已保存；确认候选后可启动模拟。' : ''}</span>`,
       ) +
       /* HTML */ `<div class="workspace-grid">
         <div class="left-stack">
@@ -2528,7 +2531,6 @@ ${esc(policyDraft.description)}</textarea
         '产物详情 · ' + a.id,
         `${fromDraft ? routeButton('返回实验草稿', 'workflow', fromDraft) : from ? routeButton('返回实验', 'experiment', from) : routeButton('返回数据目录', 'catalog')}${isViewable(a) ? /* HTML */ `<button class="btn primary" data-view-artifact="${a.id}" data-from="${esc(from)}">用此产物打开工具</button>` : ''}`,
       ) +
-      banner('这是模拟产物的元数据与来源；没有生成真实科学文件。') +
       /* HTML */ `<div class="workspace-grid">
         <div class="left-stack">
           ${panel(
@@ -2730,7 +2732,7 @@ ${esc(policyDraft.description)}</textarea
                 ${list
                   .map(
                     (a) =>
-                      /* HTML */ `<tr>
+                      /* HTML */ `<tr class="row-link" data-route="artifact" data-id="${esc(a.id)}">
                         <td>
                           <b>${esc(a.name)}</b>
                           <div class="reason">${esc(a.id)} · ${esc(a.workflowName)}</div>
@@ -2748,7 +2750,7 @@ ${esc(policyDraft.description)}</textarea
                   .join('')}
               </tbody>
             </table>
-            ${list.length ? '' : '<div class="empty">此范围没有匹配的产物。</div>'}
+            ${list.length ? '' : emptyState('empty-search', '此范围没有匹配的产物。')}
           </div>
         </div>`
     );
@@ -2804,7 +2806,6 @@ ${esc(policyDraft.description)}</textarea
     return (
       heading('PyMOL', '真实结构查看与交互',
         '<button class="btn" id="tool-list-preserve">工具列表</button>') +
-      banner('此处连接真实 PyMOL。工作流目录仍使用模拟数据，请选择真实结构文件加载。') +
       /* HTML */ `<div class="tool-layout">
         <section class="panel">
           <div class="panel-head">
@@ -3073,9 +3074,7 @@ ${esc(policyDraft.description)}</textarea
         '决定哪些结果直接用、哪些重新算，以及保存哪些数据。',
         /* HTML */ `<button class="btn primary" data-nav="newpolicy">＋ 新增策略</button>`,
       ) +
-      /* HTML */ `<div id="reuse-explorer"></div><details class="reuse-policies"><summary>策略配置与对比</summary><div class="info-banner">
-          用同一组任务，比较不同策略的预计用时。以下数据仅用于演示。
-        </div>
+      /* HTML */ `<div id="reuse-explorer"></div><details class="reuse-policies"><summary>策略配置与对比</summary><p class="small muted policy-intro">用同一组任务，比较不同策略的预计用时。</p>
         <div class="policy-grid">
           ${cards
             .map((c) => {
@@ -3091,7 +3090,7 @@ ${esc(policyDraft.description)}</textarea
                 <p>${esc(c.description)}</p>
                 <div class="policy-number">${fmt(m.total)}</div>
                 <div class="small muted">预计用时 · ${m.reuse} 个步骤直接复用</div>
-                <div class="kv" style="margin-top:19px">
+                <div class="kv" style="margin-top:16px">
                   <span>读取结果</span><strong>${fmt(m.load)}</strong>
                 </div>
                 <div class="kv"><span>重新计算</span><strong>${fmt(m.compute)}</strong></div>
@@ -3111,7 +3110,7 @@ ${esc(policyDraft.description)}</textarea
             })
             .join('')}
         </div>
-        <div class="panel" style="margin-top:22px">
+        <div class="panel" style="margin-top:24px">
           <div class="panel-head">
             <div class="panel-title">怎么选择？</div>
             <span class="pill">示例空间：4 GB</span>
@@ -3682,11 +3681,16 @@ ${esc(policyDraft.description)}</textarea
       .forEach((el) => (el.onclick = () => nav(el.dataset.nav)));
     document.querySelectorAll('[data-route]').forEach(
       (el) =>
-        (el.onclick = () => {
+        (el.onclick = (event) => {
+          // A whole table row opens its record; buttons inside the row keep their own action.
+          if (el.tagName === 'TR' && event.target.closest('button, a, input, select')) return;
           if (el.dataset.route === 'workflow') openWorkflow(el.dataset.id);
           else nav(el.dataset.route, el.dataset.id);
         }),
     );
+    document
+      .querySelectorAll('details[data-hint]')
+      .forEach((el) => (el.ontoggle = () => rememberHint(el.dataset.hint, !el.open)));
     document.querySelectorAll('[data-draft]').forEach((el) => {
       if (el.tagName === 'SELECT')
         el.onchange = () => {
@@ -3908,7 +3912,7 @@ ${esc(policyDraft.description)}</textarea
     $('#main').innerHTML =
       html +
       /* HTML */ `<footer class="footnote">
-          <span>研序 / AI4S 工作台 · 本地模拟体验</span
+          <span>研序 / AI4S 工作台</span
           ><span
             >${storageOK ? '浏览器备份可用' : '浏览器备份受限'} ·
             <span id="persistence-status">${esc(DemoAPI.statusLabel())}</span> ·
@@ -3949,6 +3953,7 @@ ${esc(policyDraft.description)}</textarea
     $('#catalog-count').textContent = product.catalog.filter(visible).length;
     $('#run-count').textContent = product.experiments.filter((e) => !e.fixture).length;
     bind();
+    window.Motion?.afterRender($('#main'), route + '/' + (page.id || ''));
     if (route === 'policy') reuseCanvas = window.ReuseCanvas.mount($('#reuse-explorer'));
     bindPymolControls();
     bindCreation();
@@ -3986,6 +3991,13 @@ ${esc(policyDraft.description)}</textarea
         nav('catalog');
       }
     };
+    // "/" jumps to the global search unless the reader is already typing somewhere.
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      e.preventDefault();
+      global.focus();
+    });
     window.addEventListener('hashchange', () => {
       readRoute();
       render();
