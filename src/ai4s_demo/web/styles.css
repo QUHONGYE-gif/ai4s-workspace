@@ -51,8 +51,10 @@ button:hover:not(:disabled) {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid var(--line);
-  background: var(--gray-0);
+  border: 1px solid var(--control-border);
+  background: var(--control-background);
+  box-shadow: var(--control-shadow);
+  backdrop-filter: blur(10px);
   border-radius: var(--radius-lg);
   padding: 8px 12px;
   font-size: var(--text-sm);
@@ -63,14 +65,19 @@ button:hover:not(:disabled) {
   background: var(--primary-background);
   border-color: var(--primary-border);
   color: white;
-  box-shadow: 0 3px 7px #4e4b8a12;
+  box-shadow: inset 0 1px 0 #ffffff33,0 3px 7px #233b6a18;
+}
+.button:hover:not(:disabled) {
+  background: var(--control-hover);
+  border-color: var(--selection-border);
+  filter: none;
 }
 .button.primary:hover:not(:disabled), .send-button:hover:not(:disabled) {
   background: var(--primary-hover);
   filter: none;
 }
 .button.soft {
-  background: var(--soft);
+  background: var(--tag-background);
   border-color: transparent;
   color: var(--gray-700);
 }
@@ -135,15 +142,16 @@ button:hover:not(:disabled) {
   align-items: center;
   gap: 4px;
   border-radius: var(--radius-md);
-  background: var(--gray-100);
+  background: var(--tag-background);
+  box-shadow: inset 0 0 0 1px var(--control-border);
   color: var(--gray-600);
   padding: 4px 8px;
   font-size: var(--text-xs);
   white-space: nowrap;
 }
 .pill.purple {
-  background: var(--violet-50);
-  color: var(--violet-700);
+  background: var(--selection-background);
+  color: var(--accent-600);
 }
 .flow-panel {
   display: flex;
@@ -204,8 +212,8 @@ button:hover:not(:disabled) {
   border-radius: var(--radius-lg);
   display: grid;
   place-items: center;
-  background: var(--soft);
-  color: var(--accent);
+  background: var(--selection-background);
+  color: var(--accent-600);
   margin-right: 2px;
 }
 .selected-icon .icon {
@@ -239,7 +247,7 @@ button:hover:not(:disabled) {
   position: relative;
 }
 .tab.active {
-  color: var(--accent);
+  color: var(--accent-600);
 }
 .tab.active:after {
   content: "";
@@ -248,7 +256,7 @@ button:hover:not(:disabled) {
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--accent);
+  background: var(--primary-background);
   border-radius: var(--radius-xs);
 }
 .detail-content {
@@ -286,16 +294,16 @@ button:hover:not(:disabled) {
 }
 .field input, .field select, .field textarea {
   width: 100%;
-  border: 1px solid var(--gray-150);
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-lg);
-  background: var(--gray-25);
+  background: var(--control-background);
   padding: 8px 12px;
   font-size: var(--text-sm);
   color: var(--gray-800);
   min-width: 0;
 }
 .field input:hover, .field select:hover {
-  border-color: var(--gray-300);
+  border-color: var(--selection-border);
 }
 .field-help {
   font-size: var(--text-xs);
@@ -375,8 +383,8 @@ button:hover:not(:disabled) {
   display: grid;
   place-items: center;
   border-radius: var(--radius-lg);
-  background: var(--violet-50);
-  color: #8872b8;
+  background: var(--selection-background);
+  color: var(--accent-600);
 }
 .agent-mark .icon {
   width: 15px;
@@ -502,10 +510,13 @@ button:hover:not(:disabled) {
 }
 .icon-button {
   border: 0;
-  background: transparent;
+  background: var(--control-background);
+  box-shadow: var(--control-shadow);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-md);
   width: 25px;
   height: 25px;
-  color: var(--muted);
+  color: var(--accent-600);
   display: grid;
   place-items: center;
 }
@@ -583,7 +594,7 @@ button:hover:not(:disabled) {
   min-height: 100px;
   resize: vertical;
   padding: 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-lg);
   width: 100%;
   font-family: inherit;
@@ -614,7 +625,7 @@ button:hover:not(:disabled) {
 }
 .pending-status {
   padding: 12px 16px;
-  background: var(--soft);
+  background: var(--tag-background);
   font-size: var(--text-sm);
   color: var(--violet-700);
 }
@@ -796,11 +807,11 @@ button:hover:not(:disabled) {
   opacity: .55;
 }
 .pill.good {
-  background: var(--green-50);
+  background: var(--success-background);
   color: var(--green-700);
 }
 .pill.warn {
-  background: var(--sand-50);
+  background: var(--warning-background);
   color: var(--sand-700);
 }
 hr {
@@ -903,7 +914,7 @@ summary {
 }
 .role-prediction {
   --role-line: #5f93e0;
-  --role-strong: #3a6fc8;
+  --role-strong: #315fae;
   --role-fill: #e4eefc;
   --role-ring: #5f93e02e;
 }
@@ -1074,14 +1085,15 @@ summary {
   color: var(--gray-900);
 }
 .graph-card.selected {
-  box-shadow: 0 0 0 4px var(--role-ring);
-  border-color: var(--role-strong);
+  background: var(--selection-background);
+  box-shadow: 0 0 0 4px #7a8ae126;
+  border-color: var(--focus-ring);
 }
 .graph-drag-handle {
   height: 28px;
   padding: 4px 12px;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  background: var(--role-fill);
+  background: linear-gradient(110deg,#ffffffb3,var(--role-fill));
   color: var(--role-strong);
   font: var(--text-xs)/18px var(--mono);
   cursor: grab;

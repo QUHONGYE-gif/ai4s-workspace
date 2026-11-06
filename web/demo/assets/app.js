@@ -179,12 +179,13 @@
       missing: '模拟文件缺失',
     };
     if (source === 'aiida') Object.assign(names, {completed: 'AiiDA 已完成', running: 'AiiDA 运行中', waiting: 'AiiDA 等待中', failed: 'AiiDA 失败', unknown: '状态未记录', complete: 'Repository 中已记录', missing: '无文件记录'});
+    let tone = '';
+    if (['completed', 'complete'].includes(value)) tone = 'good';
+    else if (['failed', 'missing'].includes(value)) tone = 'bad';
+    else if (['waiting', 'interrupted'].includes(value)) tone = 'warn';
+    else if (['ready', 'running'].includes(value)) tone = 'blue';
     return /* HTML */ `<span
-      class="pill ${['completed', 'complete'].includes(value)
-        ? 'good'
-        : ['failed', 'missing', 'interrupted'].includes(value)
-          ? 'warn'
-          : 'blue'}"
+      class="pill ${tone}"
       >${names[value] || esc(value)}</span
     >`;
   };
@@ -1752,7 +1753,7 @@ ${esc(d.workflowCommand)}</textarea
           <aside class="panel create-preview">
             <div class="panel-head">
               <div class="panel-title">流程预览</div>
-              <span class="pill good">${profiles.length} 个步骤</span>
+              <span class="pill">${profiles.length} 个步骤</span>
             </div>
             <div class="create-body">
               <div class="preview-name" id="workflow-preview-name">
