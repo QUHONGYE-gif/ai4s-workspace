@@ -95,8 +95,8 @@
   --violet:var(--violet-500);
   --orange:var(--sand-500);
   --orange-bg:var(--sand-50);
-  --nav:var(--gray-950);
-  --nav-muted:#a6acb6;
+  --nav:#23324b;
+  --nav-muted:#aebbd0;
   --radius:var(--radius-xl)
 }
 * {
@@ -346,7 +346,7 @@ svg {
   padding:12px 12px;
   background:none;
   border:0;
-  color:var(--gray-400);
+  color:var(--nav-muted);
   border-radius:var(--radius-lg);
   font-size:var(--text-sm);
   text-align:left;
