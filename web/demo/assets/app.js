@@ -157,14 +157,19 @@
   const statusBar = function statusBar(html) {
     return /* HTML */ `<div class="status-bar">${html}</div>`;
   };
-  const panel = function panel(title, content, meta = '') {
-    return /* HTML */ `<section class="panel">
+  // Quiet panels drop the frame for secondary or explanatory sections;
+  // core work areas (forms, tables, canvases, identity) keep the full card.
+  const panel = function panel(title, content, meta = '', quiet = false) {
+    return /* HTML */ `<section class="panel${quiet ? ' panel-quiet' : ''}">
       <div class="panel-head">
         <div class="panel-title">${title}</div>
         ${meta}
       </div>
       ${content}
     </section>`;
+  };
+  const quietPanel = function quietPanel(title, content, meta = '') {
+    return panel(title, content, meta, true);
   };
   const statusBadge = function statusBadge(value, source) {
     const names = {
@@ -2263,7 +2268,7 @@ ${esc(policyDraft.description)}</textarea
             ${selected ? nodeDetailPanel(selected, d, p.find((item) => item.id === selected.id)) : ''}
           </div>
           <aside class="right-stack">
-            ${panel(
+            ${quietPanel(
               stepTitle(3, '范围与策略', '可选 · 已有默认值'),
               /* HTML */ `<div class="detail-body">
                 <details class="settings-disclosure">
@@ -2310,7 +2315,7 @@ ${esc(policyDraft.description)}</textarea
   };
   const experimentTable = function experimentTable(list) {
     return !list.length
-      ? /* HTML */ `<div class="panel">
+      ? /* HTML */ `<div class="panel panel-quiet">
           ${emptyState('empty-experiments', '还没有实验。', routeButton('选择流程创建实验', 'workflows'))}
         </div>`
       : /* HTML */ `<div class="panel table-scroller">
@@ -2438,7 +2443,7 @@ ${esc(policyDraft.description)}</textarea
         <div class="left-stack">
           ${experimentFlowPanel(e, p, selected?.id || '')}
           ${selected ? nodeDetailPanel(selected, e, selectedPlan, e) : ''}
-          ${panel(
+          ${quietPanel(
             '运行日志',
             /* HTML */ `<div class="detail-body">
               <div class="log">${e.log.map(esc).join('\n')}</div>
@@ -2446,7 +2451,7 @@ ${esc(policyDraft.description)}</textarea
           )}
         </div>
         <aside class="right-stack">
-          ${panel(
+          ${quietPanel(
             '输入与配置快照',
             /* HTML */ `<div class="detail-body">
               <div class="kv">
@@ -2491,7 +2496,7 @@ ${esc(policyDraft.description)}</textarea
                 <pre class="log">${esc(JSON.stringify(e.config, null, 2))}</pre>
               </details>
             </div>`,
-          )}${panel(
+          )}${quietPanel(
             '计划与保存',
             /* HTML */ `<div class="detail-body">
               <div class="kv"><span>步骤</span><strong>${p.length}</strong></div>
@@ -2594,7 +2599,7 @@ ${esc(policyDraft.description)}</textarea
           )}
         </div>
         <aside class="right-stack">
-          ${panel(
+          ${quietPanel(
             '继续使用此产物',
             /* HTML */ `<div class="detail-body">
               <p class="small muted">下载的是带有模拟标记的 JSON 说明，不是真实结构或序列文件。</p>
@@ -2621,7 +2626,7 @@ ${esc(policyDraft.description)}</textarea
               </div>
             </div>`,
           )}${own(a)
-            ? panel(
+            ? quietPanel(
                 '共享与保留',
                 /* HTML */ `<div class="detail-body">
                   <div class="kv">
@@ -2639,7 +2644,7 @@ ${esc(policyDraft.description)}</textarea
                   <div class="field-hint">仅调整当前浏览器中的模拟权限与保留状态。</div>
                 </div>`,
               )
-            : panel(
+            : quietPanel(
                 '团队共享产物',
                 /* HTML */ `<div class="detail-body">
                   <div class="callout">
@@ -2676,8 +2681,8 @@ ${esc(policyDraft.description)}</textarea
         '查看个人与团队共享结果；身份匹配和文件可读取状态分别展示。',
         button('导出完整体验记录', 'export-state'),
       ) +
-      /* HTML */ `<div class="storage-row">
-          <div class="panel storage-card">
+      /* HTML */ `<div class="storage-row catalog-summary">
+          <div class="storage-card">
             <div class="eyebrow">个人模拟保留预算</div>
             <div class="stat-number">${size.toFixed(2)}<small>GB / 4 GB</small></div>
             <div class="storage-meter">
@@ -2685,7 +2690,7 @@ ${esc(policyDraft.description)}</textarea
             </div>
             <div class="small muted">团队成员产物不计入此个人预算。</div>
           </div>
-          <div class="panel storage-card">
+          <div class="storage-card">
             <div class="panel-title">跨工作流查找与复用</div>
             <p class="small muted">
               “当前流程”用于定位；“我的产物”和“团队共享”可跨流程查询。<br />生成条件相同的产物共享同一演示身份，流程归属独立记录。
@@ -3111,7 +3116,7 @@ ${esc(policyDraft.description)}</textarea
             })
             .join('')}
         </div>
-        <div class="panel" style="margin-top:24px">
+        <div class="panel panel-quiet" style="margin-top:24px">
           <div class="panel-head">
             <div class="panel-title">怎么选择？</div>
             <span class="pill">示例空间：4 GB</span>

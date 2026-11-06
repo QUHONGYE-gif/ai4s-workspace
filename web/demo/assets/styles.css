@@ -3453,3 +3453,98 @@ a.nav-item { text-decoration: none; }
     transform:none
   }
 }
+
+/*
+ * Quiet surfaces: fewer frames, same colors.
+ * Full cards stay on core work areas (forms, tables, flow and reuse canvases,
+ * identity, selectable choices). Secondary, explanatory or optional sections
+ * use .panel-quiet: no frame, no fill, the heading alone marks the section.
+ */
+.panel-quiet {
+  background:transparent;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  overflow:visible
+}
+.panel-quiet>.panel-head {
+  padding:0 0 8px;
+  border-bottom:0
+}
+.panel-quiet .detail-body,
+.panel-quiet .flow-notes {
+  padding:0
+}
+.panel-quiet .empty-state {
+  padding:24px 0
+}
+.right-stack>.panel-quiet+.panel-quiet,
+.left-stack>.panel-quiet {
+  margin-top:8px
+}
+/* Detail rows read as a list once the frame is gone. */
+.panel-quiet .kv {
+  margin:0;
+  padding:8px 0;
+  border-bottom:1px solid var(--line)
+}
+.panel-quiet .kv:last-of-type {
+  border-bottom:0
+}
+.panel-quiet .callout {
+  background:transparent;
+  border:0;
+  padding:8px 0;
+  border-radius:0
+}
+
+/* Catalog summary: budget and search note side by side, no card around either. */
+.catalog-summary {
+  align-items:start;
+  gap:40px;
+  padding:0 0 8px
+}
+.catalog-summary .storage-card {
+  padding:0
+}
+.catalog-summary .storage-card:before {
+  content:none
+}
+.catalog-summary .storage-meter {
+  margin:12px 0 8px
+}
+.catalog-summary .panel-title {
+  margin-bottom:4px
+}
+.catalog-summary p {
+  margin:0
+}
+
+/* Workflow entry cards: lighter inner structure, the card itself stays. */
+.entry-copy {
+  padding:24px 24px 16px
+}
+.entry-tags {
+  gap:4px 8px
+}
+.entry-tags span {
+  padding:0;
+  background:none;
+  border:0;
+  border-radius:0
+}
+.entry-tags span+span:before {
+  content:"·";
+  margin-right:8px;
+  color:var(--gray-300)
+}
+.entry-bottom {
+  border-top:0;
+  padding-top:0
+}
+
+@media(max-width:860px) {
+  .catalog-summary {
+    gap:16px
+  }
+}
