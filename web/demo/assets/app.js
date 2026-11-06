@@ -34,6 +34,7 @@
   let workflowDraft,
     policyDraft = { name: '', reuse: 'cost', storage: 'lru', description: '' };
   let aiHost = null, aiController = null, aiMount = null;
+  let reuseCanvas = null;
   let workflowFormError = '',
     policyFormError = '',
     registrationCheck = '',
@@ -137,7 +138,7 @@
       ${content}
     </section>`;
   };
-  const statusBadge = function statusBadge(value) {
+  const statusBadge = function statusBadge(value, source) {
     const names = {
       ready: '待运行',
       completed: '模拟完成',
@@ -149,6 +150,7 @@
       complete: '模拟文件可读取',
       missing: '模拟文件缺失',
     };
+    if (source === 'aiida') Object.assign(names, {completed: 'AiiDA 已完成', running: 'AiiDA 运行中', waiting: 'AiiDA 等待中', failed: 'AiiDA 失败', unknown: '状态未记录', complete: 'Repository 中已记录', missing: '无文件记录'});
     return /* HTML */ `<span
       class="pill ${['completed', 'complete'].includes(value)
         ? 'good'
@@ -686,7 +688,7 @@ ${esc(step[key] || '')}</textarea
   const artifactById = (id) => product.catalog.find((a) => a.id === id);
   const experimentById = (id) => product.experiments.find((e) => e.id === id);
   const own = (a) => !!a && a.ownerId === ME.id;
-  const visible = (a) => !!a && (own(a) || a.scope === 'team');
+  const visible = (a) => !!a && (a.source === 'aiida' || own(a) || a.scope === 'team');
   const readable = (a) => !!a && a.status === 'complete' && a.accessible && a.retained !== false;
   const usable = (a) => visible(a) && readable(a);
   const workflowById = (id) => (Object.hasOwn(workflowInfo, id) ? workflowInfo[id] : null);
@@ -1164,7 +1166,7 @@ ${esc(step[key] || '')}</textarea
     if (data.policyDraft && typeof data.policyDraft.name === 'string')
       policyDraft = data.policyDraft;
     for (const e of product.experiments)
-      if (!e.fixture && ['running', 'waiting'].includes(e.status)) {
+      if (e.source !== 'aiida' && !e.fixture && ['running', 'waiting'].includes(e.status)) {
         e.status = 'interrupted';
         e.log.push('页面离开后模拟已中断；已完成步骤的记录保留，请复制配置重新运行。');
       }
@@ -1215,8 +1217,8 @@ ${esc(step[key] || '')}</textarea
   };
   const startExperiment = function startExperiment(id = page.id) {
     const e = experimentById(id);
-    if (!e || e.fixture || e.status !== 'ready') return;
-    if (product.experiments.some((run) => run !== e && !run.fixture && ['running', 'waiting'].includes(run.status))) {
+    if (!e || e.source === 'aiida' || e.fixture || e.status !== 'ready') return;
+    if (product.experiments.some((run) => run !== e && run.source !== 'aiida' && !run.fixture && ['running', 'waiting'].includes(run.status))) {
       notify('已有一个模拟实验进行中，请查看实验记录或取消后再运行。');
       return;
     }
@@ -1389,7 +1391,7 @@ ${esc(step[key] || '')}</textarea
   };
   const cancelExperiment = function cancelExperiment(id) {
     const e = experimentById(id);
-    if (!e || e.fixture || !['running', 'waiting'].includes(e.status)) return;
+    if (!e || e.source === 'aiida' || e.fixture || !['running', 'waiting'].includes(e.status)) return;
     e.status = 'cancelled';
     e.log.push('用户停止本次模拟；已完成步骤和产物记录保留。');
     simulationToken++;
@@ -1399,7 +1401,7 @@ ${esc(step[key] || '')}</textarea
   };
   const cloneExperiment = function cloneExperiment(id, replace = false) {
     const e = experimentById(id);
-    if (!e) return;
+    if (!e || e.source === 'aiida') return;
     if (product.drafts[e.workflowId] && !replace)
       return confirmDraftReplacement(e.workflowId, () => cloneExperiment(id, true));
     const draft = createExperimentDraft(e.workflowId, e);
@@ -2038,7 +2040,7 @@ ${esc(policyDraft.description)}</textarea
                 <div>
                   <b>${esc(a.ownerName)}</b> · ${esc(a.name)}
                   <div class="reason">
-                    ${esc(a.id)} · ${esc(a.runId)} · ${a.scope === 'team' ? '团队共享' : '仅自己'}
+                    ${esc(a.id)} · ${esc(a.runId)} · ${a.scope === 'unknown' ? '未记录' : a.scope === 'team' ? '团队共享' : '仅自己'}
                   </div>
                 </div>
                 <div>
@@ -2132,6 +2134,14 @@ ${esc(policyDraft.description)}</textarea
   // dependencies; execution highlights remain driven by simulation events.
   const flowStepState = function flowStepState(e, step, index) {
     if (!e) return 'planned';
+    if (e.source === 'aiida') {
+      const native = e.plan.find((item) => item.id === step.id)?.provenance?.process;
+      if (native?.is_finished_ok) return 'complete';
+      if (native?.process_state === 'running') return 'active';
+      if (['waiting', 'created'].includes(native?.process_state)) return 'waiting';
+      if (['finished', 'excepted', 'killed'].includes(native?.process_state)) return 'failed';
+      return 'pending';
+    }
     if (e.outputs.some((out) => out.stepId === step.id)) return 'complete';
     if (e.status === 'failed' && (e.failedStep === step.id ||
         (!e.failedStep && e.currentStep === index))) return 'failed';
@@ -2202,8 +2212,8 @@ ${esc(policyDraft.description)}</textarea
       </div>`;
     }).join('');
     const current = p.find((step, i) => ['active', 'waiting', 'failed'].includes(flowStepState(e, step, i)));
-    const summary = !e ? '配置预览' : e.status === 'completed' ? '模拟已完成' : e.status === 'ready' ? '等待启动' : e.status === 'failed' ? '模拟失败' : e.status === 'cancelled' ? '模拟已取消' : e.status === 'interrupted' ? '模拟已中断' : e.fixture ? '历史示例' : '模拟运行中';
-    const motionNote = view === 'preview' ? '动效为流程示意，尚未执行' :
+    const summary = e?.source === 'aiida' ? ({completed: 'AiiDA 已完成', failed: 'AiiDA 失败', running: 'AiiDA 运行中', waiting: 'AiiDA 等待中'}[e.status] || '状态未记录') : !e ? '配置预览' : e.status === 'completed' ? '模拟已完成' : e.status === 'ready' ? '等待启动' : e.status === 'failed' ? '模拟失败' : e.status === 'cancelled' ? '模拟已取消' : e.status === 'interrupted' ? '模拟已中断' : e.fixture ? '历史示例' : '模拟运行中';
+    const motionNote = e?.source === 'aiida' ? '离线查询快照，动效不表示引擎实时进度' : view === 'preview' ? '动效为流程示意，尚未执行' :
       view === 'replay' ? '已完成 · 连线动效为数据流向回放' : '数据流与节点随模拟状态更新';
     return `<div class="live-flow ${e ? 'execution-flow' : 'plan-flow'} flow-motion-${flowMotionEnabled ? 'on' : 'off'}" data-flow-view="${view}">
       <div class="flow-toolbar"><div><span class="flow-live-label ${e && ['running', 'waiting'].includes(e.status) && !e.fixture ? 'on' : ''}"><i aria-hidden="true"></i>${summary}</span><span class="flow-toolbar-caption">${current ? '当前步骤 · ' + esc(current.name) : `${p.length} 个步骤 · ${e ? e.outputs.length + ' 个已有产物' : '输入 → 处理 → 结果'}`}</span></div><button type="button" class="link-btn flow-motion-toggle" data-flow-motion-toggle aria-pressed="${flowMotionEnabled}" aria-label="${flowMotionEnabled ? '暂停流程图动效' : '播放流程图动效'}">${flowMotionEnabled ? 'Ⅱ 暂停动效' : '▷ 播放动效'}</button></div>
@@ -2325,8 +2335,8 @@ ${esc(policyDraft.description)}</textarea
                         </div>
                       </td>
                       <td>${dateText(e.createdAt)}</td>
-                      <td>${statusBadge(e.status)}</td>
-                      <td>${e.outputs.length} / ${e.workflowSnapshot.steps.length}</td>
+                      <td>${statusBadge(e.status, e.source)}</td>
+                      <td>${new Set(e.outputs.map((output) => output.stepId)).size} / ${e.workflowSnapshot.steps.length}</td>
                       <td>${routeButton('实验详情', 'experiment', e.id)}</td>
                     </tr>`,
                 )
@@ -2339,8 +2349,8 @@ ${esc(policyDraft.description)}</textarea
     const list = product.experiments
       .filter((e) =>
         experimentScope === 'team'
-          ? e.ownerId !== 'me'
-          : e.ownerId === 'me' && !e.fixture,
+          ? e.source !== 'aiida' && e.ownerId !== 'me'
+          : e.source === 'aiida' || (e.ownerId === 'me' && !e.fixture),
       )
       .slice()
       .reverse();
@@ -2375,7 +2385,7 @@ ${esc(policyDraft.description)}</textarea
   const experimentFlowPanel = function experimentFlowPanel(e, p, selectedId) {
     const requestedView = page.query.get('view'),
       results = requestedView === 'results' || (requestedView !== 'config' && e.status !== 'ready'),
-      done = e.outputs.length,
+      done = new Set(e.outputs.map((output) => output.stepId)).size,
       total = e.workflowSnapshot.steps.length,
       percent = total ? Math.round(done / total * 100) : 0,
       graphSteps = e.workflowSnapshot.steps.map((step) => ({
@@ -2388,12 +2398,12 @@ ${esc(policyDraft.description)}</textarea
     return `<div id="experiment-flow-view" tabindex="-1" data-experiment-view="${results ? 'results' : 'config'}">${panel(
       results ? '运行进度与产物' : '工作流配置',
       `${results ? `<div class="run-progress">
-        <div class="progress-top"><span>${done} / ${total} 个步骤已产生产物</span><span>${e.status === 'ready' ? '等待启动' : e.status === 'completed' ? '模拟已完成' : percent + '%'}</span></div>
+        <div class="progress-top"><span>${done} / ${total} 个步骤已产生产物</span><span>${e.source === 'aiida' ? 'AiiDA 查询快照' : e.status === 'ready' ? '等待启动' : e.status === 'completed' ? '模拟已完成' : percent + '%'}</span></div>
         <div class="progress-track" role="progressbar" aria-label="已产生产物的步骤" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}"><div class="progress-fill" style="width:${percent}%"></div></div>
       </div>` : ''}
       ${liveFlow(graphSteps, selectedId, results ? e : null)}
       <div class="experiment-flow-actions">
-        <span class="muted small">${results ? e.status === 'ready' ? '确认候选后启动，查看当前步骤与数据流。' : '节点状态、产物和日志随本次模拟更新。' : '点击节点检查参数、候选与复用原因，然后进入运行与结果。'}</span>
+        <span class="muted small">${e.source === 'aiida' ? '只读快照，不控制真实任务；运行状态以 AiiDA 查询为准。' : results ? e.status === 'ready' ? '确认候选后启动，查看当前步骤与数据流。' : '节点状态、产物和日志随本次模拟更新。' : '点击节点检查参数、候选与复用原因，然后进入运行与结果。'}</span>
         ${results ? e.status === 'ready' ? button('确认候选并开始模拟', 'start', e.id, true) : '' : button('查看运行与结果 →', 'experiment-flow-view', 'results', true)}
       </div>
       ${results ? experimentOutputDetails(e) : ''}`,
@@ -2402,7 +2412,7 @@ ${esc(policyDraft.description)}</textarea
   };
   const experimentPage = function experimentPage(e) {
     if (!e) return missingPage('找不到这次实验');
-    const live = ['running', 'waiting'].includes(e.status) && !e.fixture,
+    const live = e.source !== 'aiida' && ['running', 'waiting'].includes(e.status) && !e.fixture,
       p = e.plan.length
         ? e.plan
         : e.workflowSnapshot.steps.map((step) => ({ ...step, action: 'compute', time: step.cost || 0 })),
@@ -2414,11 +2424,11 @@ ${esc(policyDraft.description)}</textarea
       heading(
         e.name,
         '实验快照 · ' + e.id + ' · ' + e.workflowSnapshot.name,
-        `${routeButton('我的实验', 'runs')}${button('复制配置创建实验', 'clone-experiment', e.id)}${live ? button('取消本次模拟', 'cancel', e.id) : ''}`,
+        `${routeButton('我的实验', 'runs')}${e.source === 'aiida' ? '' : button('复制配置创建实验', 'clone-experiment', e.id)}${live ? button('取消本次模拟', 'cancel', e.id) : ''}`,
       ) +
       flowRibbon(e.status === 'ready' ? 1 : live ? 2 : 3) +
       banner(
-        `${statusBadge(e.status)} <span style="margin-left:10px">${e.fixture ? '预置示例仅用于共享候选，不计入我的实验。' : e.status === 'ready' ? '配置已保存；确认候选后可启动模拟。' : '所有步骤仅模拟执行，日志中的科学产物与用时为示例。'}</span>`,
+        `${statusBadge(e.status, e.source)} <span style="margin-left:10px">${e.source === 'aiida' ? 'AiiDA 只读查询快照；刷新网页不会查询引擎，请重新导出以更新状态。文件仍在来源 Repository。' : e.fixture ? '预置示例仅用于共享候选，不计入我的实验。' : e.status === 'ready' ? '配置已保存；确认候选后可启动模拟。' : '所有步骤仅模拟执行，日志中的科学产物与用时为示例。'}</span>`,
       ) +
       /* HTML */ `<div class="workspace-grid">
         <div class="left-stack">
@@ -2466,11 +2476,11 @@ ${esc(policyDraft.description)}</textarea
                 : ''}
               <div class="kv">
                 <span>复用范围</span
-                ><strong>${e.reuseScope === 'team' ? '个人 + 团队共享' : '仅个人'}</strong>
+                ><strong>${e.reuseScope === 'unknown' ? '未记录' : e.reuseScope === 'team' ? '个人 + 团队共享' : '仅个人'}</strong>
               </div>
               <div class="kv">
                 <span>新产物共享</span
-                ><strong>${e.shareOutput === 'team' ? '团队共享' : '仅自己'}</strong>
+                ><strong>${e.shareOutput === 'unknown' ? '未记录' : e.shareOutput === 'team' ? '团队共享' : '仅自己'}</strong>
               </div>
               <details class="snapshot-json">
                 <summary>查看完整参数 JSON</summary>
@@ -2484,11 +2494,11 @@ ${esc(policyDraft.description)}</textarea
               <div class="kv"><span>复用 / 等待 / 重算</span><strong>${e.metrics.reuse || 0} / ${e.metrics.wait || 0} / ${Math.max(0, p.length - (e.metrics.reuse || 0) - (e.metrics.wait || 0))}</strong></div>
               <div class="kv"><span>策略</span><strong>${esc(e.policyRules.name)}</strong></div>
               <div class="kv">
-                <span>计划总用时</span><strong>${fmt(e.metrics.total)}（估算）</strong>
+                <span>计划总用时</span><strong>${e.source === 'aiida' ? '未记录' : fmt(e.metrics.total) + '（估算）'}</strong>
               </div>
               <div class="kv">
                 <span>已保存 / 未保留</span
-                ><strong>${e.storage.saved} / ${e.storage.skipped}</strong>
+                ><strong>${e.source === 'aiida' ? '未记录' : e.storage.saved + ' / ' + e.storage.skipped}</strong>
               </div>
               <div class="callout">
                 估算用时不代表实际墙钟时间。中断或失败的实验未完成整个计划。
@@ -2530,7 +2540,7 @@ ${esc(policyDraft.description)}</textarea
               <div class="kv">
                 <span>生成者 / 共享范围</span
                 ><strong
-                  >${esc(a.ownerName)} / ${a.scope === 'team' ? '团队共享' : '仅自己'}</strong
+                  >${esc(a.ownerName)} / ${a.scope === 'unknown' ? '未记录' : a.scope === 'team' ? '团队共享' : '仅自己'}</strong
                 >
               </div>
               <div class="kv"><span>生成流程</span><strong>${esc(a.workflowName)}</strong></div>
@@ -2543,7 +2553,7 @@ ${esc(policyDraft.description)}</textarea
               <div class="kv">
                 <span>文件状态</span
                 ><strong
-                  >${statusBadge(a.status)} ${a.retained === false ? '未保留模拟文件' : ''}</strong
+                  >${statusBadge(a.status, a.source)} ${a.retained === false ? '未保留模拟文件' : ''}</strong
                 >
               </div>
               <div class="kv">
@@ -2613,7 +2623,7 @@ ${esc(policyDraft.description)}</textarea
                 /* HTML */ `<div class="detail-body">
                   <div class="kv">
                     <span>共享范围</span
-                    ><strong>${a.scope === 'team' ? '团队共享' : '仅自己'}</strong>
+                    ><strong>${a.scope === 'unknown' ? '未记录' : a.scope === 'team' ? '团队共享' : '仅自己'}</strong>
                   </div>
                   ${button(a.scope === 'team' ? '改为仅自己' : '共享给团队', 'toggle-share', a.id)}
                   ${button(
@@ -2726,9 +2736,9 @@ ${esc(policyDraft.description)}</textarea
                           <div class="reason">${esc(a.id)} · ${esc(a.workflowName)}</div>
                         </td>
                         <td>${esc(a.ownerName)}</td>
-                        <td>${a.scope === 'team' ? '团队共享' : '仅自己'}</td>
+                        <td>${a.scope === 'unknown' ? '未记录' : a.scope === 'team' ? '团队共享' : '仅自己'}</td>
                         <td>
-                          ${statusBadge(a.status)}${a.retained === false
+                          ${statusBadge(a.status, a.source)}${a.retained === false
                             ? '<div class="reason">模拟文件未保留；来源可追溯</div>'
                             : ''}
                         </td>
@@ -3063,7 +3073,7 @@ ${esc(policyDraft.description)}</textarea
         '决定哪些结果直接用、哪些重新算，以及保存哪些数据。',
         /* HTML */ `<button class="btn primary" data-nav="newpolicy">＋ 新增策略</button>`,
       ) +
-      /* HTML */ `<div class="info-banner">
+      /* HTML */ `<div id="reuse-explorer"></div><details class="reuse-policies"><summary>策略配置与对比</summary><div class="info-banner">
           用同一组任务，比较不同策略的预计用时。以下数据仅用于演示。
         </div>
         <div class="policy-grid">
@@ -3120,7 +3130,7 @@ ${esc(policyDraft.description)}</textarea
               <p>在数据目录中固定的结果，不会被自动清理。</p>
             </div>
           </div>
-        </div>`
+        </div></details>`
     );
   };
   const missingPage = function missingPage(message) {
@@ -3397,8 +3407,8 @@ ${esc(policyDraft.description)}</textarea
       return downloadProduct('yanxu-demo-plan.json', { demo: true, draft: d, plan: packPlan(d) });
     }
     if (action === 'export-experiment')
-      return downloadProduct(value + '-demo.json', {
-        demo: true,
+      return downloadProduct(value + '-snapshot.json', {
+        demo: experimentById(value)?.source !== 'aiida',
         experiment: experimentById(value),
       });
     if (action === 'download-artifact')
@@ -3873,6 +3883,8 @@ ${esc(policyDraft.description)}</textarea
   };
   const render = function () {
     aiController?.pause();
+    reuseCanvas?.destroy();
+    reuseCanvas = null;
     let html;
     try {
       html = (
@@ -3937,6 +3949,7 @@ ${esc(policyDraft.description)}</textarea
     $('#catalog-count').textContent = product.catalog.filter(visible).length;
     $('#run-count').textContent = product.experiments.filter((e) => !e.fixture).length;
     bind();
+    if (route === 'policy') reuseCanvas = window.ReuseCanvas.mount($('#reuse-explorer'));
     bindPymolControls();
     bindCreation();
     bindRegistration();
