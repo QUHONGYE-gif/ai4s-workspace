@@ -60,10 +60,14 @@ button:hover:not(:disabled) {
   white-space: nowrap;
 }
 .button.primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--primary-background);
+  border-color: var(--primary-border);
   color: white;
   box-shadow: 0 3px 7px #4e4b8a12;
+}
+.button.primary:hover:not(:disabled), .send-button:hover:not(:disabled) {
+  background: var(--primary-hover);
+  filter: none;
 }
 .button.soft {
   background: var(--soft);
@@ -437,7 +441,7 @@ button:hover:not(:disabled) {
 .send-button {
   border: 0;
   border-radius: var(--radius-md);
-  background: var(--accent);
+  background: var(--primary-background);
   color: var(--gray-0);
   width: 26px;
   height: 26px;

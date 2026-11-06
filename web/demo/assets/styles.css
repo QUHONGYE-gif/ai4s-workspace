@@ -91,6 +91,9 @@
   --accent:var(--accent-500);
   --accent-hover:var(--accent-600);
   --accent-soft:var(--accent-50);
+  --primary-background:linear-gradient(105deg,#4564d2 0%,#6346bd 100%);
+  --primary-hover:linear-gradient(105deg,#3b57c2 0%,#5539ac 100%);
+  --primary-border:#ffffff26;
   --focus-ring:var(--accent-400);
   --violet:var(--violet-500);
   --orange:var(--sand-500);
@@ -218,13 +221,13 @@ svg {
   transform:scale(.98)
 }
 .btn.primary {
-  background:var(--accent);
+  background:var(--primary-background);
   color:var(--gray-0);
-  border-color:var(--accent);
+  border-color:var(--primary-border);
   box-shadow:0 2px 4px #39477a0e;
 }
-.btn.primary:hover {
-  background:var(--accent-hover)
+.btn.primary:hover:not(:disabled) {
+  background:var(--primary-hover)
 }
 .btn .icon {
   width:15px;
@@ -2926,7 +2929,7 @@ a.nav-item { text-decoration: none; }
   position:absolute;
   inset:0;
   z-index:-1;
-  background:linear-gradient(110deg,transparent 30%,#ffffff40 50%,transparent 70%);
+  background:linear-gradient(110deg,transparent 30%,#ffffff0c 50%,transparent 70%);
   transform:translateX(-120%);
   transition:transform var(--duration-slow) var(--ease-out)
 }
