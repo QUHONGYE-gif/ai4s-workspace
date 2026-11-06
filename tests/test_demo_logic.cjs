@@ -166,7 +166,40 @@ check('node dependencies use the experiment snapshot after workflow edits', () =
   assert.match(html, /Original snapshot input/);
 });
 
-console.log(count + ' simulation checks passed.');
+check('AiiDA snapshots remain readonly and preserve running state after import', () => {
+  const saved = persistable();
+  const e = copy(saved.experiments.find((run) => !run.fixture));
+  e.id = 'EXP-A4S-999';
+  e.source = 'aiida';
+  e.plan.forEach((step, index) => {
+    step.provenance = {process: {is_finished_ok: index === 0,
+      process_state: index === 0 ? 'finished' : 'running'}};
+  });
+  e.readOnly = true;
+  e.ownerId = 'unrecorded';
+  e.ownerName = '未记录归属';
+  e.fixture = false;
+  e.status = 'running';
+  e.policyRules = {name: '未记录', storage: null, reuse: null};
+  e.reuseScope = e.shareOutput = 'unknown';
+  saved.experiments.push(e);
+  applySaved(saved);
+  const imported = experimentById(e.id);
+  const before = JSON.stringify(imported);
+  startExperiment(e.id);
+  cancelExperiment(e.id);
+  cloneExperiment(e.id);
+  assert.equal(JSON.stringify(imported), before);
+  assert.equal(imported.status, 'running');
+  assert.equal(flowStepState(imported, imported.plan[0], 0), 'complete');
+  page = {name: 'experiment', id: e.id, query: new URLSearchParams()};
+  const html = experimentPage(imported);
+  assert.match(html, /AiiDA 只读查询快照/);
+  assert.match(html, /AiiDA 运行中/);
+  assert.doesNotMatch(html, /data-action="cancel"|data-action="clone-experiment"/);
+});
+
+console.log(count + ' simulation and import checks passed.');
 
 `,
   context,

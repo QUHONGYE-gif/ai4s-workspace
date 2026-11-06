@@ -68,15 +68,15 @@ verdi process report <UUID>
 | `artifacts.probabilities` | 请求时提供的 `SinglefileData`，`probabilities.npz` |
 | `retrieved` | 原生取回目录，保存 `aiida.out`、`outputs/run.json`、`outputs/run.log` 及所请求的嵌套产物 |
 
-`result` 同时承担清单和内联运行记录，当前没有单独的 `artifact_manifest`、`execution_report` 端口。C 的筛选从 `result.artifacts[0].samples` 读取内联样本，尚未直接消费 `artifacts.sequences/scores` 文件节点；这是当前实现与完整接口规划的差异。
+`result` 同时承担清单和内联运行记录，当前没有单独的 `artifact_manifest`、`execution_report` 端口。C 的筛选按 `artifacts.sequences` 端口查找并读取清单中的内联样本，尚未直接消费 `artifacts.sequences/scores` 文件节点；这是当前实现与完整接口规划的差异。
 
 ## 校验与失败
 
-Parser 依次检查包装命令成功结束、固定 release、输入 PDB SHA-256 与输入节点一致、权重文件名符合 model_name、实际种子符合请求，再检查必需输出、设计数量与长度、种子／模型名／温度、FASTA 与 NPZ 分数的一致性，以及请求概率数组的 `(设计数, 原生序列长度, 21)` 形状。原生序列不计入设计数量；分数比较容差为 `1e-4`。
+Parser 依次检查包装命令成功结束、固定 release、输入 PDB SHA-256 与输入节点一致、权重文件名符合 model_name、实际种子符合请求，再检查必需输出、设计数量与长度、种子／模型名／温度、FASTA 与 NPZ 分数的一致性，以及请求概率数组的 `(设计数, 残基数, 21)` 形状、有限数值、[0, 1] 范围和归一化。概率文件的 `S` 与 `chain_order` 还需按 FASTA 样本编号和链顺序对应；链分隔符不计入残基数。原生序列不计入设计数量；分数比较容差为 `1e-4`。
 
-上述检查全部通过后才发布正式文件和 `result`。显式失败码 300–307 对应运行记录缺失、模型失败、版本不符、输入不符、输出缺失、设计不符、分数不符和概率形状不符，均标记 `invalidates_cache=True`。损坏 JSON／NPZ 或缺失内部字段未全部转为专用失败码，仍可能使解析过程异常退出；失败时应读取原生诊断，不仅看外部退出码。
+上述检查全部通过后才发布正式文件和 `result`。显式失败码 300–308 对应运行记录缺失、模型失败、版本不符、输入不符、输出缺失、设计不符、分数不符、概率内容不符及输出损坏，均标记 `invalidates_cache=True`。损坏 JSON／NPZ 或缺失内部字段返回 308，清单先构造成功才发布任何正式输出。
 
-权重 SHA-256 和上游源码提交由包装命令记录并写入清单；当前 Parser 只核对权重路径后缀及 release，没有与预先固定的权重哈希／源码提交比较。概率目前只检查形状，不能据此声称概率数值、归一化及逐样本映射已全面验证。
+权重 SHA-256 和上游源码提交由包装命令记录并写入清单；当前 Parser 只核对权重路径后缀及 release，没有与预先固定的权重哈希／源码提交比较。数值与样本映射规则通过了合成文件检查，并对既有真实任务 pk22 的取回产物作了只读复核，新 Parser 通过且数据库节点数未变化。本轮没有重新执行 GPU 模型，不构成新版本 GPU 全流程验收。
 
 ## 缓存与能力边界
 
@@ -84,12 +84,14 @@ Parser 依次检查包装命令成功结束、固定 release、输入 PDB SHA-25
 
 当前没有统一 `reuse/recompute/new_sample` 请求接口、旧输出重新解析入口或 checkpoint 恢复。权重与环境身份保存在执行后记录中，未完整进入稳定的计算输入；若共享程序、权重或环境改变，不应直接沿用旧缓存，应禁用缓存并重新验证部署身份。不要将本次命中推广为完整的缓存失效条件验收。
 
-四项轻量检查仅覆盖参数、FASTA 和分数辅助函数：
+六项轻量检查覆盖参数、FASTA、分数和概率内容／样本对应；NumPy 来自 AiiDA 环境：
 
 ```bash
 PYTHONPATH=src python -m pytest -q tests/test_ai4s_tasks.py
 ```
 
-完整 Parser 故障、C 的重试／恢复、B 的真实来源查询以及网页接入需分别验收。上述实现不等于两个任务已共用一个通用 CalcJob／Parser，筛选目前是 C 的 `calcfunction`。
+CalcJob 与 Parser 的 `CACHE_VERSION` 均已提升为 2，清单的 `validator_version` 为 `proteinmpnn-2`。旧规则的缓存不会与新规则直接匹配；C 也拒绝直接消费旧验证版本的真实结果。旧过程与输出继续保留，当前没有把旧结果重新解析为新版本的公共入口。
+
+`python tests/test_aiida_workflows.py` 在独立临时 profile 检查实际 Parser 的合成损坏文件、C 的重试与连续重筛选，以及 B 的 ORM 查询与只读导出；不运行模型。真实恢复、GPU 新规则验收和网页提交需分别验证。上述实现不等于两个任务已共用一个通用 CalcJob／Parser，筛选目前是 C 的 `calcfunction`。
 
 返回：[C 模块](../README_C.md) · [运行记录](../experiments/R005-aiida-proteinmpnn/record.md) · [当前状态](status.md) · [仓库](../README.md)。

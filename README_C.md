@@ -50,10 +50,10 @@ print(node.uuid)
 - `LightMPNNCalcJob` 用 `SandboxFolder.open()` 写入 `params.json` 和 `input.pdb`，取回 `result.json`。
 - `LightMPNNParser` 将取回文件解析为 `result: Dict`；缺失结果返回 101，非法 JSON 返回 102。
 - WorkChain 仅在 `is_finished_ok` 时读取结果；`Excepted`、`Killed` 和非零退出均进入有限重试。两次重试表示总计最多三次提交。
-- 新结果与复用结果都检查 schema、产物列表和支持版本。筛选通过 `calcfunction` 创建输出，保留输入依赖及 creator；输出仍为 `selected_sequences`、`sample_table`、`selection_report`。
-- 真实任务先由 A 校验文件并发布 `result`；C 的门禁目前只检查 schema、非空产物列表与版本白名单，没有独立复核 `validation.passed`、必需文件端口及复用计算身份。不要直接把任意外来 Dict 当作可信上游。
-- 筛选消费 `result.artifacts[0].samples`，使用 `score` ≤ 阈值，按 `(score, sample_id)` 升序取前 `top_k` 条。三个输出均为 `Dict`，没有生成筛选 FASTA，也尚未采用 `artifacts.*` 输出命名空间。
-- `rerun_filter_only(old_wc_pk, ...)` 复用原任务的上游 `result`，不再次提交 MPNN。builder 中的 code、pdb_file、mpnn_params 用于满足输入声明；筛选阶段不执行它们。
+- 新结果与复用结果都检查 schema、产物列表、支持版本、校验通过标记和原生 CalcJob 来源。筛选通过 `calcfunction` 创建输出，保留输入依赖及 creator；输出仍为 `selected_sequences`、`sample_table`、`selection_report`。
+- 真实任务先由 A 校验文件并发布 `result`；C 复核 `validation.passed`、任务与契约、当前校验版本、必需文件端口和样本对应。上游必须来自成功 CalcJob，Code、PDB 内容、生效参数与本次请求一致；不匹配返回 206，不推进筛选。此检查不替代完整的权重／环境缓存身份。
+- 筛选消费 清单中 `artifacts.sequences` 对应的 `samples`，使用 `score` ≤ 阈值，按 `(score, sample_id)` 升序取前 `top_k` 条。三个输出均为 `Dict`，没有生成筛选 FASTA，也尚未采用 `artifacts.*` 输出命名空间。
+- `rerun_filter_only(old_wc_pk, ...)` 复用原任务的上游 `result`，不再次提交 MPNN。已重筛选流程继续使用 `existing_mpnn_result` 输入，因此可以连续调整阈值；每次仍复核 code、pdb_file、mpnn_params 的身份。
 - `selection_report.mpnn_cache_source` 表示本次子 CalcJob 的缓存来源；重筛选没有提交该子任务，因此该字段为空，应通过 `existing_mpnn_result` 的原生输入链接追溯。`model_launches` 累加的是子 CalcJob 提交数，`count_mpnn_launches()` 统计的是 CalcJob 节点数；两者均不能直接等同于缓存场景下的外部程序启动次数。
 
 当前 `MAX_RETRY=2` 表示两次重试、最多三次提交，与飞书本轮“最多两次尝试”的要求尚未对齐。本文记录实际行为，不更改实现或替代接口决策。checkpoint 续跑和实际 daemon 停启恢复均未验证。

@@ -15,12 +15,15 @@ def rerun_filter_only(old_wc_pk: int, new_top_k=None, new_threshold=None):
     if not old_wc.is_finished_ok:
         raise RuntimeError("原始WorkChain必须成功完成，才允许重筛选")
 
-    # 从原始workchain的called子节点取出【成功结束】的上游MPNN结果
-    upstream_mpnn_result = None
-    for child in old_wc.called:
-        if child.is_finished_ok and hasattr(child, "outputs") and hasattr(child.outputs, "result"):
-            upstream_mpnn_result = child.outputs.result
-            break
+    # 重筛选流程没有推理子任务；其原生输入继续指向同一上游 Data。
+    upstream_mpnn_result = (
+        old_wc.inputs.existing_mpnn_result if "existing_mpnn_result" in old_wc.inputs else None
+    )
+    if upstream_mpnn_result is None:
+        for child in old_wc.called:
+            if child.is_finished_ok and hasattr(child, "outputs") and hasattr(child.outputs, "result"):
+                upstream_mpnn_result = child.outputs.result
+                break
     if upstream_mpnn_result is None:
         raise RuntimeError("无法从原始workchain获取上游MPNN结果，不能执行重筛选")
 

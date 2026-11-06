@@ -1,16 +1,88 @@
 """MPNN生成、产物校验和筛选；支持有限重试与上游结果复用。"""
 
+import hashlib
+import math
+
 from aiida.engine import ToContext, WorkChain, while_
-from aiida.orm import AbstractCode, Dict, SinglefileData
+from aiida.orm import AbstractCode, CalcJobNode, Dict, SinglefileData
 from aiida.plugins import CalculationFactory
 
 from .filtering import filter_sequences, record_failure_report
+from ai4s_tasks.proteinmpnn_outputs import complete_parameters
 
 # v1.0/v1.1 来自 mock；8907e667-... 为共用 ProteinMPNN 的真实版本（A 侧 ai4s.proteinmpnn）。
 SUPPORTED_VERSIONS = ["v1.0", "v1.1", "8907e667-py312-torch260cu124"]
 MAX_RETRY = 2
 # Code 未声明默认插件时使用真实 ProteinMPNN；mock Code 声明 ai4s.light-mpnn。
 DEFAULT_MPNN_CALCULATION = "ai4s.proteinmpnn"
+
+
+def validate_filter_params(value, _context):
+    params = value.get_dict()
+    threshold, top_k = params.get("score_threshold"), params.get("top_k")
+    if isinstance(threshold, bool) or not isinstance(threshold, (int, float)) or not math.isfinite(threshold):
+        return "score_threshold must be finite"
+    if type(top_k) is not int or top_k < 1:
+        return "top_k must be a positive integer"
+
+
+def upstream_problem(node, code, pdb_file, params):
+    """Verify native provenance and this request before consuming an old result."""
+    source = node.creator
+    if not isinstance(source, CalcJobNode) or not source.is_finished_ok:
+        return "upstream result must come from a successful CalcJob"
+    if "result" not in source.outputs or source.outputs.result.uuid != node.uuid:
+        return "upstream result is not the creator's result output"
+    plugin = code.default_calc_job_plugin or DEFAULT_MPNN_CALCULATION
+    if source.process_type != f"aiida.calculations:{plugin}":
+        return "upstream calculation plugin differs from requested plugin"
+    if source.inputs.code.uuid != code.uuid:
+        return "upstream Code differs from requested Code"
+    def pdb_hash(data):
+        with data.open(mode="rb") as handle:
+            return hashlib.sha256(handle.read()).hexdigest()
+    if pdb_hash(source.inputs.pdb_file) != pdb_hash(pdb_file):
+        return "upstream PDB content differs from requested PDB"
+    old_params, new_params = source.inputs.params.get_dict(), params.get_dict()
+    if plugin == "ai4s.proteinmpnn":
+        old_params, new_params = complete_parameters(old_params), complete_parameters(new_params)
+    if old_params != new_params:
+        return "upstream parameters differ from requested parameters"
+    result = node.get_dict()
+    validation = result.get("validation", {})
+    if validation.get("passed") is not True:
+        return "upstream validation did not pass"
+    if result.get("task_id") != "proteinmpnn" or result.get("contract_version") != "1":
+        return "upstream task or contract differs from ProteinMPNN contract 1"
+    artifacts = result["artifacts"]
+    sequence = [entry for entry in artifacts if entry.get("port") == "artifacts.sequences"]
+    if len(sequence) != 1 or not sequence[0].get("samples"):
+        return "exactly one non-empty sequence artifact is required"
+    samples = sequence[0]["samples"]
+    ids = [sample["sample_id"] for sample in samples]
+    if len(set(ids)) != len(ids) or sequence[0].get("sample_count") != len(samples):
+        return "upstream sample identities or count are inconsistent"
+    if any(not math.isfinite(sample["score"]) for sample in samples):
+        return "upstream sample scores must be finite"
+    if plugin == "ai4s.proteinmpnn":
+        from ai4s_tasks.proteinmpnn import VALIDATOR_VERSION
+        if validation.get("validator_version") != VALIDATOR_VERSION:
+            return "upstream needs validation with the current ProteinMPNN validator"
+        required = {"artifacts.sequences", "artifacts.scores"}
+        if new_params["save_probabilities"]:
+            required.add("artifacts.probabilities")
+        by_port = {entry["port"]: entry for entry in artifacts}
+        if len(by_port) != len(artifacts) or not required <= by_port.keys():
+            return "required file artifact ports are missing or duplicated"
+        for port in required:
+            output = source.outputs
+            for component in port.split("."):
+                output = output[component]
+            if not isinstance(output, SinglefileData) or by_port[port].get("files") != [output.filename]:
+                return f"artifact file does not match native output {port}"
+            if by_port[port].get("sample_ids") != ids or by_port[port].get("sample_count") != len(samples):
+                return f"sample mapping differs for {port}"
+    return None
 
 
 class ProteinMPNNFilterWorkChain(WorkChain):
@@ -22,7 +94,7 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         spec.input("code", valid_type=AbstractCode)
         spec.input("pdb_file", valid_type=SinglefileData)
         spec.input("mpnn_params", valid_type=Dict)
-        spec.input("filter_params", valid_type=Dict)
+        spec.input("filter_params", valid_type=Dict, validator=validate_filter_params)
         spec.input("existing_mpnn_result", valid_type=Dict, required=False)
 
         spec.output("selected_sequences", valid_type=Dict)
@@ -34,6 +106,7 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         spec.exit_code(203, "MISSING_MPNN_OUTPUT", message="MPNN输出缺失artifacts")
         spec.exit_code(204, "INVALID_ARTIFACT_SCHEMA", message="产物schema_version不匹配ai4s-artifacts-1")
         spec.exit_code(205, "MPNN_CALC_FAILED", message="MPNN计算失败")
+        spec.exit_code(206, "UNQUALIFIED_UPSTREAM", message="上游资格或请求身份不匹配：{reason}")
 
         spec.outline(
             cls.initialize_ctx,
@@ -103,6 +176,15 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         if result.get("version") not in SUPPORTED_VERSIONS:
             self.output_failure_report("unsupported_version")
             return self.exit_codes.VERSION_NOT_SUPPORTED
+        try:
+            problem = upstream_problem(
+                self.ctx.mpnn_result, self.inputs.code, self.inputs.pdb_file, self.inputs.mpnn_params
+            )
+        except (AttributeError, KeyError, TypeError, ValueError, OSError) as error:
+            problem = f"malformed upstream: {error}"
+        if problem:
+            self.output_failure_report("unqualified_upstream")
+            return self.exit_codes.UNQUALIFIED_UPSTREAM.format(reason=problem)
 
     def output_failure_report(self, status):
         details = Dict(dict={

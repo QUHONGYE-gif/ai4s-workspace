@@ -156,6 +156,11 @@ runpy.run_path({str(cls.mock)!r},run_name="__main__")
         self.assertEqual(count_mpnn_launches(rerun.pk), 0)
         self.assertEqual((self.root / "success.count").read_text(), before)
         self.assertEqual([row["sample_id"] for row in rerun.outputs.selected_sequences.get_dict()["entries"]], ["s001"])
+        second = self.wait(rerun_filter_only(rerun.pk, new_top_k=2))
+        self.assert_ok(second)
+        self.assertEqual(second.inputs.existing_mpnn_result.uuid, rerun.inputs.existing_mpnn_result.uuid)
+        self.assertEqual(second.outputs.selection_report.get_dict()["model_launches"], 0)
+        self.assertEqual((self.root / "success.count").read_text(), before)
 
     def test_retry_then_success(self):
         node = self.workflow(self.code("retry-once", failures=1))
@@ -205,6 +210,101 @@ runpy.run_path({str(cls.mock)!r},run_name="__main__")
         self.assertEqual(node.outputs.selection_report.get_dict()["model_launches"], 0)
         self.assertFalse((self.root / "unused.count").exists())
 
+    def test_unvalidated_result_and_different_request_are_rejected(self):
+        original = self.successful_workflow()
+        child = next(n for n in original.called if isinstance(n, self.orm.CalcJobNode))
+        # A hand-created Dict has no eligible successful CalcJob creator.
+        forged = self.orm.Dict(dict={**child.outputs.result.get_dict(), "validation": {"passed": False}})
+        rejected = self.workflow(child.inputs.code, existing_mpnn_result=forged)
+        self.assertEqual(rejected.exit_status, 206, self.diagnostics(rejected))
+        rejected = self.workflow(self.code("different-code"), existing_mpnn_result=child.outputs.result)
+        self.assertEqual(rejected.exit_status, 206, self.diagnostics(rejected))
+        from ai4s_workflows.workflows import upstream_problem
+        self.assertIn("PDB", upstream_problem(child.outputs.result, child.inputs.code,
+                          self.orm.SinglefileData(file=__import__('io').BytesIO(b'different PDB'), filename='different.pdb'), child.inputs.params))
+        self.assertIn("parameters", upstream_problem(child.outputs.result, child.inputs.code,
+                          child.inputs.pdb_file, self.orm.Dict(dict={"version": "v1.1", "num_seq": 4})))
+
+    def test_query_and_readonly_export_preserve_native_states(self):
+        from ai4s_query import query, workbench
+        original = self.successful_workflow()
+        output = original.outputs.selected_sequences
+        info = query.describe(output.uuid)
+        self.assertTrue(info["lineage"]["upstream"])
+        self.assertEqual(info["creator_uuid"], output.creator.uuid)
+        original_count = self.orm.QueryBuilder().append(self.orm.Node).count()
+        exported = workbench.export_state([output.uuid])
+        self.assertEqual(self.orm.QueryBuilder().append(self.orm.Node).count(), original_count)
+        exp = exported["experiments"][0]
+        self.assertEqual(exp["status"], "completed")
+        self.assertIsNone(exp["config"]["seed"])
+        self.assertEqual(exp["policyRules"]["name"], "未记录")
+        self.assertTrue(all(not a["accessible"] for a in exported["catalog"]))
+        for state, exit_status, expected in [("finished", 301, "failed"), ("running", None, "running"), ("waiting", None, "waiting")]:
+            node = self.orm.CalcJobNode(process_type="aiida.calculations:ai4s.proteinmpnn").store()
+            node.set_process_state(state)
+            if exit_status is not None:
+                node.set_exit_status(exit_status)
+            record, _ = workbench.build_experiment(node.uuid)
+            self.assertEqual(record["status"], expected)
+            self.assertEqual(record["outputs"], [])
+
+    def test_real_parser_rejects_corrupt_arrays_before_publishing(self):
+        """Synthetic files exercise the real Parser; no model or GPU is run."""
+        import hashlib
+        import io
+        import numpy
+        from aiida.common import LinkType
+        from ai4s_tasks.proteinmpnn import ProteinMPNNParser, EXPECTED_RELEASE, VALIDATOR_VERSION
+        from ai4s_tasks.proteinmpnn_outputs import parse_fasta
+        from test_ai4s_tasks import FASTA, PARAMETERS
+
+        native, designs = parse_fasta(FASTA)
+        alphabet = "ACDEFGHIKLMNPQRSTVWYX"
+        sampled = numpy.array([[alphabet.index(aa) for aa in design["sequence"]] for design in designs])
+        record = {"status": "completed", "exit_code": 0, "release": EXPECTED_RELEASE,
+                  "inputs": {"pdb_path": {"sha256": hashlib.sha256(b"PDB").hexdigest()}},
+                  "weights": {"path": "/weights/v_48_020.pt", "sha256": "synthetic-test"},
+                  "effective_seeds": [42], "requested_seed": 42, "source_commit": "synthetic-test",
+                  "started_at": "synthetic-test", "finished_at": "synthetic-test"}
+        def archive(**arrays):
+            handle = io.BytesIO()
+            numpy.savez(handle, **arrays)
+            handle.seek(0)
+            return handle
+        for case, expected in [("valid", None), ("nan-scores", 306), ("nan-probs", 307),
+                               ("sample-order", 307), ("invalid-json", 308), ("missing-probs-key", 308),
+                               ("missing-run-field", 308), ("invalid-npz", 308)]:
+            with self.subTest(case=case):
+                calc = self.orm.CalcJobNode(process_type="aiida.calculations:ai4s.proteinmpnn", computer=self.computer)
+                calc.base.links.add_incoming(self.orm.Dict(dict=PARAMETERS).store(), LinkType.INPUT_CALC, "params")
+                calc.base.links.add_incoming(self.orm.SinglefileData(file=io.BytesIO(b"PDB"), filename="input.pdb").store(), LinkType.INPUT_CALC, "pdb_file")
+                calc.store()
+                retrieved = self.orm.FolderData()
+                run_record = dict(record)
+                if case == "missing-run-field": del run_record["source_commit"]
+                retrieved.base.repository.put_object_from_filelike(io.StringIO("invalid-json" if case == "invalid-json" else json.dumps(run_record)), "outputs/run.json")
+                retrieved.base.repository.put_object_from_filelike(io.StringIO(FASTA), "outputs/seqs/input.fa")
+                scores = numpy.array([design["score"] for design in designs])
+                global_scores = numpy.array([design["global_score"] for design in designs])
+                if case == "nan-scores": scores[0] = numpy.nan
+                retrieved.base.repository.put_object_from_filelike(archive(score=scores, global_score=global_scores), "outputs/scores/input.npz")
+                probs = numpy.full((2, len(native["sequence"]), 21), 1 / 21)
+                if case == "nan-probs": probs[0, 0, 0] = numpy.nan
+                arrays = {"probs": probs, "S": sampled[::-1] if case == "sample-order" else sampled,
+                          "chain_order": numpy.array([["A"]])}
+                if case == "missing-probs-key": del arrays["probs"]
+                retrieved.base.repository.put_object_from_filelike(io.BytesIO(b"invalid-npz") if case == "invalid-npz" else archive(**arrays), "outputs/probs/input.npz")
+                retrieved.base.links.add_incoming(calc, LinkType.CREATE, "retrieved")
+                retrieved.store()
+                parser = ProteinMPNNParser(calc)
+                outcome = parser.parse()
+                self.assertEqual(outcome.status if outcome else None, expected)
+                if expected is None:
+                    self.assertEqual(parser.outputs["result"].get_dict()["validation"]["validator_version"], VALIDATOR_VERSION)
+                else:
+                    self.assertFalse(parser.outputs)
+
 
 if __name__ == "__main__":
     if os.environ.get("AI4S_ISOLATED_WORKFLOW_TEST") == "1":
@@ -212,5 +312,5 @@ if __name__ == "__main__":
     else:
         with tempfile.TemporaryDirectory(prefix="ai4s-wf-") as directory:
             environment = dict(os.environ, AIIDA_PATH=directory, AI4S_ISOLATED_WORKFLOW_TEST="1")
-            outcome = subprocess.run([sys.executable, str(Path(__file__).resolve())], env=environment)
+            outcome = subprocess.run([sys.executable, str(Path(__file__).resolve()), *sys.argv[1:]], env=environment)
         sys.exit(outcome.returncode)

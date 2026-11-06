@@ -10,7 +10,10 @@ def filter_sequences(mpnn_result, filter_params, execution_report):
     parameters = filter_params.get_dict()
     threshold = parameters["score_threshold"]
     top_k = parameters["top_k"]
-    samples = mpnn_result.get_dict()["artifacts"][0].get("samples", [])
+    samples = next(
+        artifact["samples"] for artifact in mpnn_result.get_dict()["artifacts"]
+        if artifact["port"] == "artifacts.sequences"
+    )
     accepted = [sample for sample in samples if sample["score"] <= threshold]
     accepted.sort(key=lambda sample: (sample["score"], sample["sample_id"]))
     selected = accepted[:top_k]

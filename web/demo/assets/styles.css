@@ -2855,3 +2855,49 @@ a.nav-item { text-decoration: none; }
 .registration-ai-summary strong { font-size: 12px; color: #5b528a; }
 .registration-ai-summary p { margin: 8px 0 0; }
 .registration-ai-summary code { display: inline-block; font-size: 11px; padding: 3px 6px; margin: 2px 3px 2px 0; border-radius: 5px; background: white; color: #5b528a; }
+
+/* Reuse explorer: isolated, illustrative relationship canvas. */
+.reuse-workspace {background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:24px}
+.reuse-top {display:flex;justify-content:space-between;align-items:center;gap:20px;padding:24px 26px 18px}
+.reuse-top h2 {font-size:22px;margin:6px 0;color:var(--ink)}
+.reuse-top p {margin:0;color:var(--muted)}
+.reuse-tabs {display:flex;gap:8px;padding:0 26px 16px;border-bottom:1px solid var(--line)}
+.reuse-tabs button {background:transparent;border:0;border-radius:7px;padding:10px 18px;color:var(--muted);cursor:pointer}
+.reuse-tabs button[aria-selected=true] {background:var(--accent-soft);color:var(--accent);font-weight:650}
+.reuse-layout {display:grid;grid-template-columns:minmax(0,1fr) 290px}
+.reuse-board {min-width:0;background:#fafbfe}
+.reuse-toolbar {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.reuse-toolbar>div {display:flex;align-items:center;gap:6px;flex-shrink:0}
+.reuse-toolbar .btn {min-height:36px;padding:6px 10px}
+.reuse-zoom {min-width:40px;text-align:center;font-variant-numeric:tabular-nums}
+.reuse-viewport {height:510px;position:relative;overflow:hidden;touch-action:none;cursor:grab;background-image:radial-gradient(#d9ddea 1px,transparent 1px);background-size:22px 22px}
+.reuse-viewport:active {cursor:grabbing}
+.reuse-world {position:absolute;inset:0;transform-origin:0 0;pointer-events:none}
+.reuse-wires {position:absolute;overflow:visible;width:2000px;height:1400px}
+.reuse-wires text {fill:#646e87;font-size:12px;paint-order:stroke;stroke:#fafbfe;stroke-width:5px;stroke-linejoin:round}
+.reuse-node {position:absolute;width:230px;height:108px;padding:14px 18px;background:white;border:1px solid #d8ddeb;border-radius:12px;text-align:left;box-shadow:0 4px 14px #242c4c08;cursor:grab;pointer-events:auto;color:var(--ink)}
+.reuse-node span,.reuse-node strong,.reuse-node small {display:block}
+.reuse-node span {font-size:11px;color:var(--muted)}
+.reuse-node strong {font-size:17px;margin:6px 0}
+.reuse-node small {font-size:12px;color:#59647b}
+.reuse-node.is-asset {border-top:3px solid #789d96;background:#fcfffe}
+.reuse-node.is-selected {outline:2px solid var(--accent);outline-offset:3px}
+.reuse-node:hover {box-shadow:0 5px 18px #242c4c17}
+.reuse-workspace button:focus-visible,.reuse-viewport:focus-visible {outline:3px solid var(--accent);outline-offset:3px}
+.reuse-legend {display:flex;flex-wrap:wrap;gap:14px;padding:13px 16px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}
+.reuse-detail {border-left:1px solid var(--line);padding:24px 20px;min-width:0}
+.reuse-detail h3 {font-size:22px;margin:8px 0 12px}
+.reuse-detail p {color:#626c82;font-size:13px;line-height:1.8;margin:16px 0}
+.reuse-detail dl {margin:20px 0}
+.reuse-detail dl>div {padding:10px 0;border-bottom:1px solid var(--line)}
+.reuse-detail dt {font-size:11px;color:var(--muted)}
+.reuse-detail dd {font-size:13px;margin:4px 0 0;overflow-wrap:anywhere}
+.reuse-detail-actions {display:grid;gap:10px}
+.reuse-choice {border-top:1px solid var(--line);padding-top:18px;font-size:13px}
+.reuse-choice select {width:100%;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:7px;background:white}
+.reuse-choice button {margin-top:8px}
+.reuse-preview {padding:12px;background:var(--accent-soft);color:#424e91;border-radius:8px;font-size:12px;line-height:1.8}
+.reuse-disclaimer {padding:12px 24px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.reuse-policies>summary {cursor:pointer;font-weight:650;font-size:16px;margin:20px 0}
+@media(max-width:1100px){.reuse-layout{grid-template-columns:minmax(0,1fr) 250px}.reuse-toolbar{flex-wrap:wrap}.reuse-context{width:100%}}
+@media(max-width:760px){.reuse-layout{grid-template-columns:1fr}.reuse-detail{border-left:0;border-top:1px solid var(--line)}.reuse-viewport{height:390px}.reuse-top{align-items:flex-start;flex-direction:column;padding:20px}.reuse-tabs{padding:0 12px 14px;gap:0}.reuse-tabs button{flex:1;padding:10px}.reuse-top h2{font-size:20px}}

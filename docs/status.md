@@ -1,6 +1,6 @@
 # 当前状态
 
-更新于 2026-11-05，依据 PR #9 的实现和 qhy 个人 AiiDA profile 中的已有节点回查。模块实现、命令行验证与网页接入分别记录。
+更新于 2026-11-06，依据 PR #9 的实现、已有真实运行记录与本轮独立 CPU 检查。模块实现、命令行验证与网页接入分别记录。
 
 ## 已具备
 
@@ -9,10 +9,14 @@
 - 独立蛋白质设计程序提供 RFdiffusion → ProteinMPNN → 可选 MMseqs2 → Boltz-2 的配置与执行入口。
 - Agent 已嵌入自定义流程接入，支持资料提取、手动／对话改参、端口画布、分支与设计关系、串行配置回填及登记／请求；[运行说明](agent_demo_run.md)。
 - 实验创建先保存为待运行状态，确认候选后启动模拟；流程图支持配置／结果切换、按需节点详情和产物来源入口。
+- 复用与存储页面新增独立示例画布；来源、计划与副本整理仅用于交互演示，见 [工作台说明](../web/README.md#复用画布与-aiida-查询快照)。
+- B 查询模块已选择性接入，可只读查询原生状态、文件、来源与缓存，并导出工作台离线快照；[接口与限制](../src/ai4s_query/README.md)。
 - Docker + Coder 模板及成员管理入口用于个人开发与预览。
-- A 模块已提供真实 ProteinMPNN CalcJob／Parser 和独立提交入口，校验运行记录、输入、序列、分数及概率形状后发布原生文件 Data 和清单；接口及校验边界见 [A 模块说明](aiida_tasks.md)。
-- C 模块已接入真实任务，完成真实 1CRN → 4 条设计序列与分数 → 筛选，以及复用同一上游 Data 的仅重筛选；保留 mock、有限重试和独立临时 profile 检查，见 [C 模块说明](../README_C.md)。
+- A 模块已提供真实 ProteinMPNN CalcJob／Parser 和独立提交入口，校验运行记录、输入、序列、分数、概率数值及样本对应后发布原生文件 Data 和清单；接口及校验边界见 [A 模块说明](aiida_tasks.md)。
+- C 模块已接入真实任务，完成真实 1CRN → 4 条设计序列与分数 → 筛选，以及复用同一上游 Data 的仅重筛选；复核上游校验资格及 Code／PDB／参数身份，支持连续重筛选；保留 mock、有限重试和独立临时 profile 检查，见 [C 模块说明](../README_C.md)。
 - 已回查单任务成功、单任务缓存命中、真实两阶段成功及下游重算的原生 UUID、参数、结果和链接；详细身份、命令与结果见 [R005 运行记录](../experiments/R005-aiida-proteinmpnn/record.md)。
+
+- 本轮修复通过独立临时 profile 的 10 项 AiiDA CPU 集成检查，并补验损坏文件和查询映射；新 Parser 对既有 pk22 真实产物只读复核通过。未重新执行 GPU，也未替换成员工作区正在使用的服务或插件。
 
 ## 限制
 
@@ -25,6 +29,6 @@
 
 ## 下一步
 
-先对齐 A、C 的产物门禁、公共端口和重试次数；接入 B 查询本次真实节点，补齐故障、缓存身份与 daemon 恢复验收，再将任务准备、提交和查询连接到现有 Agent／工作台。阶段完成条件仍以 [实施计划](implementation_plan.md) 为准。
+先对齐公共端口和重试次数，补齐故障、缓存身份与 daemon 恢复验收，再将任务准备、提交和查询连接到现有 Agent／工作台。阶段完成条件仍以 [实施计划](implementation_plan.md) 为准。
 
-入口：[工作台](../web/README.md) · [PyMOL](../tools/pymol_web/README.md) · [蛋白质设计](protein_pipeline.md) · [A 模块](aiida_tasks.md) · [C 模块](../README_C.md) · [运行记录](../experiments/R005-aiida-proteinmpnn/record.md) · [仓库](../README.md)。
+入口：[工作台](../web/README.md) · [PyMOL](../tools/pymol_web/README.md) · [蛋白质设计](protein_pipeline.md) · [A 模块](aiida_tasks.md) · [B 查询](../src/ai4s_query/README.md) · [C 模块](../README_C.md) · [运行记录](../experiments/R005-aiida-proteinmpnn/record.md) · [仓库](../README.md)。

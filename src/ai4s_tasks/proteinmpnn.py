@@ -7,6 +7,7 @@ Parser only publishes outputs after every check below has passed.
 
 import hashlib
 import json
+from zipfile import BadZipFile
 
 import numpy
 from aiida.common.datastructures import CalcInfo, CodeInfo
@@ -19,13 +20,15 @@ from .proteinmpnn_outputs import (
     design_problem,
     parameter_problem,
     parse_fasta,
+    probability_problem,
+    probability_sample_problem,
     score_problem,
 )
 
 EXPECTED_RELEASE = "8907e667-py312-torch260cu124"
 SCHEMA_VERSION = "ai4s-artifacts-1"
 CONTRACT_VERSION = "1"
-VALIDATOR_VERSION = "proteinmpnn-1"
+VALIDATOR_VERSION = "proteinmpnn-2"
 
 INPUT_PDB = "input.pdb"
 OUTPUT_FOLDER = "outputs"
@@ -44,6 +47,8 @@ def validate_params(value, _context):
 
 class ProteinMPNNCalculation(CalcJob):
     """Design sequences for one PDB structure with the shared ProteinMPNN."""
+
+    CACHE_VERSION = 2
 
     @classmethod
     def define(cls, spec):
@@ -82,6 +87,8 @@ class ProteinMPNNCalculation(CalcJob):
         spec.exit_code(306, "ERROR_INVALID_SCORES", message="Score file does not match: {reason}",
                        invalidates_cache=True)
         spec.exit_code(307, "ERROR_INVALID_PROBABILITIES", message="Probability file does not match: {reason}",
+                       invalidates_cache=True)
+        spec.exit_code(308, "ERROR_MALFORMED_OUTPUT", message="Malformed model output: {reason}",
                        invalidates_cache=True)
 
     def prepare_for_submission(self, folder):
@@ -122,7 +129,15 @@ class ProteinMPNNCalculation(CalcJob):
 class ProteinMPNNParser(Parser):
     """Check run identity, designs and score files, then publish outputs."""
 
+    CACHE_VERSION = 2
+
     def parse(self, **kwargs):
+        try:
+            return self._parse_outputs()
+        except (ValueError, KeyError, TypeError, IndexError, AttributeError, OSError, EOFError, BadZipFile) as error:
+            return self.exit_codes.ERROR_MALFORMED_OUTPUT.format(reason=str(error))
+
+    def _parse_outputs(self):
         parameters = complete_parameters(self.node.inputs.params.get_dict())
         retrieved = self.retrieved
 
@@ -161,25 +176,28 @@ class ProteinMPNNParser(Parser):
             return self.exit_codes.ERROR_INVALID_DESIGNS.format(reason=problem)
 
         with retrieved.open(SCORES_FILE, "rb") as handle:
-            score_arrays = numpy.load(handle)
-            problem = score_problem(designs, score_arrays["score"], score_arrays["global_score"])
+            with numpy.load(handle, allow_pickle=False) as score_arrays:
+                problem = score_problem(designs, score_arrays["score"], score_arrays["global_score"])
         if problem:
             return self.exit_codes.ERROR_INVALID_SCORES.format(reason=problem)
 
         if parameters["save_probabilities"]:
-            expected_shape = (len(designs), len(native["sequence"]), 21)
+            length = len(native["sequence"].replace("/", ""))
             with retrieved.open(PROBABILITIES_FILE, "rb") as handle:
-                shape = numpy.load(handle)["probs"].shape
-            if shape != expected_shape:
-                return self.exit_codes.ERROR_INVALID_PROBABILITIES.format(
-                    reason=f"shape {shape}, expected {expected_shape}")
+                with numpy.load(handle, allow_pickle=False) as arrays:
+                    problem = probability_problem(arrays["probs"], len(designs), length)
+                    if not problem:
+                        problem = probability_sample_problem(arrays, native, designs, parameters["chains"])
+            if problem:
+                return self.exit_codes.ERROR_INVALID_PROBABILITIES.format(reason=problem)
 
         # 4. All checks passed: publish files and the manifest.
+        manifest = Dict(self._manifest(record, native, designs, parameters))
         self.out("artifacts.sequences", self._file_node(SEQUENCES_FILE, "design.fa"))
         self.out("artifacts.scores", self._file_node(SCORES_FILE, "scores.npz"))
         if parameters["save_probabilities"]:
             self.out("artifacts.probabilities", self._file_node(PROBABILITIES_FILE, "probabilities.npz"))
-        self.out("result", Dict(self._manifest(record, native, designs, parameters)))
+        self.out("result", manifest)
         return None
 
     def _has_file(self, path):
