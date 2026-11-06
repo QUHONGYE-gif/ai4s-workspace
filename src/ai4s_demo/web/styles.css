@@ -68,7 +68,7 @@ button:hover:not(:disabled) {
 .button.soft {
   background: var(--soft);
   border-color: transparent;
-  color: var(--violet-500);
+  color: var(--gray-700);
 }
 .button.compact {
   padding: 8px 12px;
@@ -201,7 +201,7 @@ button:hover:not(:disabled) {
   display: grid;
   place-items: center;
   background: var(--soft);
-  color: #8b73ba;
+  color: var(--accent);
   margin-right: 2px;
 }
 .selected-icon .icon {
@@ -235,7 +235,7 @@ button:hover:not(:disabled) {
   position: relative;
 }
 .tab.active {
-  color: var(--violet-500);
+  color: var(--accent);
 }
 .tab.active:after {
   content: "";
@@ -244,7 +244,7 @@ button:hover:not(:disabled) {
   left: 0;
   right: 0;
   height: 2px;
-  background: #7970cf;
+  background: var(--accent);
   border-radius: var(--radius-xs);
 }
 .detail-content {
@@ -305,7 +305,7 @@ button:hover:not(:disabled) {
 }
 .source-tag {
   font-size: var(--text-xs);
-  color: #9188bc;
+  color: var(--muted);
 }
 .detail-footer {
   display: flex;
@@ -437,7 +437,7 @@ button:hover:not(:disabled) {
 .send-button {
   border: 0;
   border-radius: var(--radius-md);
-  background: #7870c7;
+  background: var(--accent);
   color: var(--gray-0);
   width: 26px;
   height: 26px;
@@ -501,7 +501,7 @@ button:hover:not(:disabled) {
   background: transparent;
   width: 25px;
   height: 25px;
-  color: #969bb1;
+  color: var(--muted);
   display: grid;
   place-items: center;
 }
@@ -952,7 +952,7 @@ summary {
   --line: var(--gray-150);
   --accent: var(--accent-500);
   --accent2: var(--violet-400);
-  --soft: var(--accent-50);
+  --soft: var(--gray-50);
   --green: var(--green-500);
   --green-bg: var(--green-50);
   --amber: var(--sand-600);

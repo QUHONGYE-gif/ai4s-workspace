@@ -7,19 +7,19 @@
 :root {
   /* Core colors: raw palettes. Components use the semantic aliases further down. */
   --gray-0:#ffffff;
-  --gray-25:#fafbfe;
-  --gray-50:#f6f7fb;
-  --gray-100:#f0f2f9;
-  --gray-150:#e7eaf3;
-  --gray-200:#dce1ee;
-  --gray-300:#c7cde0;
-  --gray-400:#a4adc5;
-  --gray-500:#818ba1;
-  --gray-600:#66708a;
-  --gray-700:#57617b;
-  --gray-800:#38425d;
-  --gray-900:#282d40;
-  --gray-950:#22283d;
+  --gray-25:#fcfcfd;
+  --gray-50:#f7f8fa;
+  --gray-100:#f1f2f4;
+  --gray-150:#e5e7eb;
+  --gray-200:#d9dde3;
+  --gray-300:#c8ccd3;
+  --gray-400:#9ba3af;
+  --gray-500:#79818e;
+  --gray-600:#626873;
+  --gray-700:#49505c;
+  --gray-800:#343942;
+  --gray-900:#24272e;
+  --gray-950:#22252b;
   --accent-50:#edf0ff;
   --accent-100:#dfe4fb;
   --accent-300:#a8b7ff;
@@ -82,7 +82,7 @@
   --duration-base:300ms;
   --duration-slow:500ms;
 
-  /* Semantic aliases used by components. */
+  /* Neutral surfaces/text; indigo actions/selection; green success, amber warning, red failure. */
   --bg:var(--gray-50);
   --paper:var(--gray-0);
   --ink:var(--gray-900);
@@ -93,12 +93,10 @@
   --accent-soft:var(--accent-50);
   --focus-ring:var(--accent-400);
   --violet:var(--violet-500);
-  --green:var(--accent);
-  --pale:var(--accent-soft);
   --orange:var(--sand-500);
   --orange-bg:var(--sand-50);
-  --blue:var(--violet);
   --nav:var(--gray-950);
+  --nav-muted:#a6acb6;
   --radius:var(--radius-xl)
 }
 * {
@@ -127,7 +125,7 @@ button {
   color:inherit
 }
 a {
-  color:var(--green)
+  color:var(--accent)
 }
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible {
   outline:2px solid var(--focus-ring)
@@ -187,16 +185,16 @@ svg {
   color:var(--gray-600)
 }
 .pill.good {
-  color:var(--green);
-  background:var(--pale)
+  color:var(--green-700);
+  background:var(--green-50)
 }
 .pill.warn {
   color:var(--sand-600);
   background:var(--orange-bg)
 }
 .pill.blue {
-  color:var(--blue);
-  background:var(--violet-50)
+  color:var(--accent-600);
+  background:var(--accent-soft)
 }
 .btn {
   display:inline-flex;
@@ -219,9 +217,9 @@ svg {
   transform:scale(.98)
 }
 .btn.primary {
-  background:var(--green);
+  background:var(--accent);
   color:var(--gray-0);
-  border-color:var(--green);
+  border-color:var(--accent);
   box-shadow:0 2px 4px #39477a0e;
 }
 .btn.primary:hover {
@@ -234,7 +232,7 @@ svg {
 .link-btn {
   background:none;
   border:0;
-  color:var(--green);
+  color:var(--accent);
   padding:4px 0;
   font-size:var(--text-sm)
 }
@@ -305,7 +303,7 @@ svg {
 .brand-sub {
   font-size:var(--text-xs);
   letter-spacing:1.5px;
-  color:#8f9ab8;
+  color:var(--nav-muted);
   margin-top:4px
 }
 .project-switch {
@@ -316,7 +314,7 @@ svg {
   margin-bottom:32px
 }
 .project-switch .eyebrow {
-  color:var(--gray-500);
+  color:var(--nav-muted);
   letter-spacing:1px;
   font-size:var(--text-xs)
 }
@@ -337,7 +335,7 @@ svg {
   font-size:var(--text-xs);
   padding:0 12px;
   margin:0 0 12px;
-  color:var(--gray-500);
+  color:var(--nav-muted);
   letter-spacing:1.4px
 }
 .nav-item {
@@ -562,7 +560,7 @@ svg {
   color:var(--gray-600)
 }
 .stat-foot .green {
-  color:var(--green)
+  color:var(--green-700)
 }
 .workspace-grid {
   display:grid;
@@ -646,7 +644,7 @@ svg {
   box-shadow:0 4px 10px #38425d0d
 }
 .node.selected {
-  outline:2px solid var(--green);
+  outline:2px solid var(--accent);
   outline-offset:3px
 }
 .node.changed {
@@ -756,7 +754,7 @@ svg {
   display:inline-flex;
   gap:4px;
   align-items:center;
-  color:var(--green);
+  color:var(--green-700);
   font-size:var(--text-xs)
 }
 .decision-label.compute {
@@ -950,8 +948,8 @@ svg {
 }
 .filter.active {
   border-color:var(--gray-300);
-  background:var(--pale);
-  color:var(--green)
+  background:var(--accent-soft);
+  color:var(--accent)
 }
 .toolbar-search {
   margin-left:auto;
@@ -1550,7 +1548,7 @@ svg {
 .entry-open {
   font-size:var(--text-xs);
   font-weight:500;
-  color:var(--green);
+  color:var(--accent);
   display:flex;
   align-items:center;
   gap:8px
@@ -2681,7 +2679,7 @@ svg {
   white-space: nowrap;
 }
 .pymol-mode input {
-  accent-color: var(--green);
+  accent-color: var(--accent);
 }
 .pymol-console {
   padding: 16px 24px;
@@ -3284,8 +3282,8 @@ a.nav-item { text-decoration: none; }
  */
 :root {
   --topbar-height:64px;
-  --shadow-xs:0 1px 2px #272e450a;
-  --shadow-md:0 8px 24px #272e4512,0 2px 6px #272e450a
+  --shadow-xs:0 1px 2px #24272e0a;
+  --shadow-md:0 8px 24px #24272e12,0 2px 6px #24272e0a
 }
 
 /* Brand and navigation */
@@ -3305,8 +3303,8 @@ a.nav-item { text-decoration: none; }
   transition:background-color var(--duration-fast) var(--ease-out),color var(--duration-fast) var(--ease-out)
 }
 .nav-item.active {
-  background:#ffffff14;
-  box-shadow:inset 0 0 0 1px #ffffff14
+  background:#a8b7ff18;
+  box-shadow:inset 0 0 0 1px #a8b7ff2b
 }
 .nav-item.active .icon {
   color:var(--accent-300)
