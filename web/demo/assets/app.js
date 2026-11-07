@@ -783,8 +783,8 @@ ${esc(step[key] || '')}</textarea
     const messages = d.agentMessages || [];
     const context = agentContext(d, selected, experiment);
     return panel('实验配置 Agent', `<p class="small" data-agent-status>${esc(experimentAgentStatus)}</p><div class="agent-context">当前节点：<strong>${esc(selected?.name || '未选择，请先点击流程图节点')}</strong><span>仅围绕当前实验、当前节点和当前输入回答</span></div>
-      <div class="agent-artifact-context">当前产物：${context.artifacts.filter((a) => a.kind === 'FASTA').length ? `<select data-agent-artifact aria-label="Agent 当前序列产物">${context.artifacts.filter((a) => a.kind === 'FASTA').map((a) => `<option value="${esc(a.id)}" ${context.currentArtifact?.id === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.id)} · ${a.recordCount ?? '?'} 条</option>`).join('')}</select>` : '暂无可读取的序列产物'}${experiment ? `<p class="field-hint">实验快照只读。可询问失败原因，或引用产物生成新的筛选草稿。</p>` : ''}</div>
-      <div class="agent-messages" aria-live="polite">${messages.length ? messages.map((item) => `<div class="agent-message ${item.role === 'user' ? 'user' : 'assistant'}"><span>${item.role === 'user' ? '你' : 'Agent'}</span><p>${esc(item.text)}</p></div>`).join('') : '<p class="muted small">点击序列设计询问温度；点击序列筛选修改数量；结果页选择序列后可重新筛选。</p>'}</div>
+      <div class="agent-artifact-context">当前产物：${context.artifacts.filter((a) => a.kind === 'FASTA').length ? `<select data-agent-artifact aria-label="Agent 当前序列产物">${context.artifacts.filter((a) => a.kind === 'FASTA').map((a) => `<option value="${esc(a.id)}" ${context.currentArtifact?.id === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.id)} · ${a.recordCount ?? '?'} 条</option>`).join('')}</select>` : '暂无可读取的序列产物'}${experiment ? `<p class="field-hint">实验快照只读，可询问配置、运行状态和日志。${context.availableFilterNodes.length ? '也可引用序列产物生成新的筛选草稿。' : ''}</p>` : ''}</div>
+      <div class="agent-messages" aria-live="polite">${messages.length ? messages.map((item) => `<div class="agent-message ${item.role === 'user' ? 'user' : 'assistant'}"><span>${item.role === 'user' ? '你' : 'Agent'}</span><p>${esc(item.text)}</p></div>`).join('') : '<p class="muted small">先点击流程图节点询问配置；已登记的节点参数可在当前草稿中调整。</p>'}</div>
       <div class="agent-compose"><input data-agent-input type="text" placeholder="询问当前节点或修改当前实验配置" maxlength="500" /><button class="btn primary" type="button" data-agent-send ${agentPending ? 'disabled' : ''}>${agentPending ? '正在回复…' : '发送'}</button></div>`);
   };
   const identities = function (c) {
@@ -2516,7 +2516,7 @@ ${esc(policyDraft.description)}</textarea
             ${selected ? nodeDetailPanel(selected, d, p.find((item) => item.id === selected.id)) : ''}
           </div>
           <aside class="right-stack">
-            ${workflowInfo[activeWorkflow].registrationSource ? agentPanel(d, selected) : ''}
+            ${agentPanel(d, selected)}
             ${quietPanel(
               stepTitle(3, '范围与策略', '可选 · 已有默认值'),
               /* HTML */ `<div class="detail-body">
@@ -2698,7 +2698,7 @@ ${esc(policyDraft.description)}</textarea
           )}
         </div>
         <aside class="right-stack">
-          ${e.source !== 'aiida' && e.workflowSnapshot.registrationSource ? agentPanel(e, selected, e) : ''}
+          ${e.source !== 'aiida' && !e.fixture ? agentPanel(e, selected, e) : ''}
           ${quietPanel(
             '输入与配置快照',
             /* HTML */ `<div class="detail-body">
