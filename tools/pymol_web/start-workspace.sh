@@ -34,10 +34,16 @@ service_pids+=("$workbench_pid")
 agent_pid=$!
 service_pids+=("$agent_pid")
 
-PYMOL_RPCHOST=127.0.0.1 NOVNC_HOST=127.0.0.1 \
-    bash "$project_root/tools/pymol_web/start.sh" \
-    -r "$project_root/tools/pymol_web/workspace.py" "$@" &
-service_pids+=("$!")
+if [[ "${AI4S_REUSE_PYMOL:-0}" == 1 ]]; then
+    # Updating the web services can retain the existing structure and GUI session.
+    # A reused session is not owned by this launcher and is not cleaned up here.
+    "$agent_python" -c 'from xmlrpc.client import ServerProxy; ServerProxy("http://127.0.0.1:9123").ping()'
+else
+    PYMOL_RPCHOST=127.0.0.1 NOVNC_HOST=127.0.0.1 \
+        bash "$project_root/tools/pymol_web/start.sh" \
+        -r "$project_root/tools/pymol_web/workspace.py" "$@" &
+    service_pids+=("$!")
+fi
 
 nginx -p "$runtime_dir/" -c "$project_root/tools/pymol_web/workspace-nginx.conf" &
 proxy_pid=$!

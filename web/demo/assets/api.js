@@ -25,6 +25,7 @@ const DemoAPI = (() => {
     sending = false,
     blocked = false;
   let inFlight = Promise.resolve();
+  let savedState = null;
   function markPending() {
     try {
       localStorage.setItem(pendingKey, JSON.stringify({ revision }));
@@ -73,6 +74,7 @@ const DemoAPI = (() => {
         keepalive,
       }));
       revision = result.revision;
+      savedState = JSON.stringify(state);
       if (pending) markPending();
       else clearPending();
       report(pending ? '后端保存中' : '后端已保存');
@@ -91,6 +93,15 @@ const DemoAPI = (() => {
     }
   }
   return {
+    async experimentAgent(message, context) {
+      return request('agent/api/experiments/messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, context }), signal: AbortSignal.timeout(120000),
+      });
+    },
+    async registeredWorkflows() {
+      return request('agent/api/experiments/workflows', { signal: AbortSignal.timeout(15000) });
+    },
     async pymolStatus() {
       return request('api/tools/pymol');
     },
@@ -128,10 +139,17 @@ const DemoAPI = (() => {
     async loadState() {
       const result = await request('api/demo/state');
       revision = result.revision;
+      savedState = JSON.stringify(result.state);
       let unsynced = null;
       try {
         if (localStorage.getItem(localStateKey))
           unsynced = JSON.parse(localStorage.getItem(pendingKey));
+        // A pagehide save may reach the server after its page stops receiving
+        // the acknowledgement. Equal snapshots need no overwrite or recovery.
+        if (unsynced && JSON.stringify(JSON.parse(localStorage.getItem(localStateKey))) === savedState) {
+          clearPending();
+          unsynced = null;
+        }
       } catch (_) {}
       result.preferLocal = !!unsynced;
       result.conflict = !!unsynced && unsynced.revision !== revision;
@@ -156,6 +174,7 @@ const DemoAPI = (() => {
       return result;
     },
     scheduleSave(state) {
+      if (!sending && !pending && !blocked && JSON.stringify(state) === savedState) return;
       pending = state;
       if (blocked) return;
       markPending();

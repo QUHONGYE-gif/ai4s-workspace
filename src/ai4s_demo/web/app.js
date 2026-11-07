@@ -1,7 +1,7 @@
 import { api, post, operationId, escapeHTML as esc, download } from './api.js';
 import { renderMessage } from './message.js';
 import { createGraph } from './graph.js';
-export async function mountAssistant(host, { onApply }) {
+export async function mountAssistant(host, { onApply, onExperiment }) {
     const root = host.attachShadow({ mode: 'open' });
     const response = await fetch(new URL('./workspace.html', import.meta.url));
     if (!response.ok) {
@@ -56,6 +56,7 @@ export async function mountAssistant(host, { onApply }) {
         $('download-request').disabled = busy || !currentRequest || !!currentRequest.stale;
         $('chat-input').disabled = busy;
         $('apply-workflow').disabled = busy || !state?.draft.nodes.length;
+        $('create-experiment').disabled = busy || !onExperiment;
         $('save-state').textContent = busy ? '正在处理…' : dirty ? '有未保存的表单修改' : `服务端已保存 · r${state?.draft.revision ?? 0}`;
         host.setAttribute('aria-busy', String(busy));
     }
@@ -666,6 +667,10 @@ export async function mountAssistant(host, { onApply }) {
             showGraphDocument();
             graph.fit();
         }, 'graph-operations-error'));
+        $('create-experiment').addEventListener('click', () => run(async () => {
+            if (dirty) throw new Error('请先保存当前参数表单并重新登记。');
+            await onExperiment(state.draft.id);
+        }));
         $('apply-workflow').addEventListener('click', () => run(async () => {
             if (dirty) {
                 throw new Error('请先保存当前参数表单，再应用到接入草稿。');

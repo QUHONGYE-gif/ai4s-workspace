@@ -3558,3 +3558,21 @@ a.brand {
   text-decoration:underline;
   text-underline-offset:2px
 }
+
+/* Experiment assistant shares the blue/violet glass surfaces of the workbench. */
+.agent-context, .agent-artifact-context, .agent-compose, .agent-messages, [data-agent-status] {
+  margin: 16px;
+}
+.agent-context { display: grid; gap: 8px; }
+.agent-context span, .agent-message > span { color: var(--muted); font-size: 12px; }
+.agent-artifact-context select, .agent-compose input { width: 100%; min-width: 0; }
+.agent-messages { max-height: 360px; overflow-y: auto; display: grid; gap: 12px; }
+.agent-message {
+  padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--tag-background);
+}
+.agent-message.user { margin-left: 16px; border-color: var(--accent-100); }
+.agent-message p { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.agent-compose { display: flex; align-items: center; gap: 8px; }
+.agent-compose .btn { flex-shrink: 0; }
+.creation-overview strong { overflow-wrap: anywhere; }

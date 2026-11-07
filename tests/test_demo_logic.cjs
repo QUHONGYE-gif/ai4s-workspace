@@ -18,6 +18,7 @@ const context = vm.createContext({
   URLSearchParams,
   location: {hash: ''},
   console,
+  document: {activeElement:null, body:{style:{}}, querySelector(){return {hidden:true,focus(){},querySelectorAll(){return []}}}},
   assert,
   setTimeout,
   clearTimeout,
@@ -89,6 +90,13 @@ check('creation saves a ready experiment before simulation starts', () => {
   assert.equal(product.drafts.protein, undefined);
   assert.deepEqual(experiment.choices, {});
   page = {name: 'experiment', id: experiment.id, query: new URLSearchParams()};
+  assert.equal(experiment.creationConfirmed, false);
+  assert.match(experimentPage(experiment), /等待确认创建概述/);
+  startExperiment(experiment.id);
+  assert.equal(experiment.status, 'ready');
+  confirmCreation(experiment.id);
+  assert.equal(experiment.creationConfirmed, true);
+  assert.equal(experiment.status, 'ready');
 });
 
 check('experiment uses one graph and switching views does not start or change the plan', () => {

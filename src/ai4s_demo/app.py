@@ -14,6 +14,8 @@ from fastapi.staticfiles import StaticFiles
 from .agent import AgentGateway
 from .catalog import CATALOG, knowledge
 from .files import upload
+from .experiment_agent import ExperimentChat, respond
+from .handoff import registrations
 from .lock import acquire_lock, release_lock
 from .models import (ChangeRequest, ChatRequest, CreateWorkflow, GenerateRequest,
                      ImportRequest, RegisterRequest, RevisionRequest)
@@ -74,6 +76,14 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
     @app.get("/api/models")
     def models():
         return {"models": [{"id": key, **value, "documentation": knowledge(key)} for key, value in CATALOG.items()]}
+
+    @app.post("/api/experiments/messages")
+    async def experiment_messages(request: ExperimentChat):
+        return await respond(gateway, request)
+
+    @app.get("/api/experiments/workflows")
+    def experiment_workflows():
+        return {"workflows": registrations(service)}
 
     @app.get("/api/graph-contract")
     def graph_contract():
