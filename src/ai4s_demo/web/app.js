@@ -341,7 +341,26 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
             toast('输入文件已上传');
         });
     }
+    function chatExamples() {
+        switch (current()?.model_id) {
+            case 'rfdiffusion':
+                return ['当前节点还缺哪些配置？', '把当前节点的骨架长度改为 90。', '解释扩散步数的作用。'];
+            case 'proteinmpnn':
+                return ['采样温度有什么作用？', '把当前节点的序列数改为 16。', '当前节点还缺哪些配置？'];
+            case 'boltz':
+                return ['当前节点还缺哪些配置？', '解释 MSA 模式的区别。', '解释当前节点的推理参数。'];
+            default:
+                return ['介绍支持的模型。', '添加一个 RFdiffusion 节点。', '添加一个 ProteinMPNN 节点。'];
+        }
+    }
     function renderConversation() {
+        $('chat-examples').open = state.messages.length === 0;
+        $('chat-example-list').innerHTML = chatExamples().map(text => `<button type="button" class="button compact" data-chat-example="${esc(text)}">${esc(text)}</button>`).join('');
+        $('chat-example-list').querySelectorAll('[data-chat-example]').forEach(button => button.addEventListener('click', () => {
+            $('chat-input').value = button.dataset.chatExample;
+            $('chat-examples').open = false;
+            $('chat-input').focus();
+        }));
         const root = $('conversation');
         const parameterNames = Object.values(models).flatMap(model => model.fields.map(field => field.key));
         root.innerHTML = state.messages.length ? state.messages.map(m => {

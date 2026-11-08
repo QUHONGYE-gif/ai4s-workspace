@@ -1219,7 +1219,7 @@ summary {
 @container (max-width:850px) {
   .workbench {
     grid-template-columns: minmax(0,1fr);
-    grid-template-rows: 650px 480px 600px;
+    grid-template-rows: 650px 544px 600px;
   }
   .flow-panel {
     grid-column: 1;
@@ -1248,3 +1248,7 @@ summary {
   .panel-heading { flex-wrap: wrap; }
   .section-number { display: none; }
 }
+
+.chat-examples { margin: 8px 16px; font-size: var(--text-xs); }
+.chat-examples summary { color: var(--muted); cursor: pointer; }
+.chat-examples button { width: 100%; margin-top: 8px; padding: 8px 12px; text-align: left; white-space: normal; font-size: inherit; }

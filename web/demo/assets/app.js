@@ -784,6 +784,21 @@ ${esc(step[key] || '')}</textarea
       scrollAgentConversation();
     }
   };
+  const experimentChatExamples = function (d, selected, experiment) {
+    if (experiment) {
+      const context = agentContext(d, selected, experiment);
+      return ['总结这次实验的运行情况。',
+        ...(experiment.status === 'failed' ? ['根据日志解释本次失败。'] : ['这次实验使用了什么输入？']),
+        ...(context.currentArtifact && context.availableFilterNodes.length ? ['用当前产物重新筛选。'] : [])];
+    }
+    if (!selected) return ['介绍这个流程的步骤。', '这次实验有哪些复用选项？'];
+    const fields = registeredParameters(selected);
+    const examples = ['解释当前节点的参数。', '当前节点需要什么输入？'];
+    if (fields.some((field) => field.modelKey === 'num_seq_per_target')) examples.push('把当前节点的序列数改为 16。');
+    else if (fields.some((field) => field.modelKey === 'filter_count')) examples.push('把当前节点的筛选数量改为 3。');
+    else if (fields.some((field) => field.modelKey === 'length')) examples.push('把当前节点的骨架长度改为 90。');
+    return examples;
+  };
   const agentPanel = function agentPanel(d, selected, experiment = null) {
     const messages = d.agentMessages || [];
     const context = agentContext(d, selected, experiment);
@@ -791,6 +806,7 @@ ${esc(step[key] || '')}</textarea
     return panel('实验配置 Agent', `<div class="experiment-agent-body">
       ${selected ? `<div class="agent-context" aria-label="当前节点">${esc(selected.name)}</div>` : ''}
       ${sequences.length ? `<label class="agent-artifact-context"><span class="sr-only">参考序列</span><select data-agent-artifact aria-label="参考序列">${sequences.map((a) => `<option value="${esc(a.id)}" ${context.currentArtifact?.id === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.id)}${a.recordCount == null ? '' : ` · ${a.recordCount} 条`}</option>`).join('')}</select></label>` : ''}
+      <details class="agent-examples" ${messages.length ? '' : 'open'}><summary>试试这样问</summary>${experimentChatExamples(d, selected, experiment).map((text) => `<button class="btn" type="button" data-agent-example="${esc(text)}" ${agentPending ? 'disabled' : ''}>${esc(text)}</button>`).join('')}</details>
       <div class="agent-messages" role="log" aria-label="实验对话" aria-live="polite">${messages.map((item) => `<div class="agent-message ${item.role === 'user' ? 'user' : 'assistant'}"><span>${item.role === 'user' ? '你' : 'Agent'}</span><p>${esc(item.text)}</p></div>`).join('')}</div>
       <div class="agent-compose"><textarea data-agent-input aria-label="实验对话输入" placeholder="输入问题或修改要求…" rows="2" maxlength="500"></textarea><button class="btn primary" type="button" data-agent-send ${agentPending ? 'disabled' : ''}>${agentPending ? '回复中…' : '发送'}</button></div>
     </div>`, experiment ? '<span class="pill">只读快照</span>' : '');
@@ -3941,6 +3957,14 @@ ${esc(policyDraft.description)}</textarea
     });
   };
   const bind = function () {
+    document.querySelectorAll('[data-agent-example]').forEach((button) => {
+      button.onclick = () => {
+        const input = button.closest('.panel').querySelector('[data-agent-input]');
+        input.value = button.dataset.agentExample;
+        button.closest('details').open = false;
+        input.focus();
+      };
+    });
     document.querySelectorAll('[data-agent-artifact]').forEach((el) => {
       el.onchange = () => {
         const target = page.name === 'experiment' ? experimentById(page.id) : currentDraft();
