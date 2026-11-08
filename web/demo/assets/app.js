@@ -686,7 +686,6 @@ ${esc(step[key] || '')}</textarea
         action: s.action, candidateArtifactId: s.artifact?.id || null })) };
   };
   let agentPending = false;
-  const experimentAgentStatus = '共用接入自定义流程中的模型配置';
   const agentContext = function agentContext(d, selected, experiment = null) {
     const workflow = experiment?.workflowSnapshot || workflowInfo[d.workflowId];
     const node = selected ? { id: selected.id, name: selected.name, model: selected.model,
@@ -753,6 +752,10 @@ ${esc(step[key] || '')}</textarea
       config: d.config, choices: d.choices, policy: d.policy, intent: d.intent,
       reuseScope: d.reuseScope, shareOutput: d.shareOutput });
   };
+  const scrollAgentConversation = function () {
+    const conversation = document.querySelector('.agent-messages');
+    if (conversation) conversation.scrollTop = conversation.scrollHeight;
+  };
   const sendAgentMessage = async function sendAgentMessage(d, selected) {
     const input = document.querySelector('[data-agent-input]');
     const message = input?.value.trim();
@@ -761,6 +764,7 @@ ${esc(step[key] || '')}</textarea
     const context = agentContext(d, selected, experiment), before = agentRequestState(d, selected, experiment), routeBefore = location.hash;
     agentPending = true;
     d.agentMessages ||= []; d.agentMessages.push({ role: 'user', text: message }); input.value = ''; render();
+    scrollAgentConversation();
     try {
       const result = await DemoAPI.experimentAgent(message, context);
       if ((!experiment && currentDraft() !== d) || location.hash !== routeBefore || agentRequestState(d, (experiment?.workflowSnapshot.steps || steps).find((s) => s.id === selectedPlanStep), experiment) !== before) {
@@ -777,15 +781,19 @@ ${esc(step[key] || '')}</textarea
     } finally {
       agentPending = false;
       render();
+      scrollAgentConversation();
     }
   };
   const agentPanel = function agentPanel(d, selected, experiment = null) {
     const messages = d.agentMessages || [];
     const context = agentContext(d, selected, experiment);
-    return panel('实验配置 Agent', `<p class="small" data-agent-status>${esc(experimentAgentStatus)}</p><div class="agent-context">当前节点：<strong>${esc(selected?.name || '未选择，请先点击流程图节点')}</strong><span>仅围绕当前实验、当前节点和当前输入回答</span></div>
-      <div class="agent-artifact-context">当前产物：${context.artifacts.filter((a) => a.kind === 'FASTA').length ? `<select data-agent-artifact aria-label="Agent 当前序列产物">${context.artifacts.filter((a) => a.kind === 'FASTA').map((a) => `<option value="${esc(a.id)}" ${context.currentArtifact?.id === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.id)} · ${a.recordCount ?? '?'} 条</option>`).join('')}</select>` : '暂无可读取的序列产物'}${experiment ? `<p class="field-hint">实验快照只读，可询问配置、运行状态和日志。${context.availableFilterNodes.length ? '也可引用序列产物生成新的筛选草稿。' : ''}</p>` : ''}</div>
-      <div class="agent-messages" aria-live="polite">${messages.length ? messages.map((item) => `<div class="agent-message ${item.role === 'user' ? 'user' : 'assistant'}"><span>${item.role === 'user' ? '你' : 'Agent'}</span><p>${esc(item.text)}</p></div>`).join('') : '<p class="muted small">先点击流程图节点询问配置；已登记的节点参数可在当前草稿中调整。</p>'}</div>
-      <div class="agent-compose"><input data-agent-input type="text" placeholder="询问当前节点或修改当前实验配置" maxlength="500" /><button class="btn primary" type="button" data-agent-send ${agentPending ? 'disabled' : ''}>${agentPending ? '正在回复…' : '发送'}</button></div>`);
+    const sequences = context.artifacts.filter((a) => a.kind === 'FASTA');
+    return panel('实验配置 Agent', `<div class="experiment-agent-body">
+      ${selected ? `<div class="agent-context" aria-label="当前节点">${esc(selected.name)}</div>` : ''}
+      ${sequences.length ? `<label class="agent-artifact-context"><span class="sr-only">参考序列</span><select data-agent-artifact aria-label="参考序列">${sequences.map((a) => `<option value="${esc(a.id)}" ${context.currentArtifact?.id === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.id)}${a.recordCount == null ? '' : ` · ${a.recordCount} 条`}</option>`).join('')}</select></label>` : ''}
+      <div class="agent-messages" role="log" aria-label="实验对话" aria-live="polite">${messages.map((item) => `<div class="agent-message ${item.role === 'user' ? 'user' : 'assistant'}"><span>${item.role === 'user' ? '你' : 'Agent'}</span><p>${esc(item.text)}</p></div>`).join('')}</div>
+      <div class="agent-compose"><textarea data-agent-input aria-label="实验对话输入" placeholder="输入问题或修改要求…" rows="2" maxlength="500"></textarea><button class="btn primary" type="button" data-agent-send ${agentPending ? 'disabled' : ''}>${agentPending ? '回复中…' : '发送'}</button></div>
+    </div>`, experiment ? '<span class="pill">只读快照</span>' : '');
   };
   const identities = function (c) {
     const result = {},
@@ -3949,7 +3957,7 @@ ${esc(policyDraft.description)}</textarea
     });
     document.querySelectorAll('[data-agent-input]').forEach((el) => {
       el.onkeydown = (event) => {
-        if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); el.closest('.panel')?.querySelector('[data-agent-send]')?.click(); }
+        if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); el.closest('.panel')?.querySelector('[data-agent-send]')?.click(); }
       };
     });
     document

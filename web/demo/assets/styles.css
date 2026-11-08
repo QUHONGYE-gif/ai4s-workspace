@@ -3559,20 +3559,17 @@ a.brand {
   text-underline-offset:2px
 }
 
-/* Experiment assistant shares the blue/violet glass surfaces of the workbench. */
-.agent-context, .agent-artifact-context, .agent-compose, .agent-messages, [data-agent-status] {
-  margin: 16px;
-}
-.agent-context { display: grid; gap: 8px; }
-.agent-context span, .agent-message > span { color: var(--muted); font-size: 12px; }
-.agent-artifact-context select, .agent-compose input { width: 100%; min-width: 0; }
-.agent-messages { max-height: 360px; overflow-y: auto; display: grid; gap: 12px; }
-.agent-message {
-  padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px;
-  background: var(--tag-background);
-}
+/* Keep context compact and reserve a scrollable area for the conversation. */
+.experiment-agent-body { display: flex; flex-direction: column; height: 420px; min-height: 0; }
+.agent-context, .agent-artifact-context, .agent-compose, .agent-messages { margin: 12px 16px; }
+.agent-context { color: var(--muted); font-size: var(--text-xs); overflow-wrap: anywhere; }
+.agent-artifact-context select, .agent-compose textarea { width: 100%; min-width: 0; }
+.agent-messages { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.agent-message { padding: 12px 16px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--tag-background); }
 .agent-message.user { margin-left: 16px; border-color: var(--accent-100); }
+.agent-message > span { color: var(--muted); font-size: var(--text-xs); }
 .agent-message p { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.agent-compose { display: flex; align-items: center; gap: 8px; }
+.agent-compose { display: flex; align-items: flex-end; gap: 8px; }
+.agent-compose textarea { font: inherit; resize: none; padding: 8px 12px; border: 1px solid var(--control-border); border-radius: var(--radius-lg); background: var(--control-background); }
 .agent-compose .btn { flex-shrink: 0; }
 .creation-overview strong { overflow-wrap: anywhere; }

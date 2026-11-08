@@ -102,8 +102,8 @@ button:hover:not(:disabled) {
 .workbench {
   padding: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  grid-template-rows: 590px 600px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-rows: 650px 600px;
   gap: 16px;
   flex: 1;
   min-height: 0;
@@ -156,10 +156,12 @@ button:hover:not(:disabled) {
 .flow-panel {
   display: flex;
   flex-direction: column;
-  grid-column: 1 / -1;
+  grid-column: 1;
   grid-row: 1;
   min-height: 0;
 }
+.flow-panel > .panel-heading { flex-wrap: wrap; }
+.flow-panel > .panel-heading h2 { min-width: 0; overflow-wrap: anywhere; }
 .flow-head-right {
   display: flex;
   align-items: center;
@@ -196,7 +198,7 @@ button:hover:not(:disabled) {
 .detail-panel {
   display: flex;
   flex-direction: column;
-  grid-column: 1;
+  grid-column: 1 / -1;
   grid-row: 2;
   min-height: 0;
   max-height: none;
@@ -367,7 +369,7 @@ button:hover:not(:disabled) {
 }
 .agent-panel {
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
   background: var(--gray-0);
@@ -391,7 +393,7 @@ button:hover:not(:disabled) {
   height: 15px;
 }
 .agent-context {
-  padding: 12px 16px;
+  padding: 8px 16px;
   border-bottom: 1px solid var(--gray-100);
   color: var(--gray-600);
   font-size: var(--text-xs);
@@ -460,13 +462,7 @@ button:hover:not(:disabled) {
   width: 13px;
   height: 13px;
 }
-.agent-footnote {
-  font-size: var(--text-xs);
-  color: var(--gray-600);
-  text-align: center;
-  padding: 0 16px 16px;
-  line-height: 1.5;
-}
+
 .toast {
   position: fixed;
   bottom: 22px;
@@ -771,12 +767,7 @@ button:hover:not(:disabled) {
 .chat-actions {
   margin-top: 12px;
 }
-.chat-greeting {
-  font-size: var(--text-sm);
-  color: var(--muted);
-  line-height: 1.9;
-  padding: 12px 4px;
-}
+
 .demo-graph {
   overflow: auto;
   position: relative;
@@ -999,19 +990,6 @@ summary {
   color: var(--muted);
   font-size: var(--text-xs);
   margin: 12px 0 16px;
-}
-@container (max-width: 850px) {
-  .workbench {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 350px 480px 620px;
-  }
-  .agent-panel {
-    grid-column: 1;
-    grid-row: 3;
-  }
-  .ai-toolbar-actions {
-    width: 100%;
-  }
 }
 .canvas-toolbar {
   display: flex;
@@ -1241,15 +1219,14 @@ summary {
 @container (max-width:850px) {
   .workbench {
     grid-template-columns: minmax(0,1fr);
-    grid-template-rows: 650px 480px 620px;
+    grid-template-rows: 650px 480px 600px;
   }
   .flow-panel {
     grid-column: 1;
   }
-  .agent-panel {
-    grid-column: 1;
-    grid-row: 3;
-  }
+  .agent-panel { grid-column: 1; grid-row: 2; }
+  .detail-panel { grid-column: 1; grid-row: 3; }
+  .ai-toolbar-actions { width: 100%; }
   .canvas-toolbar button {
     min-height: 40px;
   }
