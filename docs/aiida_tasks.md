@@ -92,6 +92,6 @@ PYTHONPATH=src python -m pytest -q tests/test_ai4s_tasks.py
 
 CalcJob 与 Parser 的 `CACHE_VERSION` 均已提升为 2，清单的 `validator_version` 为 `proteinmpnn-2`。旧规则的缓存不会与新规则直接匹配；C 也拒绝直接消费旧验证版本的真实结果。旧过程与输出继续保留，当前没有把旧结果重新解析为新版本的公共入口。
 
-`python tests/test_aiida_workflows.py` 在独立临时 profile 检查实际 Parser 的合成损坏文件、C 的重试与连续重筛选，以及 B 的 ORM 查询与只读导出；不运行模型。真实恢复、GPU 新规则验收和网页提交需分别验证。上述实现不等于两个任务已共用一个通用 CalcJob／Parser，筛选目前是 C 的 `calcfunction`。
+`python tests/test_aiida_workflows.py` 在独立临时 profile 检查实际 Parser 的合成损坏文件、C 的两次提交上限、逐次尝试日志、daemon 排队／停启恢复与连续重筛选，以及 B 的 ORM 查询与只读导出；不运行模型。该脚本要求 POSIX daemon，Windows 开发机直接跳过。真实 GPU 恢复、新版本全流程和网页提交仍需在目标环境分别验证。上述实现不等于两个任务已共用一个通用 CalcJob／Parser，筛选目前是 C 的 `calcfunction`。新增快速逻辑检查见 [C 模块说明](../README_C.md#最小验证与原生验收)。
 
 返回：[C 模块](../README_C.md) · [运行记录](../experiments/R005-aiida-proteinmpnn/record.md) · [当前状态](status.md) · [仓库](../README.md)。

@@ -2,14 +2,15 @@
 
 面向科学中间产物的身份、依赖、共享与复用，首个场景为蛋白质设计。
 
-当前包含工作台演示前后端、独立蛋白质设计程序及嵌入式 PyMOL。工作流执行、产物目录和复用策略仍为模拟；真实 PyMOL 结构查看已接入。能力边界见 [当前状态](docs/status.md)。
+当前包含工作台演示前后端、独立蛋白质设计程序及嵌入式 PyMOL。网页上的工作流执行、产物目录和复用交互仍为模拟；C 模块 WorkChain 已实现复用决策适配层，但尚未接入网页／引擎服务；真实 PyMOL 结构查看已接入。能力边界见 [当前状态](docs/status.md)。
 
 ## 开发入口
 
 - [工作台前后端](web/README.md)：文件职责、启动、API 与已有测试。
 - [PyMOL](tools/pymol_web/README.md)：在已有工作区启动结构查看、网页命令和完整界面。
 - [蛋白质设计](docs/protein_pipeline.md)：配置、运行与输出约定。
-- [AiiDA 单任务接入](docs/aiida_tasks.md)与 [C 模块](README_C.md)：真实 ProteinMPNN、两阶段编排及重筛选；[运行记录](experiments/R005-aiida-proteinmpnn/record.md)保存已验证范围。
+- [AiiDA 单任务接入](docs/aiida_tasks.md)与 [C 模块](README_C.md)：真实 ProteinMPNN、两阶段编排、有限尝试、失败记录、daemon 恢复及重筛选；[运行记录](experiments/R005-aiida-proteinmpnn/record.md)保存已验证范围。
+- [复用决策与决策记录](docs/reuse_decision.md)：三种策略、候选映射、记录查询及验证边界。
 - [AiiDA 查询与来源](src/ai4s_query/README.md)：原生状态、文件、来源及工作台只读快照导出。
 - [成员协作](docs/collaboration.md)：个人工作区、预览与 PR 合并。
 
