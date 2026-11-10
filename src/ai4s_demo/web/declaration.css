@@ -1,0 +1,296 @@
+/* Contract registration shares the workbench's tokens and native controls. */
+.assistant-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.declaration-workspace {
+  min-width: 0;
+  color: var(--text, #262a3d);
+}
+.declaration-workspace [hidden] {
+  display: none !important;
+}
+.declaration-heading,
+.declaration-draftbar,
+.declaration-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.declaration-heading {
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.declaration-heading h2 {
+  margin: 0 0 8px;
+  font-size: 23px;
+}
+.declaration-heading p {
+  margin: 0;
+  color: #646e8b;
+  line-height: 1.6;
+}
+.declaration-draftbar {
+  margin-bottom: 16px;
+}
+.declaration-draftbar label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.declaration-draftbar select {
+  max-width: 320px;
+}
+.declaration-notice {
+  padding: 14px 18px;
+  background: #f0f2ff;
+  border: 1px solid #e0e4f5;
+  border-radius: 12px;
+  line-height: 1.7;
+}
+.declaration-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(310px, 0.48fr);
+  gap: 20px;
+  align-items: start;
+  margin-top: 18px;
+}
+.declaration-editor,
+.declaration-assistant {
+  min-width: 0;
+}
+.declaration-body {
+  padding: 22px;
+}
+.declaration-body h3 {
+  margin: 28px 0 12px;
+  font-size: 17px;
+}
+.declaration-body h4 {
+  margin: 20px 0 10px;
+  font-size: 15px;
+}
+.declaration-workspace .fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.declaration-workspace .field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.declaration-workspace input:not([type="checkbox"]),
+.declaration-workspace select,
+.declaration-workspace textarea {
+  box-sizing: border-box;
+  min-height: 42px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dce0ed;
+  border-radius: 8px;
+  background: #fff;
+  color: #30364d;
+  font: inherit;
+}
+.declaration-workspace input[readonly] {
+  background: #f6f7fb;
+  color: #626d88;
+}
+.declaration-workspace input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #625bda;
+}
+.declaration-workspace
+  :is(button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid #8c83e7;
+  outline-offset: 3px;
+}
+.declaration-workspace .field-hint {
+  color: #65718b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.declaration-table-wrap {
+  overflow: auto;
+  border: 1px solid #e1e4f0;
+  border-radius: 10px;
+}
+.declaration-workspace .source-grid {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.declaration-workspace .source-grid th {
+  background: #f5f6fb;
+  text-align: left;
+  white-space: nowrap;
+  color: #636e86;
+}
+.declaration-workspace .source-grid :is(td, th) {
+  padding: 12px;
+  vertical-align: top;
+  border-bottom: 1px solid #e9eaf3;
+}
+.declaration-workspace .source-grid td {
+  min-width: 100px;
+}
+.declaration-workspace .source-grid td:first-child {
+  min-width: 170px;
+}
+.declaration-workspace .source-grid textarea {
+  min-width: 180px;
+  min-height: 85px;
+  resize: vertical;
+}
+.declaration-workspace .source-grid code {
+  overflow-wrap: anywhere;
+}
+.declaration-missing,
+.check-list {
+  color: #94601a;
+  background: #fff9ee;
+  padding: 12px;
+  border-radius: 8px;
+  line-height: 1.7;
+}
+.check-list ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+.check-list code {
+  overflow-wrap: anywhere;
+}
+.declaration-disclosure {
+  margin: 18px 0;
+  border-top: 1px solid #e7e8f1;
+  padding-top: 16px;
+}
+.declaration-disclosure summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 8px 0;
+}
+.declaration-disclosure p {
+  line-height: 1.7;
+}
+.declaration-workspace #dp-json {
+  min-height: 360px;
+  font:
+    12px/1.6 ui-monospace,
+    monospace;
+  margin: 12px 0;
+  resize: vertical;
+}
+.declaration-workspace .json-code {
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.declaration-actions {
+  margin: 24px 0 8px;
+}
+.declaration-assistant .panel-heading {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.declaration-chat {
+  padding: 18px;
+  max-height: 640px;
+  min-height: 230px;
+  overflow: auto;
+}
+.declaration-chat .chat-message {
+  margin-bottom: 16px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.declaration-chat .message-body {
+  line-height: 1.8;
+}
+.declaration-chat .message-body pre {
+  overflow: auto;
+}
+.declaration-greeting {
+  color: #68728e;
+  font-size: 14px;
+  line-height: 1.9;
+}
+.declaration-material,
+.declaration-composer,
+.declaration-footnote {
+  margin-left: 18px;
+  margin-right: 18px;
+}
+.declaration-material textarea {
+  min-height: 110px;
+  margin-top: 10px;
+  resize: vertical;
+}
+.declaration-composer textarea {
+  min-height: 100px;
+  resize: vertical;
+  margin-bottom: 10px;
+}
+.declaration-composer button {
+  width: 100%;
+}
+.declaration-workspace #dp-pending {
+  margin: 0 18px;
+  color: #625bba;
+}
+.declaration-workspace .inline-error {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.declaration-diff {
+  border: 1px solid #e0e3f0;
+  border-radius: 10px;
+  padding: 14px;
+  margin: 14px 0;
+  overflow-wrap: anywhere;
+}
+.declaration-diff pre {
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 12px;
+  background: #f6f7fb;
+  padding: 12px;
+}
+.declaration-workspace .modal {
+  max-width: min(780px, calc(100vw - 32px));
+}
+.declaration-workspace .modal-body {
+  max-height: 65vh;
+  overflow: auto;
+}
+@media (max-width: 1150px) {
+  .declaration-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .declaration-chat {
+    max-height: 460px;
+  }
+}
+@media (max-width: 600px) {
+  .declaration-workspace .fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .declaration-body {
+    padding: 14px;
+  }
+  .declaration-draftbar select {
+    max-width: 100%;
+  }
+  .assistant-modes .button {
+    width: 100%;
+  }
+}

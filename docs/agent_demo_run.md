@@ -2,6 +2,8 @@
 
 Agent 用于 RFdiffusion、ProteinMPNN 和 Boltz 的资料参数提取、对话配置、确认登记与请求生成。科学执行与 AiiDA 尚未连接；请求标为 `not_submitted`，不能直接提交计算。
 
+网页到 AiiDA 的任务声明格式、文件登记方式和完整 JSON 示例见 [约定①任务声明](task_declaration_contract.md)。登记页、确认导出与引擎交接见 [声明登记与交付](task_declaration_run.md)。原有三模型演示与约定①登记分开保存，协议要求与已实现能力分别判断。
+
 ## 安装和启动
 
 在个人工作区仓库根目录安装项目专用依赖，需要 Python 3.12+ 和 uv：

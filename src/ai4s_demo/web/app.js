@@ -1,6 +1,7 @@
 import { api, post, operationId, escapeHTML as esc, download } from './api.js';
 import { renderMessage } from './message.js';
 import { createGraph } from './graph.js';
+import { mountDeclaration } from './declaration.js';
 export async function mountAssistant(host, { onApply }) {
     const root = host.attachShadow({ mode: 'open' });
     const response = await fetch(new URL('./workspace.html', import.meta.url));
@@ -18,6 +19,7 @@ export async function mountAssistant(host, { onApply }) {
     root.prepend(stylesheet);
     await stylesLoaded;
     const $ = id => root.getElementById(id);
+    const declaration = await mountDeclaration($('declaration-registration'));
     const graph = createGraph(root, { onMove: (node_id, position) => saveGraphOperations([{ type: 'move_node', node_id, ...position }]), onError: showError });
     const { drawNodes, drawWires, destroy } = graph;
     const lifecycle = new AbortController();
@@ -48,7 +50,7 @@ export async function mountAssistant(host, { onApply }) {
         $(target).hidden = false;
     }
     function refreshDisabled() {
-        root.querySelectorAll('button:not([data-confirm-control]):not([data-view-control])').forEach(b => b.disabled = busy);
+        $('legacy-workspace').querySelectorAll('button:not([data-confirm-control]):not([data-view-control])').forEach(b => b.disabled = busy);
         $('undo-button').disabled = busy || !state?.can_undo;
         for (const id of ['register-button', 'delete-button', 'import-button'])
             $(id).disabled = busy || !current();
@@ -779,11 +781,23 @@ export async function mountAssistant(host, { onApply }) {
             await openWorkflow(created.draft.id);
         }
     }
+    function switchMode(showDeclaration) {
+        $('declaration-registration').hidden = !showDeclaration;
+        $('legacy-workspace').hidden = showDeclaration;
+        for (const [id, active] of [['declaration-mode', showDeclaration], ['legacy-mode', !showDeclaration]]) {
+            $(id).setAttribute('aria-pressed', String(active));
+            $(id).classList.toggle('primary', active);
+        }
+        if (!showDeclaration && state) requestAnimationFrame(() => drawWires(state));
+    }
+    $('declaration-mode').addEventListener('click', () => switchMode(true), { signal: lifecycle.signal });
+    $('legacy-mode').addEventListener('click', () => switchMode(false), { signal: lifecycle.signal });
     try {
         await initialize();
     }
     catch (error) {
         lifecycle.abort();
+        declaration.destroy();
         destroy();
         throw error;
     }
@@ -804,6 +818,7 @@ export async function mountAssistant(host, { onApply }) {
         },
         destroy() {
             lifecycle.abort();
+            declaration.destroy();
             destroy();
             clearTimeout(toastTimer);
         },
