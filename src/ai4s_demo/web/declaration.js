@@ -43,6 +43,7 @@ export async function mountDeclaration(container) {
         <form id="dp-chat-form" class="declaration-composer"><label class="sr-only" for="dp-message">向任务声明助手提问</label><textarea id="dp-message" maxlength="8000" placeholder="请根据真实定义补齐缺少的输入、参数和输出"></textarea><button class="button primary" type="submit">发送给登记助手</button></form><p class="field-hint declaration-footnote">普通问答不修改声明；所有提案确认后才写入。</p>
       </aside></div>
       <dialog class="modal" id="dp-confirm" aria-labelledby="dp-confirm-title"><div class="modal-head"><h2 id="dp-confirm-title">核对声明修改</h2></div><div class="modal-body"><p>以下修改尚未写入。确认后整批保存到编辑草稿。</p><p id="dp-evidence" class="field-hint"></p><div id="dp-diff"></div></div><div class="modal-foot"><button class="button" id="dp-cancel">取消修改</button><button class="button primary" id="dp-apply">确认并写入</button></div></dialog>
+      <dialog class="modal small-modal" id="dp-discard" aria-labelledby="dp-discard-title"><div class="modal-head"><h2 id="dp-discard-title">读取保存版本？</h2></div><div class="modal-body"><p>尚未确认的表单和 JSON 编辑会被放弃，已保存的声明保持不变。</p></div><div class="modal-foot"><button class="button" id="dp-discard-cancel">继续编辑</button><button class="button primary" id="dp-discard-apply">放弃编辑并读取</button></div></dialog>
       <dialog class="modal small-modal" id="dp-settings-dialog" aria-labelledby="dp-settings-title"><div class="modal-head"><h2 id="dp-settings-title">模型 API 设置</h2><button class="button" id="dp-settings-close">关闭</button></div><form id="dp-settings-form"><div class="modal-body"><label class="field"><span>DeepSeek 模型名</span><input id="dp-model" required></label><label class="field"><span>API key（仅存服务端，留空保留）</span><input type="password" id="dp-key" autocomplete="off"></label><p id="dp-key-info"></p><p id="dp-settings-error" class="inline-error" role="alert"></p></div><div class="modal-foot"><button class="button primary">保存 API 设置</button></div></form></dialog>
     </section>`;
   const listen = (element, event, fn) =>
@@ -327,9 +328,16 @@ export async function mountDeclaration(container) {
   );
   listen($("reload"), "click", () =>
     run(async () => {
-      if (dirty && !window.confirm("放弃尚未确认的编辑，读取已保存声明？"))
-        return;
+      if (dirty) $("discard").showModal();
+      else await acceptFromServer(state.id);
+    }),
+  );
+  listen($("discard-cancel"), "click", () => $("discard").close());
+  listen($("discard-apply"), "click", () =>
+    run(async () => {
       await acceptFromServer(state.id);
+      $("discard").close();
+      $("status").textContent = "已读取服务端保存版本。";
     }),
   );
   async function acceptFromServer(id) {
