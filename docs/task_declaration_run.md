@@ -1,6 +1,6 @@
 # ProteinMPNN 任务声明登记与交付
 
-本页面完成约定①的声明编辑、真实 Agent 提案、用户确认和 JSON 导出。声明规则以 [约定①](task_declaration_contract.md) 为准，完整发布文件为 [proteinmpnn/1.json](../configs/task_declarations/proteinmpnn/1.json)。当前支持真实任务接口的 `single` 和 `mpnn_filter` 定义；导出不等于引擎已登记，也不等于实验已提交。
+本页面完成约定①的声明编辑、真实 Agent 提案、用户确认和 JSON 导出。声明规则以 [约定①](task_declaration_contract.md) 为准，完整声明文件为 [proteinmpnn/1.json](../configs/task_declarations/proteinmpnn/1.json)。当前支持真实任务接口的 `single` 和 `mpnn_filter` 定义；导出不等于引擎已登记，也不等于实验已提交。
 
 ## 使用入口
 
