@@ -4,43 +4,278 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<link rel="icon" href="data:,">
-<title>研序 · AI4S 工作台（模拟体验）</title>
-<link rel="stylesheet" href="./assets/styles.css">
+<link rel="icon" href="./assets/yanxu/favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="./assets/yanxu/yanxu-icon-180.png">
+<meta name="theme-color" content="#1c2c54">
+<title>研序 · AI4S 科学产物工作台</title>
+<meta name="description" content="研序记录 AI4S 工作流中间结果的身份、依赖与生成成本，帮助团队判断何时复用、何时重算、是否保存。首个场景为蛋白质设计。">
+<meta property="og:title" content="研序 · AI4S 科学产物工作台">
+<meta property="og:description" content="让每一份科学中间结果都可判断、可复用、可追溯。">
+<meta property="og:image" content="./assets/yanxu/og-image.jpg">
+<script>
+  // Old workbench links such as ./#/catalog keep working after the move.
+  const openWorkbenchRoute = () => {
+    if (location.hash.startsWith('#/')) location.replace('./workbench.html' + location.hash);
+  };
+  openWorkbenchRoute();
+  window.addEventListener('hashchange', openWorkbenchRoute);
+</script>
+<link rel="stylesheet" href="./assets/landing.css">
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
-<symbol id="i-flow" viewBox="0 0 24 24"><rect x="3" y="9" width="5" height="6" rx="1"/><rect x="16" y="3" width="5" height="6" rx="1"/><rect x="16" y="15" width="5" height="6" rx="1"/><path d="M8 12h4V6h4M12 12v6h4"/></symbol>
-<symbol id="i-data" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v7c0 4 16 4 16 0V5M4 12v7c0 4 16 4 16 0"/></symbol>
-<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
-<symbol id="i-tune" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="10" cy="18" r="2" fill="currentColor" stroke="none"/></symbol>
-<symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
-<symbol id="i-play" viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z"/></symbol>
-<symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 9a8 8 0 1 1 0 7M4 3v6h6"/></symbol>
-<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
-<symbol id="i-atom" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(45 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-45 12 12)"/><circle cx="12" cy="12" r="1"/></symbol>
-<symbol id="i-file" viewBox="0 0 24 24"><path d="M13 3H5v18h14V9Zm0 0v6h6M8 13h8M8 17h6"/></symbol>
-<symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-13-2 20"/></symbol>
-<symbol id="i-box" viewBox="0 0 24 24"><path d="m12 3 9 5v9l-9 5-9-5V8Zm0 9 9-4M12 12 3 8m9 4v10M7 5.8l9 5"/></symbol>
-<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
-<symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
-<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
-</defs></svg>
-<aside class="sidebar" aria-label="主导航">
-  <div class="brand"><svg class="brandmark" viewBox="0 0 36 40" fill="none" aria-hidden="true"><path d="m4 11 13-7 14 8-13 8Zm0 9 14 8 13-8M4 29l14 8 13-8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><div><div class="brand-name">研序</div><div class="brand-sub">SCIENCE WORKBENCH</div></div></div>
-  <div class="project-switch"><div class="eyebrow">当前项目</div><div class="project-name"><svg class="icon"><use href="#i-atom"/></svg> 分子设计探索 <span class="pill good" style="margin-left:auto;font-size:8px;padding:1px 5px">示例</span></div><div id="active-context" class="tiny" style="color:#939fbb;margin-top:9px">当前流程 · 蛋白质设计</div></div>
-  <div class="nav-label">WORKSPACE</div>
-  <nav><button class="nav-item active" data-nav="workflows"><svg class="icon"><use href="#i-flow"/></svg>工作流<span id="workflow-count" class="nav-count">02</span></button><button class="nav-item" data-nav="catalog"><svg class="icon"><use href="#i-data"/></svg>数据目录<span id="catalog-count" class="nav-count">5</span></button><button class="nav-item" data-nav="runs"><svg class="icon"><use href="#i-clock"/></svg>实验记录<span id="run-count" class="nav-count">0</span></button><button class="nav-item" data-nav="policy"><svg class="icon"><use href="#i-tune"/></svg>复用与存储</button><button class="nav-item" data-nav="tools"><svg class="icon"><use href="#i-box"/></svg>常用工具<span class="nav-count">02</span></button></nav>
-  <div class="sidebar-note"><div class="status"><span class="dot"></span>演示模式</div><div>科学流程仅作模拟</div></div>
-  <div class="user"><div class="avatar">研</div><div><div class="user-name">示例研究者</div><div class="user-role">演示账户</div></div><button class="help-button" id="help-btn" aria-label="查看原型说明">?</button></div>
-</aside>
-<div class="shell"><header class="topbar"><div class="breadcrumbs">项目空间 <span>/</span> 分子设计探索 <span>/</span> <strong id="breadcrumb">工作流</strong></div><div class="top-right"><label class="search-box"><svg class="icon"><use href="#i-search"/></svg><input id="global-search" aria-label="搜索数据目录" placeholder="搜索中间数据…"><span class="kbd">↵</span></label><span class="demo-badge">演示版</span></div></header><main id="main" class="main"><div class="panel empty" role="status">正在载入工作台…</div></main></div>
-<input type="file" id="state-import" accept=".json,application/json" hidden>
-<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-<div id="modal" class="modal-backdrop" hidden><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1"><div class="panel-head"><div id="modal-title" class="panel-title"></div><button class="modal-close" aria-label="关闭弹窗"><svg class="icon"><use href="#i-close"/></svg></button></div><div id="modal-content" class="modal-content"></div></section></div>
-<script src="./assets/api.js" defer></script>
-<script src="./assets/reuse-canvas.js" defer></script>
-<script src="./assets/app.js" defer></script>
+<a class="skip-link" href="#main">跳到正文</a>
+
+<header class="site-nav" data-nav>
+  <a class="nav-brand" href="#top" aria-label="研序 项目首页">
+    <img src="./assets/yanxu/yanxu-icon-180.png" alt="" width="28" height="28">
+    <span>研序</span>
+  </a>
+  <nav class="nav-links" aria-label="页面目录">
+    <a href="#questions">核心问题</a>
+    <a href="#lineage">溯源</a>
+    <a href="#pipeline">工作方式</a>
+    <a href="#scenes">使用场景</a>
+    <a href="#system">系统构成</a>
+  </nav>
+  <a class="btn btn-primary btn-sm" href="#enter">进入工作台</a>
+  <button class="nav-toggle" type="button" aria-label="打开目录" aria-expanded="false" data-nav-toggle><span></span><span></span></button>
+</header>
+
+<main id="main">
+  <!-- Hero: the generated image carries the protein and data-flow story; copy sits on its quiet left side. -->
+  <section class="hero" id="top">
+    <div class="hero-media" data-parallax aria-hidden="true">
+      <img src="./assets/yanxu/landing-hero.webp" alt="" fetchpriority="high">
+    </div>
+    <div class="hero-veil" aria-hidden="true"></div>
+    <div class="hero-copy">
+      <p class="eyebrow">AI4S 科学产物工作台 · 首个场景：蛋白质设计</p>
+      <h1 class="hero-title">让每一份科学中间结果<br>都可判断、可复用、可追溯</h1>
+      <p class="hero-sub">研序记录工作流中间结果的身份、依赖与生成成本。<br>在多人共用的服务器上，帮团队决定哪些结果直接复用、哪些重新计算、<br>哪些值得保存。</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#enter">进入工作台</a>
+        <a class="btn btn-glass" href="#pipeline">看它如何判断复用</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem: heading on the left, three costs stacked on the right. -->
+  <section class="section problem" id="problem">
+    <div class="split">
+      <div class="section-head reveal">
+        <p class="eyebrow">为什么需要它</p>
+        <h2>同一份结果，<br>被不同的人反复算了很多次</h2>
+        <p class="lead">AI4S 实验由预处理、模型计算和结果分析串成。中间结果数量多、生成贵，却常常只是散落在各自目录里的文件。</p>
+      </div>
+      <div class="pain-list">
+        <article class="pain reveal">
+          <span class="pain-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9a8 8 0 1 1 0 7M4 3v6h6"/></svg></span>
+          <div><h3>重复计算</h3><p>队友已经生成过同样的骨架或序列，自己并不知道，只好再跑一遍 GPU。</p></div>
+        </article>
+        <article class="pain reveal">
+          <span class="pain-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7h13l-3-3M21 17H8l3 3"/></svg></span>
+          <div><h3>数据搬运</h3><p>结果存在别处、读取很慢时，复用反而比重算更费时，却缺少依据去比较。</p></div>
+        </article>
+        <article class="pain reveal">
+          <span class="pain-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+          <div><h3>来源不清</h3><p>参数、模型或数据库版本改过之后，哪些旧结果还有效，只能靠记忆判断。</p></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Three research questions side by side, each with a small live illustration. -->
+  <section class="section questions" id="questions">
+    <div class="section-head center reveal">
+      <p class="eyebrow">核心研究问题</p>
+      <h2>比普通文件缓存更懂科学数据</h2>
+      <p class="lead">依据数据的语义、依赖关系和计算成本，决定中间结果何时复用、何时重算、是否保存。</p>
+    </div>
+    <div class="question-grid">
+      <article class="question reveal">
+        <div class="visual visual-identity" aria-hidden="true">
+          <div class="id-parts">
+            <span style="--i:0">输入 seq-a</span>
+            <span style="--i:1">模型 fold-v1</span>
+            <span style="--i:2">参数 seed 42</span>
+            <span style="--i:3">数据库 db-2025</span>
+          </div>
+          <div class="id-result"><small>可复用身份</small><strong>structure-ad334e8f</strong></div>
+        </div>
+        <span class="question-index">01</span>
+        <h3>数据如何识别</h3>
+        <p>输入、算法、参数、模型和数据库版本共同定义一份结果的身份。同样的生成条件，得到同一个身份。</p>
+      </article>
+      <article class="question reveal">
+        <div class="visual visual-compare" aria-hidden="true">
+          <div class="bar-row"><span>读取共享结果</span><div class="bar"><i style="--w:22%"></i></div></div>
+          <div class="bar-row"><span>重新计算</span><div class="bar"><i class="slow" style="--w:88%"></i></div></div>
+          <div class="bar-row"><span>远端读取</span><div class="bar"><i class="warn" style="--w:96%"></i></div></div>
+          <div class="verdict"><span class="verdict-dot"></span>选择：读取共享结果</div>
+        </div>
+        <span class="question-index">02</span>
+        <h3>数据如何复用</h3>
+        <p>先判断已有结果是否仍然有效，再比较读取与重算的时间。已有结果不一定更快。</p>
+      </article>
+      <article class="question reveal">
+        <div class="visual visual-storage" aria-hidden="true">
+          <div class="tier"><span>固定保留</span><div class="blocks"><i class="pin"></i><i class="pin"></i></div></div>
+          <div class="tier"><span>共享存储</span><div class="blocks"><i></i><i></i><i></i><i class="fade"></i></div></div>
+          <div class="tier"><span>节点缓存</span><div class="blocks"><i></i><i class="fade"></i><i class="fade"></i></div></div>
+        </div>
+        <span class="question-index">03</span>
+        <h3>数据如何存放</h3>
+        <p>结合复用价值、数据大小和可用空间，决定保留哪些结果、放在哪里，重要结果固定保留。</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- Lineage: one shared artifact, its origin and the two runs that reuse it. -->
+  <section class="section lineage" id="lineage">
+    <div class="lineage-card reveal">
+      <div class="lineage-copy">
+        <p class="eyebrow">可追溯</p>
+        <h2>每份产物都知道<br>自己从哪里来、被谁用过</h2>
+        <p class="lead">选中图中的节点，查看它的身份与关系。共享骨架 B1 由一次运行生成，又被两位成员分别接到新的序列设计上。</p>
+        <dl class="lineage-detail" data-lineage-detail>
+          <div><dt>节点</dt><dd data-field="title">骨架 B1</dd></div>
+          <div><dt>类型</dt><dd data-field="kind">科学产物 · PDB</dd></div>
+          <div><dt>来源</dt><dd data-field="from">RFdiffusion 运行 E01</dd></div>
+          <div><dt>去向</dt><dd data-field="to">ProteinMPNN 运行 E02、E03</dd></div>
+        </dl>
+      </div>
+      <div class="lineage-graph">
+        <svg viewBox="0 0 640 360" role="img" aria-label="产物关系图：RFdiffusion 生成骨架 B1，B1 被两次 ProteinMPNN 运行复用，分别得到序列 S1、S2">
+          <g class="edges">
+            <path d="M120 180 C150 180 150 180 180 180"/>
+            <path d="M300 180 C340 180 330 90 370 90"/>
+            <path d="M300 180 C340 180 330 270 370 270"/>
+            <path d="M470 90 C490 90 490 90 510 90"/>
+            <path d="M470 270 C490 270 490 270 510 270"/>
+          </g>
+          <g class="nodes">
+            <g class="node run" data-node="e01" tabindex="0" style="--i:0"><rect x="10" y="150" width="110" height="60" rx="12"/><text x="24" y="174" class="k">生成运行</text><text x="24" y="196">RFdiffusion</text></g>
+            <g class="node asset is-selected" data-node="b1" tabindex="0" style="--i:1"><rect x="180" y="146" width="120" height="68" rx="14"/><text x="196" y="172" class="k">共享产物</text><text x="196" y="196">骨架 B1</text></g>
+            <g class="node run" data-node="e02" tabindex="0" style="--i:2"><rect x="370" y="60" width="100" height="60" rx="12"/><text x="382" y="84" class="k">成员甲</text><text x="382" y="106">ProteinMPNN</text></g>
+            <g class="node run" data-node="e03" tabindex="0" style="--i:2"><rect x="370" y="240" width="100" height="60" rx="12"/><text x="382" y="264" class="k">成员乙</text><text x="382" y="286">ProteinMPNN</text></g>
+            <g class="node asset" data-node="s1" tabindex="0" style="--i:3"><rect x="510" y="60" width="120" height="60" rx="12"/><text x="524" y="84" class="k">序列 S1</text><text x="524" y="106">→ Boltz-2</text></g>
+            <g class="node asset" data-node="s2" tabindex="0" style="--i:3"><rect x="510" y="240" width="120" height="60" rx="12"/><text x="524" y="264" class="k">序列 S2</text><text x="524" y="286">FASTA</text></g>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pipeline: interactive explanation of what is reused after one change. -->
+  <section class="section pipeline-section" id="pipeline">
+    <div class="section-head center reveal">
+      <p class="eyebrow">工作方式</p>
+      <h2>改一个参数，只重算真正受影响的步骤</h2>
+      <p class="lead">每一步的输出都带着身份和依赖。修改某一步之后，上游结果直接复用，下游结果重新计算。</p>
+    </div>
+    <div class="pipeline-card reveal">
+      <div class="pipeline-controls" role="group" aria-label="选择要修改的步骤">
+        <span>修改：</span>
+        <button type="button" class="chip" data-change="none" aria-pressed="true">不修改</button>
+        <button type="button" class="chip" data-change="1" aria-pressed="false">ProteinMPNN 采样温度</button>
+        <button type="button" class="chip" data-change="3" aria-pressed="false">Boltz-2 推理设置</button>
+        <button type="button" class="chip" data-change="0" aria-pressed="false">RFdiffusion 骨架条件</button>
+      </div>
+      <ol class="pipeline" data-pipeline>
+        <li class="stage" data-stage="0"><span class="stage-kind">骨架生成</span><strong>RFdiffusion</strong><small>backbone.pdb</small><em class="stage-state"></em></li>
+        <li class="stage" data-stage="1"><span class="stage-kind">序列设计</span><strong>ProteinMPNN</strong><small>sequences.fasta</small><em class="stage-state"></em></li>
+        <li class="stage optional" data-stage="2"><span class="stage-kind">同源检索 · 可选</span><strong>MMseqs2</strong><small>alignment.a3m</small><em class="stage-state"></em></li>
+        <li class="stage" data-stage="3"><span class="stage-kind">结构预测</span><strong>Boltz-2</strong><small>structure.cif</small><em class="stage-state"></em></li>
+      </ol>
+      <div class="pipeline-foot">
+        <p class="pipeline-summary" data-summary aria-live="polite"></p>
+        <div class="pipeline-meter" aria-hidden="true"><span data-meter-reuse></span><span data-meter-compute></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tagline reveal over the shared-network image. -->
+  <section class="tagline" aria-label="项目主张">
+    <div class="tagline-media" aria-hidden="true"><img src="./assets/yanxu/landing-network.webp" alt="" loading="lazy"></div>
+    <p class="tagline-text" data-words>不是更大的文件缓存，<br>而是读懂科学数据之后的复用判断。</p>
+  </section>
+
+  <!-- Scenarios with generated illustrations. -->
+  <section class="section scenes" id="scenes">
+    <div class="section-head reveal">
+      <p class="eyebrow">使用场景</p>
+      <h2>从一个人的实验，到一个课题组的共享成果</h2>
+    </div>
+    <div class="scene-grid">
+      <article class="scene reveal">
+        <img src="./assets/yanxu/scene-share.webp" alt="一份共享骨架分出两条光路，连接到两份新序列" loading="lazy">
+        <div class="scene-copy"><span class="scene-tag">团队共享</span><h3>沿用队友生成的骨架</h3><p>成员甲生成并共享骨架 B1，成员乙设计新序列时直接接上，不再重复生成。</p></div>
+      </article>
+      <article class="scene reveal">
+        <img src="./assets/yanxu/scene-iterate.webp" alt="四个相连的玻璃块，前两块保持，后两块重新生成" loading="lazy">
+        <div class="scene-copy"><span class="scene-tag">参数迭代</span><h3>只重跑受影响的下游</h3><p>调整 ProteinMPNN 的采样设置后，骨架照常复用，序列和结构预测重新计算。</p></div>
+      </article>
+      <article class="scene reveal">
+        <img src="./assets/yanxu/scene-storage.webp" alt="分层玻璃架上的数据块，部分淡出，固定的一块保持明亮" loading="lazy">
+        <div class="scene-copy"><span class="scene-tag">空间整理</span><h3>先预览再整理缓存</h3><p>清理节点缓存前，先看能释放多少空间、共享副本是否仍在、是否影响正在运行的任务。</p></div>
+      </article>
+      <article class="scene reveal">
+        <img src="./assets/yanxu/scene-structure.webp" alt="悬浮在发光平板上的蛋白质结构，并连回一个数据块" loading="lazy">
+        <div class="scene-copy"><span class="scene-tag">结构查看</span><h3>从产物直接打开 PyMOL</h3><p>在数据目录里选中结构文件，进入网页中的 PyMOL 会话，来源始终可追溯。</p></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- System layers: from compute engine to the workbench. -->
+  <section class="section system" id="system">
+    <div class="system-card">
+      <div class="system-media reveal" aria-hidden="true"><img src="./assets/yanxu/landing-architecture.webp" alt="" loading="lazy"></div>
+      <div class="system-copy">
+        <div class="section-head reveal">
+          <p class="eyebrow">系统构成</p>
+          <h2>从计算引擎到研究者的工作台</h2>
+        </div>
+        <ol class="layers">
+          <li class="layer reveal"><span class="layer-index">01</span><div><h3>工作台与 Agent</h3><p>创建实验、检查共享候选、查看数据目录；Agent 辅助接入自定义流程。</p></div></li>
+          <li class="layer reveal"><span class="layer-index">02</span><div><h3>查询与快照</h3><p>读取原生运行状态、文件、来源与缓存，导出为工作台可读的快照。</p></div></li>
+          <li class="layer reveal"><span class="layer-index">03</span><div><h3>任务编排</h3><p>两阶段工作流负责上游资格检查与连续重筛选。</p></div></li>
+          <li class="layer reveal"><span class="layer-index">04</span><div><h3>科学计算任务</h3><p>ProteinMPNN 计算任务校验运行记录、序列、分数与样本对应后发布结果。</p></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- Entry: display name only, kept in this browser. -->
+  <section class="enter" id="enter">
+    <div class="enter-media" aria-hidden="true"><img src="./assets/yanxu/landing-login.webp" alt="" loading="lazy"></div>
+    <div class="enter-copy reveal">
+      <p class="eyebrow">进入工作台</p>
+      <h2>从一次蛋白质设计实验开始</h2>
+      <p>创建实验、检查共享候选、运行流程，再到数据目录追溯每一份产物。</p>
+      <ul class="enter-steps">
+        <li><span>1</span>选择流程并填写输入</li>
+        <li><span>2</span>检查可复用的共享结果</li>
+        <li><span>3</span>运行并查看产物来源</li>
+      </ul>
+    </div>
+    <form class="enter-card reveal" data-enter-form novalidate>
+      <h3>成员入口</h3>
+      <label class="field" for="member">
+        <span>显示名称</span>
+        <input id="member" name="member" autocomplete="nickname" maxlength="24" placeholder="例如：林同学">
+      </label>
+      <p class="field-error" data-enter-error role="alert" hidden></p>
+      <button class="btn btn-primary btn-block" type="submit">进入工作台</button>
+      <a class="guest-link" href="./workbench.html" data-guest>以访客身份进入</a>
+    </form>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div><img src="./assets/yanxu/yanxu-icon-32.png" alt="" width="20" height="20"> 研序 · AI4S 科学产物工作台</div>
+  <div class="footer-links"><a href="#questions">核心问题</a><a href="#system">系统构成</a><a href="./workbench.html">工作台</a></div>
+</footer>
+
+<script src="./assets/landing.js" defer></script>
 </body>
 </html>

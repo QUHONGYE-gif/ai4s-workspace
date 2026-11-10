@@ -280,7 +280,7 @@ window.ReuseCanvas = (() => {
     const on = (el, event, fn, options = {}) =>
       el.addEventListener(event, fn, { ...options, signal: lifecycle.signal });
     root.innerHTML = `<section class="reuse-workspace" aria-label="复用与存储关系画布">
-      <div class="reuse-top"><div><span class="eyebrow">REUSE EXPLORER</span><h2>把已有成果接到下一次探索</h2><p>示例场景：团队共享骨架，分别设计新序列。</p></div><span class="pill">交互演示 · 独立示例</span></div>
+      <div class="reuse-top"><div><span class="eyebrow">REUSE EXPLORER</span><h2>把已有成果接到下一次探索</h2><p>示例场景：团队共享骨架，分别设计新序列。</p></div></div>
       <div class="reuse-tabs" role="tablist" aria-label="查看方式">${Object.entries(
         views,
       )
@@ -292,8 +292,7 @@ window.ReuseCanvas = (() => {
       <div class="reuse-layout"><div class="reuse-board"><div class="reuse-toolbar"><span class="reuse-context"></span><div><button class="btn" data-camera="out" aria-label="缩小画布">−</button><span class="reuse-zoom">100%</span><button class="btn" data-camera="in" aria-label="放大画布">＋</button><button class="btn" data-camera="fit">适应画布</button></div></div>
       <div class="reuse-viewport" tabindex="0" role="region" aria-label="关系画布，可拖动空白平移，方向键平移，加减键缩放"><div class="reuse-world"><svg class="reuse-wires" aria-hidden="true"></svg><div class="reuse-nodes"></div></div></div>
       <div class="reuse-legend"><span>▭ 运行 / 计划</span><span>▱ 产物 / 副本</span><span>拖动节点调整位置 · 拖动空白平移 · 滚轮缩放</span></div></div>
-      <aside class="reuse-detail" aria-label="选中节点详情"></aside></div>
-      <div class="reuse-disclaimer">此画布使用独立示例数据。计划选择与空间整理仅在当前页面演示，不执行模型、不修改文件或已有实验。</div></section>`;
+      <aside class="reuse-detail" aria-label="选中节点详情"></aside></div></section>`;
     const $ = (s) => root.querySelector(s);
     const viewport = $(".reuse-viewport"),
       world = $(".reuse-world");

@@ -12,7 +12,7 @@ python scripts/serve_workbench.py --host 127.0.0.1 --port 3000 \
   --data-dir "$workbench_state_dir"
 ```
 
-然后打开工作区已有“开发预览”。需要真实 PyMOL 时，改用 [联合启动器](../tools/pymol_web/README.md)，不同时启动两个占用 3000 端口的服务。
+然后打开工作区已有“开发预览”：根路径为项目介绍页，经“进入工作台”进入 `workbench.html`。入口只在浏览器保存显示名称，不校验账号或密码。需要真实 PyMOL 时，改用 [联合启动器](../tools/pymol_web/README.md)，不同时启动两个占用 3000 端口的服务。
 
 ## Agent 工作流接入
 
@@ -36,9 +36,11 @@ python scripts/serve_workbench.py --host 127.0.0.1 --port 3000 \
 
 | 文件 | 职责 |
 | --- | --- |
-| [index.html](demo/index.html) | 页面外壳与资源引用 |
-| [app.js](demo/assets/app.js)、[styles.css](demo/assets/styles.css) | 页面交互、模拟规则与样式 |
-| [reuse-canvas.js](demo/assets/reuse-canvas.js) | 复用与存储的独立示例画布；仅页面内交互，不修改目录、实验或文件 |
+| [index.html](demo/index.html)、[landing.css](demo/assets/landing.css)、[landing.js](demo/assets/landing.js) | 项目介绍与成员入口；旧的 `./#/…` 链接自动转到工作台 |
+| [workbench.html](demo/workbench.html) | 工作台页面外壳与资源引用 |
+| [app.js](demo/assets/app.js)、[styles.css](demo/assets/styles.css) | 页面交互、模拟规则与样式；`styles.css` 顶部为工作台与 Agent 页面共用的设计变量（颜色、字号、间距、圆角、动效），新样式只取其中的值 |
+| [motion.js](demo/assets/motion.js) | 页面进入、计数和卡片高光等纯界面动效，遵循系统“减少动态效果”设置 |
+| [yanxu/](demo/assets/yanxu/README.md) | 流程封面、空状态插图、图标与分享图 |
 | [api.js](demo/assets/api.js) | 相对路径请求、快照保存与冲突恢复 |
 | [pymol.html](demo/pymol.html) | 无工具栏的嵌入式 noVNC 查看器 |
 | [server.py](../src/workbench/server.py) | 同源静态资源与 HTTP API |
@@ -63,6 +65,12 @@ python scripts/serve_workbench.py --host 127.0.0.1 --port 3000 \
 状态 API 使用 `X-Demo-Session` 隔离模拟快照，不代表成员鉴权或共享权限。保存位置由 `--data-dir` 决定。遇到修订冲突或保存失败，先导出浏览器记录，再显式恢复或导入，避免覆盖未同步内容。
 
 工作流执行、候选匹配和复用决策仍在前端模拟；后端不会执行表单中的模型命令。PyMOL 接口只操作已有个人工具会话，不能作为蛋白质流程或科学效果验证。
+
+## 复用画布与 AiiDA 查询快照
+
+“复用与存储”新增产物关系、复用计划和存储位置三个视图，支持选点、拖动、缩放及模拟整理。画布使用独立示例，不执行模型、不清理实际文件。
+
+[B 查询模块](../src/ai4s_query/README.md)可导出 AiiDA 原生记录，再由页面“导入”读取。此路径是只读离线快照；运行中状态不会被页面改成模拟中断，也不能通过模拟启动／取消／复制配置操作修改真实记录。刷新网页不更新引擎状态，需重新导出。文件仍在来源 Repository，导入 JSON 不授予文件访问或团队共享权限。
 
 ## 验证
 

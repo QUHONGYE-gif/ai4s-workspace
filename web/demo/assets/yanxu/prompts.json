@@ -1,0 +1,163 @@
+{
+  "generated_on": "2026-11-06",
+  "tool": "built-in image_gen.imagegen",
+  "export_tool": "macOS sips --resampleHeightWidth",
+  "note": "PNG 位图；vector style 指视觉风格，不是 SVG。未将文字烘焙进图像。生成模型不保证逐像素色值或精确描边。",
+  "assets": [
+    {
+      "name": "protein-workflow",
+      "width": 1600,
+      "height": 900,
+      "transparent": false,
+      "prompt": "Flat vector illustration, clean scientific line art, 1.5px uniform stroke, limited palette: indigo #4F5FD2, soft lavender #EDF0FF, slate ink #282D40, warm sand accent #AF8D64 used sparingly, pure flat background with no gradients and no shadows, generous negative space, precise geometric construction, calm academic tone, no text, no letters, no watermark, no logos, high resolution, crisp edges. An abstract protein ribbon structure: two alpha helices and a beta sheet rendered as smooth indigo ribbons, flowing from left to right into a simplified folded 3D cartoon. Small dotted connector lines link the ribbon to three tiny node circles on the right, suggesting a pipeline. Composition weighted to the right, empty left third for overlay text. Background flat #EDF0FF. Output a single standalone asset, 1600×900 pixels, aspect ratio 16:9. No caption, no contact sheet, no added labels.",
+      "edit_prompt": null,
+      "source": "/Users/quhongye/.codex/generated_images/01a1af44-d92a-75f0-9715-8ccb5d7df329/exec-94101784-03da-41f4-b4c5-cbfbe21078a8.png"
+    },
+    {
+      "name": "molecule-workflow",
+      "width": 1600,
+      "height": 900,
+      "transparent": false,
+      "prompt": "Flat vector illustration, clean scientific line art, 1.5px uniform stroke, limited palette: indigo #4F5FD2, soft lavender #EDF0FF, slate ink #282D40, warm sand accent #AF8D64 used sparingly, pure flat background with no gradients and no shadows, generous negative space, precise geometric construction, calm academic tone, no text, no letters, no watermark, no logos, high resolution, crisp edges. A small organic molecule drawn as a skeletal formula with two fused hexagonal rings and short side chains, atoms as small filled indigo dots, one bond highlighted in warm sand. Faint docking pocket outline as a curved contour around it. Composition weighted to the right, empty left third. Background flat #F1ECFC. Output a single standalone asset, 1600×900 pixels, aspect ratio 16:9. No caption, no contact sheet, no added labels.",
+      "edit_prompt": null,
+      "source": "/Users/quhongye/.codex/generated_images/01a1af44-d92a-75f0-9715-8ccb5d7df329/exec-72b7440b-2a34-4b21-839c-9ab1dfe305d7.png"
+    },
+    {
+      "name": "custom-workflow",
+      "width": 1600,
+      "height": 900,
+      "transparent": false,
+      "prompt": "Flat vector illustration, clean scientific line art, 1.5px uniform stroke, limited palette: indigo #4F5FD2, soft lavender #EDF0FF, slate ink #282D40, warm sand accent #AF8D64 used sparingly, pure flat background with no gradients and no shadows, generous negative space, precise geometric construction, calm academic tone, no text, no letters, no watermark, no logos, high resolution, crisp edges. Modular building blocks: four rounded rectangles connected by ports and short orthogonal lines, one block being slotted into place with a small motion hint arc, a terminal bracket icon inside one block. Flat #F6F7FB background. Terminal bracket is a simple symbolic chevron mark, no words. Output a single standalone asset, 1600×900 pixels, aspect ratio 16:9. No caption, no contact sheet, no added labels.",
+      "edit_prompt": "Correct the module count to EXACTLY FOUR rounded rectangular blocks TOTAL including the moving block. Remove the lower left fifth block entirely and connect the remaining three stationary blocks with short orthogonal port connectors, plus the fourth block being slotted in. Keep the terminal symbol and small motion arc. Only four block bodies may be visible. Flat #F6F7FB background, flat solid fills, no grain, no texture, no shading. 16:9.",
+      "source": "/Users/quhongye/.codex/generated_images/01a1af44-d92a-75f0-9715-8ccb5d7df329/exec-169f4f49-286e-4ef8-b653-626ab9718634.png"
+    },
+    {
+      "name": "empty-experiments",
+      "width": 800,
+      "height": 800,
+      "transparent": true,
+      "prompt": "Flat vector illustration, clean scientific line art, 1.5px uniform stroke, limited palette: indigo #4F5FD2, soft lavender #EDF0FF, slate ink #282D40, warm sand accent #AF8D64 used sparingly, pure flat background with no gradients and no shadows, generous negative space, precise geometric construction, calm academic tone, no text, no letters, no watermark, no logos, high resolution, crisp edges. A single empty laboratory flask on a minimal bench line, a tiny sparkle of three dots above its mouth suggesting something about to start, transparent background, centered, subject occupies 55% of canvas. Output a single standalone asset, 800×800 pixels, aspect ratio 1:1. No caption, no contact sheet, no added labels.",
+      "edit_prompt": "Keep a single empty flask, minimal bench line and exactly three sparkle dots. Remove ALL large white glass reflection streaks and stray pixels. Use a clean thin indigo outline, small flat pale lavender glass fill if needed, no reflective effects. Scale the entire centered illustration so its total bounding box occupies approximately 55% of the square canvas with generous equal margins. True transparent background including all corners. No checkerboard. No texture, grain, gradient or shadows. 800x800.",
+      "source": "/Users/quhongye/.codex/generated_images/01a1af44-d92a-75f0-9715-8ccb5d7df329/exec-de8d940d-c1a3-4059-b5da-5252b8c1512f.png"
+    },
+    {
+      "name": "empty-search",
+      "width": 800,
+      "height": 800,
+      "transparent": true,
+      "prompt": "Flat vector illustration, clean scientific line art, 1.5px uniform stroke, limited palette: indigo #4F5FD2, soft lavender #EDF0FF, slate ink #282D40, warm sand accent #AF8D64 used sparingly, pure flat background with no gradients and no shadows, generous negative space, precise geometric construction, calm academic tone, no text, no letters, no watermark, no logos, high resolution, crisp edges. A magnifying glass hovering over a small stack of three flat data cards, the top card blank, transparent background, centered, subject occupies 55% of canvas. Output a single standalone asset, 800×800 pixels, aspect ratio 1:1. No caption, no contact sheet, no added labels.",
+      "edit_prompt": "Keep the magnifying glass and exactly three blank stacked data cards. Scale the entire illustration down so its total bounding box occupies approximately 55% of the square canvas, centered, with generous equal margins. True transparent background including all corners. Preserve clean palette, use completely solid flat fills, no texture, grain, gradients or shadows. No text. 800x800.",
+      "source": "/Users/quhongye/.codex/generated_images/01a1af44-d92a-75f0-9715-8ccb5d7df329/exec-062d658b-019e-4a49-94c0-000b869153ed.png"
+    },
+    {
+      "name": "empty-canvas",
+      "width": 800,
+      "height": 800,
+      "transparent": true,
+      "prompt": "Flat vector illustration, clean scientific line art, 1.5px uniform stroke, limited palette: indigo #4F5FD2, soft lavender #EDF0FF, slate ink #282D40, warm sand accent #AF8D64 used sparingly, pure flat background with no gradients and no shadows, generous negative space, precise geometric construction, calm academic tone, no text, no letters, no watermark, no logos, high resolution, crisp edges. Three disconnected node circles with dashed outlines waiting to be linked, one faint dotted path suggesting where a connection could go, transparent background, centered. Output a single standalone asset, 800×800 pixels, aspect ratio 1:1. No caption, no contact sheet, no added labels.",
+      "edit_prompt": null,
+      "source": "/Users/quhongye/.codex/generated_images/01a1af44-d92a-75f0-9715-8ccb5d7df329/exec-c984545d-ca1e-4d1f-874a-789778382299.png"
+    },
+    {
+      "name": "yanxu-icon",
+      "width": 1024,
+      "height": 1024,
+      "transparent": false,
+      "prompt": "Minimal geometric app icon for a scientific workbench named Yanxu, three stacked isometric layers forming an abstract sequence, single indigo #4F5FD2 on flat off white #F6F7FB, rounded square container with 22% corner radius, bold simple shapes readable at 16 pixels, no text, no gradients, no shadows, vector style. Output a single standalone asset, 1024×1024 pixels, aspect ratio 1:1. No caption, no contact sheet, no added labels.",
+      "edit_prompt": null,
+      "source": "/Users/quhongye/.codex/generated_images/01a1af44-d92a-75f0-9715-8ccb5d7df329/exec-15bea0d5-0e59-4fb4-aded-317a87260345.png"
+    },
+    {
+      "name": "og-image",
+      "width": 1200,
+      "height": 630,
+      "transparent": false,
+      "prompt": "Flat vector illustration, clean scientific line art, 1.5px uniform stroke, limited palette: indigo #4F5FD2, soft lavender #EDF0FF, slate ink #282D40, warm sand accent #AF8D64 used sparingly, pure flat background with no gradients and no shadows, generous negative space, precise geometric construction, calm academic tone, no text, no letters, no watermark, no logos, high resolution, crisp edges. Wide banner: on the right half, a stylized workflow of five connected nodes leading from a protein ribbon to a data table card; left half is empty flat #F6F7FB for title text to be added later in code. Output a single standalone asset, 1200×630 pixels, aspect ratio 120:63. No caption, no contact sheet, no added labels.",
+      "edit_prompt": "Keep the five connected workflow nodes and their contents, but shrink and reposition the entire diagram so EVERY node and connector is wholly in the RIGHT HALF, x=650..1160 in a 1200x630 canvas. The ENTIRE LEFT HALF x=0..600 must be empty and uniform solid #F6F7FB, reserved for later title text. No text. Pure solid fills, no paper grain, no gradient, no shadows.",
+      "source": "/Users/quhongye/.codex/generated_images/01a1af44-d92a-75f0-9715-8ccb5d7df329/exec-d2723dee-927d-483d-afc8-e70fb3fdc8fb.png"
+    },
+    {
+      "name": "landing-hero",
+      "width": 1672,
+      "height": 941,
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "Hero background: on the right two thirds, a large glowing protein structure rendered as smooth translucent glass ribbons (alpha helices and beta sheets) floating in dark space; from it, thin luminous lines carry small glowing glass cubes and spheres (data artifacts) along a gentle curved pipeline toward the right edge, some branching and reconnecting like a dependency graph. The left 40 percent is calm, dark, nearly empty navy space for overlay headline text. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, subtle depth of field, clean and calm academic tone, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 78, resized to 1600 px wide"
+    },
+    {
+      "name": "landing-network",
+      "width": 1672,
+      "height": 941,
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "A shared research data network: several soft frosted-glass workstation tiles arranged in a loose arc, each connected by thin glowing lines to one central luminous glass crystal (a shared scientific artifact, containing a tiny protein ribbon). Some lines show small particles flowing toward the center, suggesting reuse instead of recomputation. Dark navy background, plenty of empty space at the top. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, subtle depth of field, clean and calm academic tone, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 78, resized to 1600 px wide"
+    },
+    {
+      "name": "landing-login",
+      "width": 1086,
+      "height": 1448,
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "Vertical abstract composition: layered translucent blue glass panels stacked in perspective, with a delicate protein ribbon and a few connected node dots glowing behind the glass, soft light from top left, dark navy to cobalt background. Calm, elegant, minimal. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, subtle depth of field, clean and calm academic tone, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 78, resized to 720 px wide"
+    },
+    {
+      "name": "scene-share",
+      "aspect": "4:3",
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "One glowing glass protein backbone scaffold on a pedestal in the middle, with two thin light paths branching from it to two small glass vials of new sequences on the left and right, suggesting one shared result reused by two researchers. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, clean and calm academic tone, centered subject with breathing room, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 76-78, resized to 640 px wide"
+    },
+    {
+      "name": "scene-iterate",
+      "aspect": "4:3",
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "A horizontal chain of four frosted glass blocks connected by light; the first two blocks glow steady blue (kept), a small warm sand dial on the second block suggests a parameter change, and the last two blocks are rebuilt with fresh violet light particles (recomputed). Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, clean and calm academic tone, centered subject with breathing room, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 76-78, resized to 640 px wide"
+    },
+    {
+      "name": "scene-storage",
+      "aspect": "4:3",
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "Layered translucent glass shelves stacked in depth holding small luminous data cubes; a few cubes are softly fading out while a pinned golden cube stays bright, suggesting careful cache cleanup with protected results. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, clean and calm academic tone, centered subject with breathing room, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 76-78, resized to 640 px wide"
+    },
+    {
+      "name": "scene-structure",
+      "aspect": "4:3",
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "A detailed translucent protein cartoon structure floating above a frosted glass tablet that emits soft light, like a molecular viewer, with a faint thin line linking the structure back to a small glowing data cube. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, clean and calm academic tone, centered subject with breathing room, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 76-78, resized to 640 px wide"
+    },
+    {
+      "name": "landing-architecture",
+      "aspect": "4:3",
+      "transparent": false,
+      "generated_on": "2026-11-06",
+      "tool": "Codex CLI built-in image generation",
+      "prompt": "Isometric layered platform: three stacked translucent glass slabs with soft gaps; bottom slab carries small compute node blocks, middle slab carries a glowing dependency graph of connected dots, top slab carries a minimal workbench panel and a small protein ribbon. Thin vertical light beams connect the layers. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, clean and calm academic tone, centered subject with breathing room, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
+      "edit_prompt": null,
+      "export": "cwebp -q 76-78, resized to 960 px wide"
+    }
+  ]
+}
