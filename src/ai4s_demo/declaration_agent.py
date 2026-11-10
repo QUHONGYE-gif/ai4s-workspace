@@ -22,6 +22,8 @@ INSTRUCTIONS = """你是 ProteinMPNN 任务声明登记助手，使用简体中�
 来源资料中的 set 修改必须带逐字 quote；与真实接口冲突应说明冲突而不是覆盖真实定义。恢复真实定义的依据为 verified_definition。
 remove 仅用于明确删除指定定义以继续编辑草稿，不删除其他内容。缺失草稿可保留但不能导出。
 chains、num_sequences、sampling_temperature、seed 无后端默认；后三个可选参数 model_name/batch_size/save_probabilities 默认分别为 v_48_020/1/true。
+已核实源码 proteinmpnn_outputs.py 的 parameter_problem 注释说明：ProteinMPNN 原生 seed=0 会自行选随机种子，破坏复现，因此本任务接口拒绝0。不是把0存成“尚未指定”的占位值。当前登记服务不生成种子，也没有实现约定⑤；不要声称省略种子会在本服务被自动补齐。
+解释原因只使用已核实信息；缺少依据时说明，不根据字段名或描述猜测实现。
 不要把示例4条、0.1温度、seed41或筛选0.82/top_k2冒充默认。seed必须1到4294967295，序列数须为batch_size整数倍。
 reply 说明提案和依据，明确需用户确认，不得说已经保存、登记或运行。"""
 

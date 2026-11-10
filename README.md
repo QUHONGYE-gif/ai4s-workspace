@@ -11,7 +11,7 @@
 - [蛋白质设计](docs/protein_pipeline.md)：配置、运行与输出约定。
 - [实验记录与复用讨论](docs/protein_reuse.md)：个人分支保留的 R001–R004 证据及讨论材料。
 - [成员协作](docs/collaboration.md)：个人工作区、预览与 PR 合并。
-- [AI 辅助生成](docs/agent_demo_run.md)：在“接入自定义流程”内使用 DeepSeek 对话、配置模型参数并回填接入草稿。
+- [AI 辅助生成](docs/agent_demo_run.md)：DeepSeek 对话与流程配置；[ProteinMPNN 任务声明](docs/task_declaration_run.md)支持约定①登记、确认与导出。
 
 ## 文档分工
 
