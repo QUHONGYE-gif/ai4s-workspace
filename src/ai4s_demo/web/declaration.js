@@ -54,7 +54,9 @@ export async function mountDeclaration(container) {
   }
   function disabled(value) {
     busy = value;
-    container.querySelectorAll("button").forEach((b) => (b.disabled = value));
+    container
+      .querySelectorAll("button, input, select, textarea")
+      .forEach((b) => (b.disabled = value));
     $("message").disabled = value;
     container.setAttribute("aria-busy", String(value));
   }
@@ -431,6 +433,7 @@ export async function mountDeclaration(container) {
       }
     });
   });
+  disabled(true);
   reference = await api("/api/task-declarations/proteinmpnn/1");
   await loadSettings();
   const list = await api("/api/declaration-drafts");
@@ -439,6 +442,7 @@ export async function mountDeclaration(container) {
   if (existing) await acceptFromServer(existing.id);
   else
     await accept(await post("/api/declaration-drafts", { template: "empty" }));
+  disabled(false);
   return {
     destroy() {
       signal.abort();
