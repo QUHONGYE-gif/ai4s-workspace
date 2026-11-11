@@ -24,6 +24,7 @@
 | [部署与运维](docs/operations.md) | 管理员操作入口及维护边界 |
 | [存储层原型说明](src/storage/README.md) | 运行复用验证原型，查看命令行与数据落地位置 |
 | [查询模块说明](src/ai4s_query/README.md) | AiiDA 运行结果与来源查询：状态、血缘、产物校验与复用区分 |
+| [跨成员候选查找与查询接口](docs/task4-candidates-and-query-api.md) | 任务 4.0 站 5/9：约定④ 候选列表、共享方式选型、只读查询服务与真实运行记录 |
 
 ## 代码位置
 

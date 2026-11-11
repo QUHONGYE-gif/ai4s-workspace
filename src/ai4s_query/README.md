@@ -10,6 +10,13 @@
 3. **报告导出**：JSON + 可读报告，区分「正式产物 / 失败诊断 / 未记录信息 / 不可读文件」
 4. **复用区分**：缓存命中复用（过程级）与直接复用旧 Data（数据级）
 
+任务 4.0 追加两项能力（站 5、站 9）：
+
+5. **跨成员候选查找**：按计算指纹在多个 profile 之间查候选，输出约定④ 的字段与不合格原因
+6. **实时查询接口**：只读 HTTP 服务，网页按 UUID 读来源、产物与约定⑤ 决策记录
+
+说明见 [任务 4.0 · 跨成员候选查找与查询接口](../../docs/task4-candidates-and-query-api.md)。
+
 ## 目录
 
 ```
@@ -18,14 +25,20 @@ src/ai4s_query/
 ├── sample_calcs.py    # 原生两步样例（seq_stats -> filter_by_length）+ 故意失败样例
 ├── query.py           # 核心：节点描述、校验记录、血缘、四分类缺失信息
 ├── report.py          # JSON / 可读报告导出
-├── cli.py             # 命令行入口（show / trace / tree / cat / workbench）
+├── candidates.py      # 跨成员候选查找（约定④：字段、五级判定、六种原因）
+├── decision.py        # 约定⑤ 决策记录的读取与校验（适配层）
+├── server.py          # 只读查询服务（/api/node、/api/trace、/api/candidates、/api/decision）
+├── members.json       # profile -> 成员姓名 映射（跨库场景下唯一的「人」来源）
+├── cli.py             # 命令行入口（show / trace / tree / cat / workbench / candidates / decision / serve）
 ├── workbench.py       # 导出为「研序」工作台可导入的记录 JSON
 ├── DEMO.md            # 演示脚本（汇报用，六幕）
 └── examples/
-    ├── run_demo.py          # 一键：造四类节点 + 生成全部报告
-    ├── run_two_step.py      # 两步样例 + 演示「直接复用旧 Data」
-    ├── run_cache_demo.py    # 演示「缓存命中复用」
-    └── run_failure_case.py  # 生成失败节点 + 二进制产物节点（四分类真实样本）
+    ├── run_demo.py                # 一键：造四类节点 + 生成全部报告
+    ├── run_two_step.py            # 两步样例 + 演示「直接复用旧 Data」
+    ├── run_cache_demo.py          # 演示「缓存命中复用」
+    ├── run_failure_case.py        # 生成失败节点 + 二进制产物节点（四分类真实样本）
+    ├── run_task4_demo.py          # 任务 4.0 一站演示：跨成员候选 + 不合格组 + 决策记录
+    └── make_sample_decision.py    # 由真实候选生成一条约定⑤ 决策记录（联调期用）
 ```
 
 ## 运行
@@ -65,6 +78,38 @@ python -m ai4s_query.cli tree <UUID或PK> --depth 5
 # 文件读取入口：文本直接打印，二进制用 --out 导出
 python -m ai4s_query.cli cat <UUID> run.json
 python -m ai4s_query.cli cat <UUID> scores/1CRN.npz --out 1CRN.npz
+```
+
+### 跨成员候选查找（站 5）
+
+```bash
+# 以某个结果节点为参照，按它的指纹在所有 profile 里找候选
+python -m ai4s_query.cli candidates --node <UUID或PK>
+
+# 直接用指纹（支持前 16 位前缀）
+python -m ai4s_query.cli candidates --fingerprint 2a20461daa76ff27
+
+# 带质量门限：要求 4 条序列、最优分数不高于 1.2
+python -m ai4s_query.cli candidates --node <UUID> --num-sequences 4 --score-threshold 1.2
+
+# 只列合格候选（默认也列不合格的，带原因）
+python -m ai4s_query.cli candidates --node <UUID> --qualified-only
+
+# 限定 profile，导出 JSON
+python -m ai4s_query.cli candidates --node <UUID> --profiles lab,lab2 --json 候选.json
+```
+
+成员姓名来自 `members.json`（`{"profile名": "姓名"}`），也可用环境变量
+`AI4S_MEMBERS='{"lab":"陈思睿"}'` 覆盖。
+
+### 查询服务（站 9）
+
+```bash
+python -m ai4s_query.cli serve --port 8848          # 或 python -m ai4s_query.server
+curl localhost:8848/api/health
+curl localhost:8848/api/node/<UUID>
+curl localhost:8848/api/candidates?fingerprint=<指纹前缀>
+curl localhost:8848/api/decision?request_id=<请求编号>
 ```
 
 ## 实现约定
