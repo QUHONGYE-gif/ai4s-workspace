@@ -149,6 +149,85 @@ def test_custom_decision_function_uses_r05_and_cannot_select_unqualified_candida
         )
 
 
+@pytest.mark.parametrize(
+    ("reuse_policy", "action", "effective_seed", "selected_uuid"),
+    [
+        ("force_rerun", "reuse", 37, CANDIDATE_A),
+        ("force_rerun", "new_sample", 52817, None),
+        ("new_sample", "reuse", 37, CANDIDATE_A),
+        ("new_sample", "rerun", 37, None),
+    ],
+)
+def test_custom_decision_cannot_bypass_user_policy(
+    reuse_policy,
+    action,
+    effective_seed,
+    selected_uuid,
+):
+    def choose(context):
+        return {
+            "action": action,
+            "selected_candidate_uuid": selected_uuid,
+            "effective_seed": effective_seed,
+            "reason_text": "试图绕过用户选择的复用策略",
+        }
+
+    with pytest.raises(
+        DecisionError,
+        match=rf"reuse_policy {reuse_policy} does not allow action {action}",
+    ):
+        make_record(reuse_policy, [candidate()], decision_function=choose)
+
+
+@pytest.mark.parametrize(
+    ("reuse_policy", "action", "effective_seed", "selected_uuid"),
+    [
+        ("allow_reuse", "reuse", 37, CANDIDATE_A),
+        ("allow_reuse", "rerun", 37, None),
+        ("force_rerun", "rerun", 37, None),
+        ("new_sample", "new_sample", 52817, None),
+    ],
+)
+def test_custom_decision_allows_only_policy_compatible_actions(
+    reuse_policy,
+    action,
+    effective_seed,
+    selected_uuid,
+):
+    def choose(context):
+        return {
+            "action": action,
+            "selected_candidate_uuid": selected_uuid,
+            "effective_seed": effective_seed,
+            "reason_text": "在用户策略允许范围内自定义决策",
+        }
+
+    record = make_record(reuse_policy, [candidate()], decision_function=choose)
+
+    assert record["reason"]["reason_code"] == "R05"
+    assert record["reuse_policy"] == reuse_policy
+    assert record["final_decision"]["action"] == action
+
+
+def test_decision_record_validation_rejects_tampered_policy_action_pair():
+    def rerun(context):
+        return {
+            "action": "rerun",
+            "selected_candidate_uuid": None,
+            "effective_seed": context["original_seed"],
+            "reason_text": "人工判断后选择重算",
+        }
+
+    record = make_record("allow_reuse", [candidate()], decision_function=rerun)
+    record["reuse_policy"] = "new_sample"
+
+    with pytest.raises(
+        DecisionError,
+        match="reuse_policy new_sample does not allow action rerun",
+    ):
+        validate_decision_record(record)
+
+
 def test_candidate_uniqueness_uses_uuid_and_fingerprint():
     same_node_different_fingerprint = [
         candidate(fingerprint="fingerprint-a"),

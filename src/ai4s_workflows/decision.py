@@ -23,6 +23,11 @@ DECISION_RECORDS_EXTRA_KEY = "ai4s_decision_records"
 
 REUSE_POLICIES = ("allow_reuse", "force_rerun", "new_sample")
 ACTIONS = ("reuse", "rerun", "new_sample")
+ALLOWED_ACTIONS_BY_POLICY = {
+    "allow_reuse": ("reuse", "rerun"),
+    "force_rerun": ("rerun",),
+    "new_sample": ("new_sample",),
+}
 REASON_CODES = ("R01", "R02", "R03", "R04", "R05")
 
 _REQUEST_ID_PATTERN = re.compile(
@@ -54,6 +59,18 @@ def validate_reuse_policy(reuse_policy: str) -> None:
     if reuse_policy not in REUSE_POLICIES:
         allowed = ", ".join(REUSE_POLICIES)
         raise DecisionError(f"reuse_policy must be one of: {allowed}")
+
+
+def _validate_policy_action(reuse_policy: str, action: str) -> None:
+    """Reject actions that the requester's policy does not permit."""
+    validate_reuse_policy(reuse_policy)
+    allowed_actions = ALLOWED_ACTIONS_BY_POLICY[reuse_policy]
+    if action not in allowed_actions:
+        allowed = ", ".join(sorted(allowed_actions))
+        raise DecisionError(
+            f"reuse_policy {reuse_policy} does not allow action {action}; "
+            f"allowed actions: {allowed}"
+        )
 
 
 def validate_request_id(request_id: str) -> None:
@@ -243,6 +260,7 @@ def _decision_from_custom_function(
     reason_text = outcome.get("reason_text")
     if action not in ACTIONS:
         raise DecisionError(f"custom decision action must be one of: {', '.join(ACTIONS)}")
+    _validate_policy_action(context["reuse_policy"], action)
     if not isinstance(reason_text, str) or not reason_text.strip():
         raise DecisionError("custom decision reason_text must be a non-empty string")
     if type(effective_seed) is not int or not 1 <= effective_seed < 2**32:
@@ -423,6 +441,7 @@ def validate_decision_record(record: Mapping[str, Any]) -> None:
             f"{reason_code} requires reuse_policy {required_policies}; "
             f"got {record['reuse_policy']}"
         )
+    _validate_policy_action(record["reuse_policy"], action)
 
     if action == "reuse":
         _selected_candidate(candidates, selected_uuid)

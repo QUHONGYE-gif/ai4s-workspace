@@ -98,7 +98,7 @@ flowchart TD
 | `R02` | `allow_reuse` | `rerun`（无合格候选） |
 | `R03` | `force_rerun` | `rerun` |
 | `R04` | `new_sample` | `new_sample` |
-| `R05` | 自定义决策器 | `reuse`／`rerun`／`new_sample` |
+| `R05` | 自定义决策器 | 必须在 `reuse_policy` 允许的动作内选择 |
 
 同一 `(request_id, process_uuid)` 重放时替换原记录；同一请求下不同过程 UUID 保留多条记录。查询接口只返回能通过完整结构校验的记录：
 
@@ -126,7 +126,15 @@ def choose(context):
     }
 ```
 
-将函数放在 daemon 可导入的可信模块中，并配置为 `my_decisions:choose`。包装器会统一写入 `R05` 并再次校验：不能选择不合格候选，不能复用换种子，也不能在重跑时改种子。自定义模块会在 daemon 进程内导入，只应配置经过审查的代码。
+将函数放在 daemon 可导入的可信模块中，并配置为 `my_decisions:choose`。自定义决策器只在用户策略允许的动作范围内选择，不能借 `R05` 绕过用户策略：
+
+| `reuse_policy` | 允许返回的 `action` |
+| --- | --- |
+| `allow_reuse` | `reuse`／`rerun` |
+| `force_rerun` | `rerun` |
+| `new_sample` | `new_sample` |
+
+包装器会统一写入 `R05` 并再次校验：动作必须符合用户策略，不能选择不合格候选，不能复用换种子，也不能在重跑时改种子。记录读取时还会重复校验策略与动作的对应关系，防止被篡改的历史记录通过查询。自定义模块会在 daemon 进程内导入，只应配置经过审查的代码。
 
 ## 运行结果与失败码
 
