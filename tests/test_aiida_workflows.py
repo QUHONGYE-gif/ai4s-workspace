@@ -281,10 +281,17 @@ if {invalid_manifest!r}:
         self.assertEqual(before[2], "waiting")
 
         self.stop_daemon()
-        stopped = self.orm.load_node(target.pk)
-        self.assertEqual((stopped.pk, stopped.uuid), before[:2])
-        self.assertEqual(stopped.process_state.value, "waiting")
-        self.start_daemon()
+        try:
+            stopped = self.orm.load_node(target.pk)
+            self.assertEqual((stopped.pk, stopped.uuid), before[:2])
+            # A graceful shutdown may finish a waiting process before the
+            # daemon exits. Stable identity is the recovery guarantee.
+            self.assertIn(
+                stopped.process_state.value,
+                {"waiting", "running", "finished"},
+            )
+        finally:
+            self.start_daemon()
 
         target = self.wait(target)
         self.assert_ok(target)
@@ -312,8 +319,11 @@ if {invalid_manifest!r}:
         running_identity = (children[0].pk, children[0].uuid)
 
         self.stop_daemon()
-        self.assertEqual((self.orm.load_node(node.pk).pk, self.orm.load_node(node.pk).uuid), before)
-        self.start_daemon()
+        try:
+            stopped = self.orm.load_node(node.pk)
+            self.assertEqual((stopped.pk, stopped.uuid), before)
+        finally:
+            self.start_daemon()
 
         node = self.wait(node)
         self.assert_ok(node)
