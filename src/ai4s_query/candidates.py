@@ -33,7 +33,30 @@ REASONS = {
 }
 
 _FASTA_SUFFIX = (".fa", ".fasta", ".faa", ".fas")
-_SCORE_RE = re.compile(r"score\s*=\s*(-?\d+(?:\.\d+)?)")
+# ProteinMPNN 的 header 形如 >T=0.1, sample=1, score=1.234, global_score=1.301, seq_recovery=0.48
+# 注意不能匹配到 global_score 里的 "score="，否则最优分数会取到 global_score 的最小值。
+_SCORE_RE = re.compile(r"(?<![\w])score\s*=\s*(-?\d+(?:\.\d+)?)")
+_GLOBAL_SCORE_RE = re.compile(r"global_score\s*=\s*(-?\d+(?:\.\d+)?)")
+
+# 「值型」产物：只存值、没有仓库文件。约定④ 允许它们作为候选（size_bytes=0）。
+_VALUE_NODE_TYPES = (
+    "data.core.dict.Dict.",
+    "data.core.int.Int.",
+    "data.core.float.Float.",
+    "data.core.bool.Bool.",
+    "data.core.str.Str.",
+    "data.core.list.List.",
+    "data.core.jsonable.JsonableData.",
+)
+
+# 「仓库型」产物：应该有文件。若一个都没有文件，说明没 retrieve 或写坏了，不能按「仅值」豁免。
+_ARCHIVE_NODE_TYPES = (
+    "data.core.folder.FolderData.",
+    "data.core.singlefile.SinglefileData.",
+    "data.core.remote.RemoteData.",
+    "data.core.array.ArrayData.",
+)
+
 
 
 # ---------------------------------------------------------------- 成员与 profile
@@ -159,16 +182,38 @@ def _primary_file(node):
     return entry
 
 
+def _node_kind(node) -> str:
+    """产物节点的种类，用于区分「值型」与「仓库型」（决定缺文件能不能豁免）。"""
+    t = str(getattr(node, "node_type", ""))
+    for kind in ("FolderData", "SinglefileData", "RemoteData", "ArrayData", "BandsData",
+                 "TrajectoryData", "Dict", "Int", "Float", "Bool", "Str", "List",
+                 "JsonableData"):
+        if t.endswith(kind + "."):
+            return kind
+    return "Other"
+
+
 def _bundle(proc) -> dict:
     """汇总一次过程的全部产物：总字节数、代表文件、FASTA 条数与最优分数。
 
-    注意「仅有值」的情形：calcfunction 产出 Dict/Int 这类节点时没有仓库文件，
-    约定④ 允许其作为候选存在（size_bytes 记 0，note 写“仅值”），
-    因此 out_count > 0 且 file_count = 0 不能判为 missing_file。
+    与节点类型无关：calcfunction 的 Dict/Int 与 CalcJob 的 FolderData 走同一条路，
+    因此 A 侧接上真实 ProteinMPNN 后不需要改这里。
+
+    三种情形要分开：
+    - 值型（Dict/Int/Str）：没有仓库文件，④ 允许作为候选（size_bytes=0，note 写“仅值”）；
+    - 仓库型（FolderData/SinglefileData）：应当有文件，一个都没有就是没取回或写坏了，
+      不能按“仅值”豁免；
+    - RemoteData：产物还在远端，说明 retrieve 没做完，同样不算可用。
     """
-    total, files, seq_count, scores = 0, [], 0, []
+    total, files, seq_count, scores, globals_, kinds = 0, [], 0, [], [], []
+    unretrieved = False
     outs = _output_nodes(proc)
     for node in outs:
+        kind = _node_kind(node)
+        kinds.append(kind)
+        if kind == "RemoteData":
+            unretrieved = True
+            continue
         try:
             names = list(query._iter_files(node.base.repository))
         except Exception:  # noqa: BLE001
@@ -179,25 +224,37 @@ def _bundle(proc) -> dict:
             except Exception:  # noqa: BLE001
                 continue
             total += len(raw)
-            files.append({"node_uuid": node.uuid, "path": name, "size": len(raw)})
+            files.append({"node_uuid": node.uuid, "path": name, "size": len(raw),
+                          "kind": kind})
             if name.lower().endswith(_FASTA_SUFFIX):
                 text = raw.decode("utf-8", "replace")
                 seq_count += sum(1 for ln in text.splitlines() if ln.startswith(">"))
                 scores.extend(float(m) for m in _SCORE_RE.findall(text))
+                globals_.extend(float(m) for m in _GLOBAL_SCORE_RE.findall(text))
     primary = None
     for node in outs:
         primary = _primary_file(node)
         if primary:
             primary["node_uuid"] = node.uuid
+            primary["kind"] = _node_kind(node)
             break
+    has_archive = any(k in ("FolderData", "SinglefileData", "RemoteData", "ArrayData",
+                            "BandsData", "TrajectoryData") for k in kinds)
+    has_value = any(k in ("Dict", "Int", "Float", "Bool", "Str", "List", "JsonableData")
+                    for k in kinds)
     return {
         "out_count": len(outs),
+        "out_kinds": kinds,
+        "has_archive": has_archive,
+        "has_value": has_value,
+        "unretrieved": unretrieved,
         "size_bytes": total,
         "file_count": len(files),
         "files": files,
         "primary": primary,
         "seq_count": seq_count,
         "best_score": min(scores) if scores else None,
+        "best_global_score": min(globals_) if globals_ else None,
     }
 
 
@@ -224,14 +281,24 @@ def qualify(proc, bundle: dict, request: dict | None = None):
     # 2 文件可用（「仅有值」的结果不算缺失：④ 允许 size_bytes=0 + note「仅值」）
     if bundle.get("out_count", 0) == 0:
         return False, "missing_file", "missing_file: 过程没有产出任何结果节点"
+    if bundle.get("has_archive") and bundle.get("file_count", 0) == 0:
+        if bundle.get("unretrieved"):
+            return False, "missing_file", \
+                "missing_file: 产物仍是 RemoteData，retrieve 未完成，文件不可读"
+        return False, "missing_file", \
+            "missing_file: 仓库型产物（FolderData／SinglefileData）内没有任何文件"
     if bundle["file_count"] > 0 and bundle["size_bytes"] == 0:
         return False, "format_error", "format_error: 产物为空，无法解析"
 
-    # 3 完整性（只对有序列文件的结果适用）
+    # 3 完整性（只对有序列文件的结果适用；纯值型结果不判这条）
     want = request.get("num_sequences")
-    if want and bundle["seq_count"] and bundle["seq_count"] < int(want):
-        return False, "insufficient", \
-            f"insufficient: 仅 {bundle['seq_count']} 条序列 < 要求 {want} 条"
+    if want:
+        if bundle["seq_count"] and bundle["seq_count"] < int(want):
+            return False, "insufficient", \
+                f"insufficient: 仅 {bundle['seq_count']} 条序列 < 要求 {want} 条"
+        if not bundle["seq_count"] and bundle.get("has_archive"):
+            return False, "insufficient", \
+                f"insufficient: 产物中没有可解析的序列文件（0 条 < 要求 {want} 条）"
 
     # 4 质量门限（蛋白设计：分数越低越好，按升序取前 N）
     thr = request.get("score_threshold")
@@ -265,8 +332,10 @@ def build_candidate(proc, profile: str, request: dict | None = None) -> dict:
     note = []
     if cached:
         note.append(f"cached_from={info.get('cache_source')}")
-    if bundle["size_bytes"] == 0:
+    if bundle["size_bytes"] == 0 and bundle.get("has_value"):
         note.append("仅值（无文件产物）")
+    if bundle.get("unretrieved"):
+        note.append("RemoteData 未 retrieve")
 
     cand = {
         # —— 约定④ 的 9 个字段
@@ -289,9 +358,121 @@ def build_candidate(proc, profile: str, request: dict | None = None) -> dict:
         "cached_from": info.get("cache_source"),
         "seq_count": bundle["seq_count"],
         "best_score": bundle["best_score"],
+        "best_global_score": bundle.get("best_global_score"),
+        "out_kinds": bundle.get("out_kinds"),
         "created": str(proc.ctime),
     }
     return cand
+
+
+# ---------------------------------------------------------------- 接入体检
+
+_HINT_NO_HASH = ("extras 里没有 _aiida_hash：该节点不是走正常 AiiDA 执行产生的"
+                 "（手工构造或未完成 store 的节点不会有缓存键），跨成员永远找不到它")
+_HINT_NOT_RETRIEVE = ("产物是 RemoteData：retrieve 没做完。CalcJob 需要 "
+                      "`retrieve_list` 或 parser 里完成取回后，由 FolderData 承接")
+_HINT_NO_FILE = "仓库型产物里没有文件：检查 parser 是否把结果写进 FolderData"
+_HINT_NO_FASTA = ("找不到 FASTA（.fa/.fasta/.faa）：条数与分数判定会跳过；"
+                  "若这次确实是结构设计任务，请把序列写进 *.fa 并保留 header 的 score=")
+_HINT_OK = "可直接作为候选"
+
+
+def _diagnose(proc, bundle: dict, info: dict) -> tuple:
+    """对单个过程给出 (status, hints)。status: ready / partial / blocked。"""
+    hints = []
+    if not fingerprint_of(proc):
+        hints.append(_HINT_NO_HASH)
+    if bundle.get("unretrieved"):
+        hints.append(_HINT_NOT_RETRIEVE)
+    if bundle.get("has_archive") and not bundle.get("file_count"):
+        hints.append(_HINT_NO_FILE)
+    if info.get("process_state") != "finished":
+        hints.append(f"过程状态为 {info.get('process_state')}，"
+                     "④ 会判 not_finished；失败节点仍会被列出，但不会被选中")
+    if bundle.get("has_archive") and bundle.get("file_count") and not bundle.get("seq_count"):
+        hints.append(_HINT_NO_FASTA)
+
+    hard = (not fingerprint_of(proc)) or bundle.get("unretrieved") or \
+        (bundle.get("has_archive") and not bundle.get("file_count")) or \
+        bundle.get("out_count", 0) == 0
+    if hard:
+        return "blocked", hints
+    if hints:
+        return "partial", hints
+    return "ready", [_HINT_OK]
+
+
+def preflight(profiles: list | None = None, limit: int = 20,
+              only_problems: bool = False) -> dict:
+    """接入体检：逐个过程检查「我这边能不能把它读成候选」。
+
+    给站 ③④（曲鸿烨）用：跑这一条就知道真实 CalcJob 节点还缺什么，
+    不必等整条页面联调。也给站 ⑥⑧ 用：确认自己产出的节点能被别人找到。
+    """
+    from aiida.orm import QueryBuilder, load_node
+    from aiida.orm.nodes.process.process import ProcessNode
+
+    names = profiles or _profile_names()
+    members = _member_map()
+    items, summary = [], {"ready": 0, "partial": 0, "blocked": 0}
+
+    for name in names:
+        try:
+            with using_profile(name):
+                rows = (QueryBuilder().append(
+                    ProcessNode, project=["pk"]).order_by({ProcessNode: [{"pk": "desc"}]})
+                    .limit(limit).all())
+                for (pk,) in rows:
+                    proc = load_node(pk)
+                    info = query._process_info(proc) or {}
+                    bundle = _bundle(proc)
+                    status, hints = _diagnose(proc, bundle, info)
+                    summary[status] = summary.get(status, 0) + 1
+                    if only_problems and status == "ready":
+                        continue
+                    items.append({
+                        "profile": name,
+                        "member": members.get(name, name),
+                        "pk": pk,
+                        "uuid": proc.uuid,
+                        "label": proc.label,
+                        "process_state": info.get("process_state"),
+                        "fingerprint": fingerprint_of(proc),
+                        "out_kinds": bundle.get("out_kinds"),
+                        "file_count": bundle.get("file_count"),
+                        "seq_count": bundle.get("seq_count"),
+                        "best_score": bundle.get("best_score"),
+                        "status": status,
+                        "hints": hints,
+                    })
+        except Exception as exc:  # noqa: BLE001
+            items.append({"profile": name, "status": "blocked",
+                          "hints": [f"profile 无法查询：{type(exc).__name__}: {exc}"]})
+
+    return {
+        "profiles": names,
+        "members": {n: members.get(n, n) for n in names},
+        "checked": sum(summary.values()),
+        "summary": summary,
+        "items": items,
+    }
+
+
+def preflight_text(result: dict) -> str:
+    lines = [f"体检范围 {'、'.join(result['profiles'])}　"
+             f"检查 {result['checked']} 个过程　"
+             f"ready {result['summary'].get('ready', 0)} / "
+             f"partial {result['summary'].get('partial', 0)} / "
+             f"blocked {result['summary'].get('blocked', 0)}", ""]
+    for it in result["items"]:
+        mark = {"ready": "✔", "partial": "△", "blocked": "✘"}.get(it.get("status"), "?")
+        head = (f"{mark} {it.get('member', '?')} pk={it.get('pk')} "
+                f"{it.get('label') or ''} out={','.join(it.get('out_kinds') or []) or '—'} "
+                f"files={it.get('file_count')} seqs={it.get('seq_count')}")
+        lines.append(head)
+        for h in it.get("hints") or []:
+            lines.append(f"    · {h}")
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------- 查询入口

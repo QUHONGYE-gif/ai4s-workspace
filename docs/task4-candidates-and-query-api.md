@@ -250,10 +250,14 @@ python -m ai4s_query.cli decision req-6f1c2a9e-3b7d-4c51-9a0e-1d2f3c4b5a6e
    1；演示与联调够用，生产应改为「每库一个只读连接池」或迁移到共用数据库。
 2. **指纹前缀匹配在 Python 侧完成**，复杂度 O(节点数/profile)，当前规模（数百）
    无影响；上万节点后应改为按完整指纹建索引。
-3. **约定⑤ 的存放载体尚未定稿**。查询接口做成适配层：先读过程节点 attributes 的
-   `ai4s_decision`，找不到再读旁路目录（默认 `~/runs/decisions`）。载体定下来后只改
-   `decision.py`，接口不变。
+3. **约定⑤ 的存放载体尚未定稿**。查询接口做成适配层：先读过程节点的 `extras.ai4s_decision`，
+   找不到再读旁路目录（默认 `~/runs/decisions`）。**不能写 attributes**——过程一终止就 seal，
+   sealed 节点的 attributes 不可改（`ModificationNotAllowed`），extras 才可以。
+   载体定下来后只改 `decision.py`，接口不变。写入端与实测见
+   [接入就绪-站5站9](接入就绪-站5站9.md)。
 4. **候选目前来自原生 calcfunction 过程**。真实 ProteinMPNN 的 CalcJob 节点由 A 侧
    产出，接上之后同一套代码直接可用（指纹键、产物遍历、判定逻辑都与节点类型无关）。
+   这一点已用与真实 CalcJob 同构的 `FolderData` 产物验证，并补了 `preflight` 体检命令；
+   见 [接入就绪-站5站9](接入就绪-站5站9.md)。
 5. **耗时字段**取过程 `ctime→mtime`；缓存命中记 0。若 ⑤ 需要区分「排队」与「执行」，
    要拆成两列（已在 ④ 文档中标注为待确认项）。

@@ -14,6 +14,8 @@
 
 5. **跨成员候选查找**：按计算指纹在多个 profile 之间查候选，输出约定④ 的字段与不合格原因
 6. **实时查询接口**：只读 HTTP 服务，网页按 UUID 读来源、产物与约定⑤ 决策记录
+7. **接入就绪**：读取与节点类型无关（calcfunction 与 CalcJob 同一套）；`preflight` 逐条体检节点；
+   `decision-write` 校验后写决策记录。见 [接入就绪-站5站9](../../docs/接入就绪-站5站9.md)
 
 说明见 [任务 4.0 · 跨成员候选查找与查询接口](../../docs/task4-candidates-and-query-api.md)。
 
@@ -26,7 +28,7 @@ src/ai4s_query/
 ├── query.py           # 核心：节点描述、校验记录、血缘、四分类缺失信息
 ├── report.py          # JSON / 可读报告导出
 ├── candidates.py      # 跨成员候选查找（约定④：字段、五级判定、六种原因）
-├── decision.py        # 约定⑤ 决策记录的读取与校验（适配层）
+├── decision.py        # 约定⑤ 决策记录的读取、校验与写入（适配层）
 ├── server.py          # 只读查询服务（/api/node、/api/trace、/api/candidates、/api/decision）
 ├── members.json       # profile -> 成员姓名 映射（跨库场景下唯一的「人」来源）
 ├── cli.py             # 命令行入口（show / trace / tree / cat / workbench / candidates / decision / serve）
@@ -38,6 +40,7 @@ src/ai4s_query/
     ├── run_cache_demo.py          # 演示「缓存命中复用」
     ├── run_failure_case.py        # 生成失败节点 + 二进制产物节点（四分类真实样本）
     ├── run_task4_demo.py          # 任务 4.0 一站演示：跨成员候选 + 不合格组 + 决策记录
+    ├── run_calcjob_shape_demo.py  # 接入就绪：CalcJob 形状产物 + 决策写入 + 体检
     └── make_sample_decision.py    # 由真实候选生成一条约定⑤ 决策记录（联调期用）
 ```
 

@@ -13,6 +13,8 @@
 
 - AiiDA 运行结果与来源查询模块已放入 `src/ai4s_query/`：给定节点 UUID 输出运行状态、输入与参数、产物与文件校验、血缘（上下游）及缺失信息，报告区分「正式产物 / 失败诊断 / 未记录信息 / 不可读文件」，并区分缓存命中复用与直接复用旧数据；说明见 [查询模块说明](../src/ai4s_query/README.md)。
 
+- 站 5/站 9 已进入「接入就绪」：候选读取与 AiiDA 节点类型无关（calcfunction 的 Dict 与真实 CalcJob 的 FolderData 走同一条路），`preflight` 可逐条体检节点并指出缺什么；约定⑤ 决策记录提供写入端（校验后写 `extras.ai4s_decision` 与旁路文件），过程 seal 之后 attributes 不可写、只能写 extras。说明见 [接入就绪](接入就绪-站5站9.md)。
+
 - 任务 4.0 的站 5、站 9 已具备：跨成员候选查找按计算指纹在多个 profile 之间查候选，输出约定④ 的字段、五级合格判定与六种不合格原因（不合格也列出）；只读查询服务提供 `/api/node`、`/api/trace`、`/api/candidates`、`/api/decision`，网页可实时读取来源、产物与约定⑤ 决策记录，不再依赖手动导出快照。说明见 [跨成员候选查找与查询接口](task4-candidates-and-query-api.md)。
 
 ## 限制
