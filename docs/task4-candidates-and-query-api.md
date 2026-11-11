@@ -142,6 +142,9 @@ python -m ai4s_query.cli serve --port 8848
 
 统一返回 JSON，`Access-Control-Allow-Origin: *`，错误按 400 / 404 / 500 区分。
 
+五个端点的真实响应快照在 [task4-api-examples/](task4-api-examples/)，前端可直接对照字段，
+不必等环境跑起来（`01-health` / `02-node` / `03-trace` / `04-candidates` / `05-decision`）。
+
 ### 3.3 给站 10（网页）的对接约定
 
 1. **字段名直接用 ④ ⑤ 的键名**：候选 `uuid / fingerprint / member / qualified / reason`，

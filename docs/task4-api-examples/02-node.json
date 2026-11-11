@@ -1,0 +1,189 @@
+{
+  "uuid": "de4ba3d8-8c52-4762-9245-6390748c51ca",
+  "pk": 170,
+  "node_type": "process.calculation.calcfunction.CalcFunctionNode.",
+  "label": "seq_stats",
+  "description": "",
+  "ctime": "2026-11-05 12:16:57.357720+00:00",
+  "mtime": "2026-11-05 12:16:57.622346+00:00",
+  "creator_uuid": null,
+  "process": {
+    "process_state": "finished",
+    "process_state_raw": "ProcessState.FINISHED",
+    "process_status": null,
+    "is_finished_ok": true,
+    "is_terminated": true,
+    "exception": null,
+    "exit_code": null,
+    "exit_message": null,
+    "is_created_from_cache": false,
+    "cache_source": null
+  },
+  "inputs": [
+    {
+      "port": "seq",
+      "link_type": "input_calc",
+      "label": "",
+      "uuid": "7c7576d2-e72f-446b-a8b4-b332fcb4e669",
+      "pk": 169,
+      "node_type": "data.core.str.Str.",
+      "creator_uuid": null,
+      "value": {
+        "kind": "str",
+        "value": "MKTAYIAKQRQISFVKSHFSRQ",
+        "text": "\"MKTAYIAKQRQISFVKSHFSRQ\"（22 字符）"
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "port": "result",
+      "link_type": "create",
+      "label": "",
+      "uuid": "3e86212e-e0c4-47a9-9cea-a1eb61963051",
+      "pk": 171,
+      "node_type": "data.core.dict.Dict.",
+      "creator_uuid": null
+    }
+  ],
+  "repository": {
+    "has_repository": true,
+    "error": null,
+    "node_hash": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+    "files": [
+      {
+        "path": "source_file",
+        "read": {
+          "cli": "verdi node repo cat de4ba3d8-8c52-4762-9245-6390748c51ca source_file",
+          "python": "node.base.repository.get_object_content('source_file')",
+          "export": "python -m ai4s_query.cli cat de4ba3d8-8c52-4762-9245-6390748c51ca source_file --out source_file"
+        },
+        "role": "function_source",
+        "note": "calcfunction 源码快照（AiiDA 为可复现自动保存），不是本次计算的产物",
+        "readable": true,
+        "kind": "text",
+        "size": 2312,
+        "sha256": "6c86c396986ab8d05d48d3f509cefa06a2625a3f3cf7fbb153cf2be8058d0960",
+        "preview": "# -*- coding: utf-8 -*- / \"\"\"原生两步计算样例（不依赖真实模型）。"
+      }
+    ]
+  },
+  "checksum": {
+    "node_hash": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+    "files": [
+      {
+        "path": "source_file",
+        "size": 2312,
+        "sha256": "6c86c396986ab8d05d48d3f509cefa06a2625a3f3cf7fbb153cf2be8058d0960"
+      }
+    ]
+  },
+  "lineage": {
+    "upstream": [
+      {
+        "depth": 0,
+        "via_port": "seq",
+        "node_uuid": "7c7576d2-e72f-446b-a8b4-b332fcb4e669",
+        "node_pk": 169,
+        "node_type": "data.core.str.Str.",
+        "label": "",
+        "creator_uuid": null
+      }
+    ],
+    "downstream": [
+      {
+        "depth": 0,
+        "relation": "produced",
+        "via_port": "result",
+        "link_type": "create",
+        "node_uuid": "3e86212e-e0c4-47a9-9cea-a1eb61963051",
+        "node_pk": 171,
+        "node_type": "data.core.dict.Dict.",
+        "label": ""
+      },
+      {
+        "depth": 1,
+        "relation": "used_by",
+        "via_port": "stats",
+        "link_type": "input_calc",
+        "node_uuid": "12c13ac9-1357-484f-8d80-4d09d007f7a0",
+        "node_pk": 234,
+        "node_type": "process.calculation.calcfunction.CalcFunctionNode.",
+        "label": "strict_length_check"
+      },
+      {
+        "depth": 1,
+        "relation": "used_by",
+        "via_port": "stats",
+        "link_type": "input_calc",
+        "node_uuid": "5894cc28-8c2a-4ec6-9b7c-f948847b882f",
+        "node_pk": 184,
+        "node_type": "process.calculation.calcfunction.CalcFunctionNode.",
+        "label": "strict_length_check"
+      },
+      {
+        "depth": 1,
+        "relation": "used_by",
+        "via_port": "stats",
+        "link_type": "input_calc",
+        "node_uuid": "ac56089f-27ee-4288-8a84-358cc8179fd9",
+        "node_pk": 173,
+        "node_type": "process.calculation.calcfunction.CalcFunctionNode.",
+        "label": "filter_by_length"
+      },
+      {
+        "depth": 1,
+        "relation": "used_by",
+        "via_port": "stats",
+        "link_type": "input_calc",
+        "node_uuid": "e80c16c6-78e7-4584-8af4-b2e34be70d97",
+        "node_pk": 176,
+        "node_type": "process.calculation.calcfunction.CalcFunctionNode.",
+        "label": "filter_by_length"
+      },
+      {
+        "depth": 2,
+        "relation": "produced",
+        "via_port": "result",
+        "link_type": "create",
+        "node_uuid": "099fbcdd-a06c-4bc8-8143-7194606e005c",
+        "node_pk": 177,
+        "node_type": "data.core.bool.Bool.",
+        "label": ""
+      },
+      {
+        "depth": 2,
+        "relation": "produced",
+        "via_port": "result",
+        "link_type": "create",
+        "node_uuid": "cf2a256f-abe3-43db-8c9b-35e9f1163e5d",
+        "node_pk": 174,
+        "node_type": "data.core.bool.Bool.",
+        "label": ""
+      }
+    ]
+  },
+  "attributes": {
+    "process_state": "finished",
+    "process_label": "seq_stats",
+    "metadata_inputs": null,
+    "version": {
+      "core": "2.9.4"
+    },
+    "function_name": "seq_stats",
+    "function_starting_line_number": 25,
+    "function_number_of_lines": 16,
+    "function_namespace": "ai4s_query.sample_calcs",
+    "exit_status": 0,
+    "sealed": true
+  },
+  "extras": {
+    "_aiida_hash": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e"
+  },
+  "issues": {
+    "failures": [],
+    "unrecorded": [],
+    "unreadable_files": []
+  },
+  "ok": true
+}

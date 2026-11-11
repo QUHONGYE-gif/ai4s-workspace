@@ -1,0 +1,104 @@
+{
+  "identifier": "req-6f1c2a9e-3b7d-4c51-9a0e-1d2f3c4b5a6e",
+  "profile": null,
+  "count": 1,
+  "records": [
+    {
+      "request_id": "req-6f1c2a9e-3b7d-4c51-9a0e-1d2f3c4b5a6e",
+      "process_uuid": "de4ba3d8-8c52-4762-9245-6390748c51ca",
+      "reuse_policy": "allow_reuse",
+      "candidate_compare_list": [
+        {
+          "uuid": "cf51c226-1402-4d72-af26-3d8ece208310",
+          "fingerprint": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+          "member": "吴昱慧",
+          "qualified": true,
+          "reason": null
+        },
+        {
+          "uuid": "de4ba3d8-8c52-4762-9245-6390748c51ca",
+          "fingerprint": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+          "member": "陈思睿",
+          "qualified": true,
+          "reason": null
+        },
+        {
+          "uuid": "0c042232-4035-46eb-adaf-17021bf3e1f8",
+          "fingerprint": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+          "member": "陈思睿",
+          "qualified": true,
+          "reason": null
+        },
+        {
+          "uuid": "364a4258-91b7-40e0-87b4-ecb27a475023",
+          "fingerprint": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+          "member": "陈思睿",
+          "qualified": true,
+          "reason": null
+        },
+        {
+          "uuid": "7351ae89-872c-46a5-b951-b9bff5d39cc2",
+          "fingerprint": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+          "member": "陈思睿",
+          "qualified": true,
+          "reason": null
+        },
+        {
+          "uuid": "8c286855-1d5f-4a77-8ca3-1e68e86849d6",
+          "fingerprint": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+          "member": "陈思睿",
+          "qualified": true,
+          "reason": null
+        },
+        {
+          "uuid": "bd09f2f9-56a6-4468-8613-8f4de9824cdf",
+          "fingerprint": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+          "member": "陈思睿",
+          "qualified": true,
+          "reason": null
+        },
+        {
+          "uuid": "b9b84a40-a8ed-4965-9739-06cab578367c",
+          "fingerprint": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+          "member": "陈思睿",
+          "qualified": true,
+          "reason": null
+        }
+      ],
+      "final_decision": {
+        "action": "reuse",
+        "selected_candidate_uuid": "cf51c226-1402-4d72-af26-3d8ece208310",
+        "effective_seed": 37
+      },
+      "reason": {
+        "reason_code": "R01",
+        "reason_text": "策略为允许复用，存在合格候选，按规则选中第一条（成员 吴昱慧）"
+      },
+      "timestamp": "2026-11-11T08:48:58Z",
+      "_extra": {
+        "_meta": {
+          "generated_by": "ai4s_query.examples.make_sample_decision",
+          "note": "联调样例：候选数据取自真实节点，决策本身待扩展点产出",
+          "fingerprint": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+          "candidates_total": 13,
+          "candidates_qualified": 13
+        }
+      },
+      "_source": "file:req-6f1c2a9e-3b7d-4c51-9a0e-1d2f3c4b5a6e.json",
+      "_problems": [],
+      "_ok": true
+    }
+  ],
+  "sources_tried": [
+    {
+      "source": "节点属性",
+      "count": 0
+    },
+    {
+      "source": "旁路文件",
+      "count": 1
+    }
+  ],
+  "missing": null,
+  "ok": true
+}

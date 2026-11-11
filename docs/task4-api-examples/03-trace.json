@@ -1,0 +1,60 @@
+{
+  "ok": true,
+  "uuid": "de4ba3d8-8c52-4762-9245-6390748c51ca",
+  "steps": [
+    {
+      "kind": "data",
+      "uuid": "7c7576d2-e72f-446b-a8b4-b332fcb4e669",
+      "pk": 169,
+      "node_type": "data.core.str.Str.",
+      "label": "",
+      "creator_uuid": null,
+      "value": {
+        "kind": "str",
+        "value": "MKTAYIAKQRQISFVKSHFSRQ",
+        "text": "\"MKTAYIAKQRQISFVKSHFSRQ\"（22 字符）"
+      },
+      "file_count": 0,
+      "node_hash": "13f1cd5a78a662e39b4e6d7dfbd0c2350f139ae4a5f82aa10983361dcafb0fa9"
+    },
+    {
+      "kind": "process",
+      "uuid": "de4ba3d8-8c52-4762-9245-6390748c51ca",
+      "pk": 170,
+      "node_type": "process.calculation.calcfunction.CalcFunctionNode.",
+      "label": "seq_stats",
+      "process": {
+        "process_state": "finished",
+        "process_state_raw": "ProcessState.FINISHED",
+        "process_status": null,
+        "is_finished_ok": true,
+        "is_terminated": true,
+        "exception": null,
+        "exit_code": null,
+        "exit_message": null,
+        "is_created_from_cache": false,
+        "cache_source": null
+      },
+      "params": [
+        {
+          "port": "seq",
+          "node_type": "data.core.str.Str.",
+          "uuid": "7c7576d2-e72f-446b-a8b4-b332fcb4e669",
+          "value": {
+            "kind": "str",
+            "value": "MKTAYIAKQRQISFVKSHFSRQ",
+            "text": "\"MKTAYIAKQRQISFVKSHFSRQ\"（22 字符）"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "port": "result",
+          "node_type": "data.core.dict.Dict.",
+          "uuid": "3e86212e-e0c4-47a9-9cea-a1eb61963051"
+        }
+      ]
+    }
+  ],
+  "count": 2
+}

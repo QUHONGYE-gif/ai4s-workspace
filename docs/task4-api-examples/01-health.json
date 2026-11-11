@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "service": "ai4s-query/4.0",
+  "current_profile": "lab",
+  "profiles": [
+    "lab",
+    "lab2"
+  ],
+  "members": {
+    "lab": "陈思睿",
+    "lab2": "吴昱慧"
+  },
+  "decisions_dir": "C:\\Users\\13101\\runs\\decisions"
+}
