@@ -13,6 +13,7 @@ from ai4s_workflows.workflows import (
     MAX_RETRY,
     ProteinMPNNFilterWorkChain,
     attempt_label,
+    process_state_value,
     validation_manifest_problem,
 )
 
@@ -32,6 +33,13 @@ def test_attempt_limit_is_two_total_submissions():
     assert MAX_ATTEMPTS == 2
     assert MAX_RETRY == 1
     assert attempt_label("workflow-uuid", 1).endswith(":01")
+
+
+def test_unlaunched_process_is_reported_as_created():
+    assert process_state_value(types.SimpleNamespace(process_state=None)) == "created"
+    assert process_state_value(
+        types.SimpleNamespace(process_state=types.SimpleNamespace(value="waiting"))
+    ) == "waiting"
 
 
 @pytest.mark.parametrize(

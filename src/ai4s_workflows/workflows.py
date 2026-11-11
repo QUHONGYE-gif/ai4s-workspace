@@ -32,6 +32,12 @@ ATTEMPT_LABEL_PREFIX = "ai4s-mpnn"
 WORKCHAIN_PROCESS_TYPE = "aiida.workflows:ai4s.protein-mpnn-filter"
 
 
+def process_state_value(process):
+    """Return the native state, treating an unlaunched stored node as created."""
+    state = process.process_state
+    return "created" if state is None else state.value
+
+
 def validate_filter_params(value, _context):
     params = value.get_dict()
     threshold, top_k = params.get("score_threshold"), params.get("top_k")
@@ -477,7 +483,7 @@ class ProteinMPNNFilterWorkChain(WorkChain):
             "calcjob_pk": calculation.pk,
             "calcjob_uuid": calculation.uuid,
             "label": calculation.label,
-            "process_state": getattr(calculation.process_state, "value", str(calculation.process_state)),
+            "process_state": process_state_value(calculation),
             "exit_status": calculation.exit_status,
         }
 

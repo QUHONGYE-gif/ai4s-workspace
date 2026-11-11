@@ -101,7 +101,36 @@ if {invalid_manifest!r}:
             if node.is_terminated:
                 return node
             time.sleep(0.5)
-        raise AssertionError(f"Process {node.pk} did not finish in 120 seconds")
+        from ai4s_workflows.workflows import process_state_value
+
+        children = [
+            (child.pk, child.process_type, process_state_value(child))
+            for child in node.called
+        ]
+        raise AssertionError(
+            f"Process {node.pk} did not finish in 120 seconds; "
+            f"state={process_state_value(node)}, children={children}"
+        )
+
+    @classmethod
+    def wait_for_process_state(cls, node, expected, timeout=30):
+        from ai4s_workflows.workflows import process_state_value
+
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            node = cls.orm.load_node(node.pk)
+            state = process_state_value(node)
+            if state == expected:
+                return node
+            if node.is_terminated:
+                raise AssertionError(
+                    f"Process {node.pk} terminated as {state} before reaching {expected}"
+                )
+            time.sleep(0.2)
+        raise AssertionError(
+            f"Process {node.pk} did not reach {expected} in {timeout} seconds; "
+            f"state={process_state_value(node)}"
+        )
 
     @classmethod
     def wait_for_file(cls, path, timeout=60):
@@ -247,7 +276,7 @@ if {invalid_manifest!r}:
             mpnn_params=self.orm.Dict(dict={"version": "v1.0", "num_seq": 4}),
             filter_params=self.orm.Dict(dict={"score_threshold": 1.08, "top_k": 2}),
         )
-        target = self.orm.load_node(target.pk)
+        target = self.wait_for_process_state(target, "waiting")
         before = (target.pk, target.uuid, target.process_state.value)
         self.assertEqual(before[2], "waiting")
 

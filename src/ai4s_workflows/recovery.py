@@ -5,7 +5,12 @@ import json
 
 from aiida.orm import CalcJobNode, load_node
 
-from .workflows import WORKCHAIN_PROCESS_TYPE, ProteinMPNNFilterWorkChain, find_calcjobs_by_label
+from .workflows import (
+    WORKCHAIN_PROCESS_TYPE,
+    ProteinMPNNFilterWorkChain,
+    find_calcjobs_by_label,
+    process_state_value,
+)
 
 
 def calcjob_identity(node):
@@ -14,7 +19,7 @@ def calcjob_identity(node):
         "pk": node.pk,
         "uuid": node.uuid,
         "label": node.label,
-        "process_state": getattr(node.process_state, "value", str(node.process_state)),
+        "process_state": process_state_value(node),
         "exit_status": node.exit_status,
         "cache_source": node.base.caching.get_cache_source(),
     }
@@ -41,7 +46,7 @@ def workflow_report(workchain_pk):
             "pk": workchain.pk,
             "uuid": workchain.uuid,
             "label": workchain.label,
-            "process_state": getattr(workchain.process_state, "value", str(workchain.process_state)),
+            "process_state": process_state_value(workchain),
             "exit_status": workchain.exit_status,
         },
         "calcjobs": sorted(calcjobs, key=lambda item: item["pk"]),
