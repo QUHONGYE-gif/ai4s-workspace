@@ -2,7 +2,7 @@
 
 本页说明项目 WorkChain 适配层中的复用决策扩展点、候选映射、持久化记录和验证边界。字段口径与 [约定⑤](https://lcnzinmktf6r.feishu.cn/wiki/WRgGwqdcKiqvFNkwqSscY7pMn8c) 对齐，候选结构直接使用 [约定④](https://lcnzinmktf6r.feishu.cn/wiki/YH74w7cq6iZLdVkpVBBcMEtcnlc)。
 
-已验证事实：本仓库已在 `ProteinMPNNFilterWorkChain` 中接入三种策略；Windows 快速测试已覆盖决策结构、策略选择、候选去重、记录替换与查询，并通过。三种策略的 AiiDA 临时 profile 集成用例已补充，但尚未在本机执行确认。工作假设：这些端口将由引擎服务透传。待确认项：团队 `aiida-core` fork 的缓存入口尚未在本仓库内改造；当前实现是项目 WorkChain 适配层，不是把决策逻辑合入 AiiDA 内核。
+当前实现在 `ProteinMPNNFilterWorkChain` 中完成三种策略和决策记录适配；Windows 快速测试覆盖决策结构、策略选择、候选去重、记录替换和查询，Linux AiiDA 2.9.4 临时 profile 的完整 15 项 CPU mock 集成检查也已通过。该实现仍是项目 WorkChain 适配层，不是团队 `aiida-core` fork 的内核改造。
 
 ## 三种策略
 
@@ -139,6 +139,6 @@ def choose(context):
 
 ## 验证边界
 
-Windows 快速测试覆盖决策结构、三种策略、理由码约束、候选去重、记录替换与查询、208／209 输入门禁。需要 POSIX AiiDA 和 daemon 的集成场景覆盖三种策略各运行一次、复用不启动模型、新采样种子不同和按请求／过程查询记录。真实 ProteinMPNN、GPU、目标 Linux daemon、跨成员 profile 和网页到引擎的完整闭环仍未在本机验证，不能由快速测试结果推断其已通过。
+Windows 快速测试覆盖决策结构、三种策略、候选去重、记录替换和查询；Linux AiiDA 2.9.4 临时 profile 的完整 15 项 CPU mock 集成检查通过，覆盖三种策略、实际种子与启动次数、决策记录查询、daemon 停止／重启恢复、重试成功与上限、无效清单及复用 schema 门禁。尚未运行真实 ProteinMPNN/GPU，尚未接入网页实时回传；跨成员、跨 profile 的真实候选查询与共享也未经本次验证。
 
 返回：[C 模块](../README_C.md) · [当前状态](status.md) · [实施计划](implementation_plan.md) · [仓库](../README.md)。

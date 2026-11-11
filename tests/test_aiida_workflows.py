@@ -43,6 +43,7 @@ class WorkflowIntegrationTests(unittest.TestCase):
     @classmethod
     def start_daemon(cls):
         subprocess.run([sys.executable, "-m", "aiida", "daemon", "start", "1"], check=True)
+        cls.wait_for_daemon(running=True)
         from aiida.manage import get_manager
         for attempt in range(15):
             try:
@@ -56,6 +57,35 @@ class WorkflowIntegrationTests(unittest.TestCase):
     @classmethod
     def stop_daemon(cls):
         subprocess.run([sys.executable, "-m", "aiida", "daemon", "stop"], check=False)
+        cls.wait_for_daemon(running=False)
+        # The manager keeps its runner and broker alive for the lifetime of
+        # this process. Release both so subsequent submissions connect to the
+        # broker started by the replacement daemon.
+        from aiida.manage import get_manager
+
+        manager = get_manager()
+        if manager._runner is not None:
+            manager._runner.close()
+            manager._runner = None
+
+        broker = manager.get_broker()
+        if broker is not None:
+            broker.close()
+
+    @classmethod
+    def wait_for_daemon(cls, running, timeout=60):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            status = subprocess.run(
+                [sys.executable, "-m", "aiida", "daemon", "status", "-t", "10"],
+                check=False,
+                capture_output=True,
+            )
+            if (status.returncode == 0) == running:
+                return
+            time.sleep(0.5)
+        expected = "running" if running else "stopped"
+        raise AssertionError(f"Daemon did not become {expected} in {timeout} seconds")
 
     @classmethod
     def tearDownClass(cls):
