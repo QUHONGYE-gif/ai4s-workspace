@@ -2,7 +2,7 @@
 
 本页说明项目 WorkChain 适配层中的复用决策扩展点、候选映射、持久化记录和验证边界。字段口径与 [约定⑤](https://lcnzinmktf6r.feishu.cn/wiki/WRgGwqdcKiqvFNkwqSscY7pMn8c) 对齐，候选结构直接使用 [约定④](https://lcnzinmktf6r.feishu.cn/wiki/YH74w7cq6iZLdVkpVBBcMEtcnlc)。
 
-当前实现在 `ProteinMPNNFilterWorkChain` 中完成三种策略和决策记录适配；Windows 快速测试覆盖决策结构、策略选择、候选去重、记录替换和查询，Linux AiiDA 2.9.4 临时 profile 的完整 15 项 CPU mock 集成检查也已通过。该实现仍是项目 WorkChain 适配层，不是团队 `aiida-core` fork 的内核改造。
+当前实现在 `ProteinMPNNFilterWorkChain` 中完成三种策略和决策记录适配。Windows 快速测试覆盖决策结构、策略选择、候选去重、记录替换和查询；Linux AiiDA 2.9.4 临时 profile 的完整 15 项 CPU mock 集成检查已通过；2026-11-11 又在授权 GPU 环境完成真实 `force_rerun` 两阶段复验，真实 CalcJob 无缓存来源，决策记录可按 `request_id` 查回 R03。该实现仍是项目 WorkChain 适配层，不是团队 `aiida-core` fork 的内核改造。
 
 ## 三种策略
 
@@ -139,6 +139,6 @@ def choose(context):
 
 ## 验证边界
 
-Windows 快速测试覆盖决策结构、三种策略、候选去重、记录替换和查询；Linux AiiDA 2.9.4 临时 profile 的完整 15 项 CPU mock 集成检查通过，覆盖三种策略、实际种子与启动次数、决策记录查询、daemon 停止／重启恢复、重试成功与上限、无效清单及复用 schema 门禁。尚未运行真实 ProteinMPNN/GPU，尚未接入网页实时回传；跨成员、跨 profile 的真实候选查询与共享也未经本次验证。
+Windows 快速测试覆盖决策结构、策略选择、候选去重、记录替换和查询；Linux AiiDA 2.9.4 临时 profile 的 15 项 CPU mock 集成检查通过，覆盖三种策略、真实种子、证据清单、决策记录、daemon 停止与恢复、重试上限、失效清单和 schema 门禁。2026-11-11 已在授权 GPU 环境验证真实 `force_rerun` 两阶段 WorkChain 和 R03 决策记录查询；尚未验证 `allow_reuse`／`new_sample` 在真实候选上的复用、真实 daemon 中断恢复、网页实时回显、团队共享 profile 查询与共享。
 
 返回：[C 模块](../README_C.md) · [当前状态](status.md) · [实施计划](implementation_plan.md) · [仓库](../README.md)。

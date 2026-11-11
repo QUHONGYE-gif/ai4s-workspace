@@ -1,6 +1,6 @@
 # R005：AiiDA ProteinMPNN 接入与两阶段最小验证
 
-状态：所列四次运行已完成，2026-11-05 通过原生 ORM 回查；没有在补文档时重新启动模型。目标是验证真实任务接入、单任务缓存和局部重算，不评价蛋白质功能或模型优劣。入口：[A 模块](../../docs/aiida_tasks.md)、[C 模块](../../README_C.md)、[当前状态](../../docs/status.md)。
+状态：2026-11-05 的四次历史运行和 2026-11-11 的真实 GPU 两阶段复验均已完成；两部分分别保留当时的环境和身份，旧运行不能替代新链路证据。目标是验证真实任务接入、单任务缓存、局部重算和复用决策记录，不评价蛋白质功能或模型优劣。入口：[A 模块](../../docs/aiida_tasks.md)、[C 模块](../../README_C.md)、[当前状态](../../docs/status.md)。
 
 ## 代码与执行环境
 
@@ -101,11 +101,45 @@ pk 22 的取回节点为 `78f6788d-c599-43b9-8c9f-9f83fab385e2`，含 `outputs/r
 
 - 本次文档补充前重新运行 `PYTHONPATH=src /opt/homebrew/Caskroom/miniforge/base/envs/lab/bin/python -m pytest -q tests/test_ai4s_tasks.py`，4 项通过；仅覆盖参数、FASTA 和分数辅助函数，不是完整 Parser 集成测试。
 - PR 原有记录报告：目标服务器直接调用四个辅助测试函数通过，`python tests/test_aiida_workflows.py` 在独立临时 profile 的 7 项 CPU mock 检查通过。本次未重跑该组，也未把它当作真实 GPU 或 daemon 中断恢复的证据。
-- 尚未验证真实 WorkChain 缓存命中、daemon 停启恢复、B 的真实产物查询、多成员／跨 profile 访问、完整缓存失效条件和正式网页提交。
+- 2026-11-05 记录对应的运行未覆盖真实 WorkChain 缓存命中、daemon 停启恢复、B 的真实产物查询、多成员／跨 profile 访问、完整缓存失效条件和正式网页提交；2026-11-11 的真实 `force_rerun` 两阶段复验见后文，其余各项仍未由本次复验覆盖。
 - 权重哈希仅被记录；完整运行身份、概率数值及样本映射、异常文件诊断和正式端口差异的实现边界见模块说明。记录时源码仍为三次提交上限，后续已改为最多两次尝试，见下一节。
 
 ## 2026-11-08 后续源码变更（未重跑）
 
-C 模块之后将提交上限改为最多两次尝试，并加入逐次尝试明细、稳定 label 提交核对、已知失效清单门禁、原生恢复报告和 daemon 排队／停启检查。上述源码变更后的运行记录不能沿用本页旧 PK 冒充；已有真实两阶段与仅重筛选仍只对应本页记录的旧源码版本。新变更的快速逻辑检查结果见 [当前状态](../../docs/status.md)；目标 Linux 环境中的扩展集成检查和真实复验仍待执行。
+C 模块之后将提交上限改为最多两次尝试，并加入逐次尝试明细、稳定 label 提交核对、已知失效清单门禁、原生恢复报告和 daemon 排队／停启检查。上述源码变更后的运行记录不能沿用本页旧 PK 冒充；已有真实两阶段与仅重筛选仍只对应本页旧源码版本。新变更的快速逻辑检查和 Linux CPU mock 集成检查已通过；2026-11-11 当前个人 profile 中的真实 `force_rerun` 两阶段复验见下一节。
+
+## 2026-11-11 真实 GPU 两阶段复验
+
+本节记录 2026-11-11 在当前个人 `ai4s` profile 上对新复用决策与记录链路的真实执行事实。上文 PK 22／31／41／55 属于更早环境和来源版本，不能与本节的 PK 74 混用。
+
+| 项目 | 实际数据 |
+| --- | --- |
+| AiiDA | `aiida-core 2.9.4`，`ai4s` profile，daemon 单 worker |
+| Code | `proteinmpnn-8907e667@localhost`，PK 57，UUID `037c05e5-9f42-470b-8df8-03d7e61ec386` |
+| 输入 | release `8907e667-py312-torch260cu124` 的 `examples/1CRN.pdb`，链 A |
+| 参数 | `num_sequences=4`、温度 0.1、seed 41、阈值 0.82、`top_k=2` |
+| 单任务 | CalcJob PK 60 / `9e6d9350-f564-465b-90b6-07178e12535b`，`Finished [0]`，无缓存来源 |
+| 两阶段 WorkChain | PK 74 / `89fea7d1-1fdd-41c8-904d-788b674ab888`，`Finished [0]` |
+| 实际 MPNN CalcJob | PK 75 / `77f45c98-8471-4f88-8034-1e0198b3e0e7`，`Finished [0]`，无缓存来源 |
+| 请求编号 | `req-a8ae5d84-430a-44c8-88d1-6a35b7eaf4a2` |
+| 决策 | `force_rerun` → `rerun`，`R03`，`effective_seed=41` |
+| 启动计数 | `model_launches=1`、`attempt_count=1`、`retry_attempt=0` |
+| 筛选 | `selected_count=2`，`selection_report` PK 86 |
+| 上游结果 UUID | `87ada36e-8a31-4805-b5f8-52813d27219f` |
+
+`verdi process report 74` 依次记录复用决策、唯一一次 MPNN 提交和筛选完成，没有错误或重试。`python -m ai4s_workflows.recovery --workchain 74` 返回 WorkChain 和 CalcJob 均为 `finished`、退出码 0，CalcJob 的 `cache_source` 为 `null`。恢复报告顶层的 `upstream_result_uuid` 为空，是因为新链路没有使用旧的 `existing_mpnn_result` 输入；本次上游结果 UUID 保存在 `selection_report.upstream_result_uuid`。
+
+决策记录查询结果：
+
+```text
+request_id: req-a8ae5d84-430a-44c8-88d1-6a35b7eaf4a2
+process_uuid: 89fea7d1-1fdd-41c8-904d-788b674ab888
+reuse_policy: force_rerun
+action: rerun
+effective_seed: 41
+reason_code: R03
+```
+
+这次复验证明真实 ProteinMPNN CalcJob、两阶段筛选、`force_rerun` 决策及 `ai4s_decision_records` 查询在当前个人 profile 中可用。它没有证明网页实时回显，也没有证明 `allow_reuse`／`new_sample` 对真实候选的复用；这两项仍需要站点 2／10 的服务联调以及后续真实候选验证。
 
 返回：[A 模块](../../docs/aiida_tasks.md) · [C 模块](../../README_C.md) · [当前状态](../../docs/status.md) · [仓库](../../README.md)。
