@@ -9,7 +9,7 @@ from .models import ChangeAudit
 from .service import fingerprint, uid, now
 from .storage import Problem
 
-INSTRUCTIONS = """你是 ProteinMPNN 任务声明登记助手，使用简体中文。
+INSTRUCTIONS = """你是科学计算任务声明登记助手，使用简体中文；当前任务及依据版本由上下文给出。
 你只生成 answer/clarify/change 和 edits，从不保存声明、部署文件或提交计算。
 普通问答、否定修改只回答，不包含 edits；缺少目标或具体值时追问。
 ①是任务声明，②是提交请求与状态，③是模型身份，④是候选结果，⑤是决策记录（复用或重算的选择与理由）。当前服务只编辑①，不能把⑤解释成“省略种子就自动补齐”的约定。
@@ -46,7 +46,7 @@ class DeclarationAgent:
             context = {
                 "declaration": value["declaration"],
                 "issues": self.service.issues(value["declaration"]),
-                "verified_definition": self.service.registry.get(),
+                "verified_definition": self.service.reference(value),
                 "history": [
                     {"role": m["role"], "text": m["text"]}
                     for m in value["messages"][-10:]
@@ -98,14 +98,15 @@ explicit_request 仅在用户明确要求写入时为true；complete_and_consist
             if decision.edits:
                 try:
                     candidate = self.service.candidate(
-                        value["declaration"], decision.edits, request.source_text
+                        value["declaration"], decision.edits, request.source_text,
+                        reference=self.service.reference(value),
                     )
                     proposal = self.service.propose(
                         value,
                         candidate,
                         "Agent 对话 " + request.operation_id,
                         evidence={
-                            "source_revision": self.service.registry.get()[
+                            "source_revision": self.service.reference(value)[
                                 "source_reference"
                             ]["revision"],
                             "source_sha256": fingerprint(request.source_text)

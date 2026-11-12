@@ -1,7 +1,10 @@
 import { api, post, operationId, escapeHTML as esc, download } from "./api.js";
 import { renderMessage } from "./message.js";
 
-export async function mountDeclaration(container) {
+export async function mountDeclaration(
+  container,
+  { draftId, taskId, version, readOnly = false, onBack } = {},
+) {
   const signal = new AbortController();
   const $ = (id) => container.querySelector("#dp-" + id);
   let state,
@@ -11,13 +14,14 @@ export async function mountDeclaration(container) {
     settings;
   let activeSection = "inputs";
   let editingItem;
+  const groupLabels = { inference: "推理参数", filter: "筛选参数" };
   const endpoint = (suffix) =>
     "/api/declaration-drafts/" + state.id + "/" + suffix;
   container.innerHTML = `
-    <section class="declaration-workspace" aria-label="ProteinMPNN 任务声明登记">
-      <header class="declaration-heading"><div><h2>ProteinMPNN 任务登记</h2><p>定义模型的输入、参数和输出，供实验页面与引擎使用。</p></div><div class="declaration-actions"><button class="button primary" id="dp-export" type="button">校验并导出</button></div></header>
-      <div class="declaration-draftbar"><label><span class="sr-only">当前声明草稿</span><select id="dp-drafts" aria-label="当前声明草稿"></select></label><span id="dp-revision" class="declaration-state"></span><details class="declaration-draft-menu"><summary>草稿操作</summary><div><button class="button" id="dp-reload">读取保存版本</button><button class="button" id="dp-new">新建空白声明</button><button class="button" id="dp-complete">从完整定义新建</button></div></details></div>
-      <p class="declaration-notice">登记任务接口，不会启动计算。导出后需交给引擎部署。</p>
+    <section class="declaration-workspace ${readOnly ? "declaration-readonly" : ""}" aria-label="任务声明编辑器">
+      <header class="declaration-heading"><div><h2 id="dp-title">任务声明</h2><p id="dp-caption"></p></div><div class="declaration-actions"><button class="button" id="dp-back" type="button">返回注册中心</button><button class="button primary" id="dp-export" type="button">校验并导出</button></div></header>
+      <div class="declaration-draftbar" id="dp-draftbar"><label><span class="sr-only">当前声明草稿</span><select id="dp-drafts" aria-label="当前声明草稿"></select></label><span id="dp-revision" class="declaration-state"></span><details class="declaration-draft-menu"><summary>草稿操作</summary><div><button class="button" id="dp-reload">读取保存版本</button></div></details></div>
+      <p class="declaration-notice">接口定义供节点引用；节点实例的输入与参数独立保存。</p>
       <div class="inline-error" id="dp-error" role="alert" hidden></div><p class="inline-result" id="dp-status" role="status" aria-live="polite"></p>
       <div class="declaration-columns with-assistant" id="dp-columns"><div class="declaration-main">
         <section class="declaration-map panel" aria-labelledby="dp-map-title"><div class="panel-heading"><div><h3 id="dp-map-title">任务接口</h3><p>点击节点查看定义</p></div><span class="declaration-caption">已保存的定义 · 非运行状态</span></div><div id="dp-flow"></div><div class="declaration-validation"><div id="dp-issues" role="status"></div></div></section>
@@ -35,9 +39,9 @@ export async function mountDeclaration(container) {
             .join("")}</nav>
           <div class="declaration-body"><form id="dp-form" novalidate>
             <section id="dp-section-inputs" data-detail-section="inputs"><div class="declaration-section-heading"><h3>需要什么输入</h3><p>这里定义文件端口；具体文件在创建实验时选择。</p></div><div id="dp-inputs"></div></section>
-            <section id="dp-section-parameters" data-detail-section="parameters" hidden><div class="declaration-section-heading"><h3>参数规则</h3><p>展开查看类型、必填性和默认值。这里编辑规则，实验时再填写具体值。</p></div><div id="dp-parameters"></div><details class="declaration-disclosure"><summary>试填联调参数</summary><p class="field-hint">以下是示例值，不是默认值，也不会启动实验。</p><div id="dp-example"></div></details></section>
+            <section id="dp-section-parameters" data-detail-section="parameters" hidden><div class="declaration-section-heading"><h3>参数与约束</h3><p>定义接口规则；具体取值在工作流节点或实验中配置。</p></div><div id="dp-parameters"></div><details class="declaration-disclosure"><summary>跨字段约束</summary><div id="dp-constraints"></div></details><details class="declaration-disclosure"><summary>试填联调参数</summary><p class="field-hint">以下是示例值，不是默认值，也不会启动实验。</p><div id="dp-example"></div></details></section>
             <section id="dp-section-outputs" data-detail-section="outputs" hidden><div class="declaration-section-heading"><h3>会产生什么输出</h3><p>这是产物定义，文件和结果节点将在实际计算后产生。</p></div><div id="dp-outputs"></div></section>
-            <section id="dp-section-advanced" data-detail-section="advanced" hidden><div class="declaration-section-heading"><h3>任务信息</h3><p>维护接口版本与来源，保持已发布定义不变。</p></div><div class="fields"><label class="field"><span>任务名称</span><input id="dp-name" required maxlength="200"></label><label class="field"><span>接口版本</span><input id="dp-version" required pattern="[1-9][0-9]{0,7}"></label></div><dl class="declaration-metadata"><div><dt>任务标识</dt><dd><code>proteinmpnn</code></dd></div><div><dt>声明格式</dt><dd><code>ai4s-task-declaration-1</code></dd></div><div><dt>适用模型版本</dt><dd><code id="dp-release"></code></dd></div></dl>
+            <section id="dp-section-advanced" data-detail-section="advanced" hidden><div class="declaration-section-heading"><h3>任务信息</h3><p>维护接口版本与来源，保持已发布定义不变。</p></div><div class="fields"><label class="field"><span>任务名称</span><input id="dp-name" required maxlength="200"></label><label class="field"><span>接口版本</span><input id="dp-version" required pattern="[1-9][0-9]{0,7}"></label></div><dl class="declaration-metadata"><div><dt>任务标识</dt><dd><code id="dp-task-id"></code></dd></div><div><dt>声明格式</dt><dd><code id="dp-schema"></code></dd></div><div><dt>适用模型版本</dt><dd><code id="dp-release"></code></dd></div></dl>
               <details class="declaration-disclosure"><summary>批量补齐</summary><p class="field-hint">按已核实定义补齐所有缺项，保留已有内容；也可在各项旁单独填写。</p><button class="button" id="dp-restore" type="button">预览补齐全部缺项</button></details><details class="declaration-disclosure"><summary>完整 JSON 与高级编辑</summary><p class="field-hint">JSON 编辑单独校验，核对差异后确认写入。</p><textarea id="dp-json" aria-label="完整声明 JSON" spellcheck="false"></textarea><button class="button" id="dp-json-preview" type="button">校验 JSON 修改</button></details>
               <details class="declaration-disclosure"><summary>来源与执行映射</summary><div id="dp-source"></div><pre id="dp-execution" class="json-code"></pre></details>
               <details class="declaration-disclosure"><summary>确认记录</summary><div id="dp-events"></div></details>
@@ -68,7 +72,11 @@ export async function mountDeclaration(container) {
     busy = value;
     container
       .querySelectorAll("button, input, select, textarea")
-      .forEach((b) => (b.disabled = value));
+      .forEach(
+        (b) =>
+          (b.disabled =
+            value || (readOnly && b.matches("input, select, textarea"))),
+      );
     $("message").disabled = value;
     container.setAttribute("aria-busy", String(value));
   }
@@ -113,6 +121,7 @@ export async function mountDeclaration(container) {
     }
   }
   function itemButtons(path, exists) {
+    if (readOnly) return "";
     return `<div class="declaration-item-actions"><button class="button soft" type="button" data-edit-item="${esc(path)}">${exists ? "编辑" : "填写定义"}</button><button class="declaration-inline-action" type="button" data-ask-item="${esc(path)}">请助手协助</button></div>`;
   }
   function fieldsTable(section) {
@@ -233,17 +242,23 @@ export async function mountDeclaration(container) {
     $("item-dialog").showModal();
   }
   function renderFlow(d) {
-    const inputs = Object.entries(d.inputs || {});
-    const inferenceOutputs = Object.entries(d.outputs || {}).filter(
-      ([, p]) => p.owner === "inference",
-    );
-    const filterOutputs = Object.entries(d.outputs || {}).filter(
-      ([, p]) => p.owner === "filter",
-    );
-    const node = (section, title, caption, entries, kind) =>
-      `<button type="button" class="declaration-node ${kind}" data-section="${section}" aria-controls="dp-section-${section}" aria-pressed="false"><span class="declaration-node-kind">${caption}</span><strong>${esc(title)}</strong><span class="declaration-node-ports">${entries.length ? entries.map(([key, p]) => `<span><i aria-hidden="true"></i>${esc(p.filename || key)}${p.format && !p.filename ? " · " + esc(p.format) : ""}${p.required_if ? " · 按需" : ""}</span>`).join("") : '<span class="declaration-caption">待补齐定义</span>'}</span></button>`;
+    const groups = Object.keys(reference.parameters || {});
+    const primary = groups[0];
+    const outputsFor = (group) =>
+      Object.entries(d.outputs || {}).filter(
+        ([, port]) => !port.owner || port.owner === group,
+      );
+    const node = (section, title, caption, entries) =>
+      `<button type="button" class="declaration-node" data-section="${section}" aria-controls="dp-section-${section}" aria-pressed="false"><span class="declaration-node-kind">${caption}</span><strong>${esc(title)}</strong><span class="declaration-node-ports">${entries.length ? entries.map(([key, port]) => `<span><i aria-hidden="true"></i>${esc(port.filename || key)}${port.format && !port.filename ? " · " + esc(port.format) : ""}${port.required_if ? " · 按需" : ""}</span>`).join("") : '<span class="declaration-caption">待填写定义</span>'}</span></button>`;
+    const primaryCount = Object.keys(d.parameters?.[primary] || {}).length;
     $("flow").innerHTML =
-      `<div class="declaration-flow">${node("inputs", "输入骨架", "INPUT", inputs, "input-node")}<span class="declaration-connector" aria-label="作为模型输入">→</span><button type="button" class="declaration-node model-node" data-section="parameters" aria-controls="dp-section-parameters" aria-pressed="false"><span class="declaration-node-kind">序列设计模型</span><strong>ProteinMPNN</strong><span class="declaration-model-description">根据骨架设计氨基酸序列</span><span class="declaration-model-params">${Object.keys(d.parameters?.inference || {}).length} 项推理参数</span></button><span class="declaration-connector" aria-label="声明的模型输出">→</span>${node("outputs", "模型输出", "OUTPUT", inferenceOutputs, "output-node")}</div>${d.workflow_modes?.includes("mpnn_filter") ? `<div class="declaration-filter-branch"><span class="declaration-branch-line" aria-hidden="true">↳</span><button type="button" class="declaration-filter-node" data-section="parameters" aria-controls="dp-section-parameters" aria-pressed="false"><strong>可选：序列筛选</strong><span>${Object.keys(d.parameters?.filter || {}).length} 项筛选参数 · 推理后处理</span></button><span class="declaration-connector" aria-hidden="true">→</span><button type="button" class="declaration-filter-output" data-section="outputs" aria-controls="dp-section-outputs" aria-pressed="false"><strong>筛选记录与报告</strong><span>${filterOutputs.length} 项输出定义</span></button></div>` : ""}`;
+      `<div class="declaration-flow">${node("inputs", "任务输入", "INPUT", Object.entries(d.inputs || {}))}<span class="declaration-connector" aria-label="作为任务输入">→</span><button type="button" class="declaration-node model-node" data-section="parameters" aria-controls="dp-section-parameters" aria-pressed="false"><span class="declaration-node-kind">计算任务</span><strong>${esc(d.name)}</strong><span class="declaration-model-description">${esc(d.task_id)} · 接口 v${esc(d.version)}</span><span class="declaration-model-params">${primaryCount} 项${esc(groupLabels[primary] || primary || "参数")}</span></button><span class="declaration-connector" aria-label="声明的任务输出">→</span>${node("outputs", "任务输出", "OUTPUT", outputsFor(primary))}</div>${groups
+        .slice(1)
+        .map(
+          (group) =>
+            `<div class="declaration-filter-branch"><span class="declaration-branch-line" aria-hidden="true">↳</span><button type="button" data-section="parameters" aria-controls="dp-section-parameters" aria-pressed="false"><strong>${esc(groupLabels[group] || group)}</strong><span>${Object.keys(d.parameters?.[group] || {}).length} 项参数 · 独立阶段</span></button><span class="declaration-connector" aria-hidden="true">→</span><button type="button" data-section="outputs" aria-controls="dp-section-outputs" aria-pressed="false"><strong>阶段输出</strong><span>${outputsFor(group).length} 项输出定义</span></button></div>`,
+        )
+        .join("")}`;
   }
   function inputValue(field) {
     const value = field.type === "checkbox" ? field.checked : field.value;
@@ -261,10 +276,28 @@ export async function mountDeclaration(container) {
   }
   function render() {
     const d = state.declaration;
+    $("title").textContent = d.name || d.task_id;
+    $("caption").textContent = readOnly
+      ? `仓库声明 v${d.version} · 只读 · 网页服务已加载`
+      : `编辑声明 v${d.version} · 确认后保存草稿，导出后仍需审核与部署`;
+    $("task-id").textContent = d.task_id;
+    $("schema").textContent = d.schema_version;
+    $("constraints").innerHTML =
+      (d.constraints || [])
+        .map(
+          (rule) =>
+            `<p class="field-hint"><code>${esc(rule.rule)}</code> · ${esc(rule.message)}</p>`,
+        )
+        .join("") || "<p>没有跨字段约束。</p>";
     $("name").value = d.name || "";
     $("version").value = d.version || "";
     $("release").textContent = d.model?.release || "缺少版本";
-    $("revision").textContent = "草稿 r" + state.revision + " · 未部署";
+    $("revision").textContent =
+      "草稿 r" +
+      state.revision +
+      (state.status === "exported_not_deployed"
+        ? " · 已导出，未部署"
+        : " · 未发布");
     renderFlow(d);
     selectSection(activeSection);
     $("savebar").hidden = true;
@@ -277,7 +310,7 @@ export async function mountDeclaration(container) {
     $("parameters").innerHTML = Object.entries(reference.parameters)
       .map(
         ([group, fields]) =>
-          `<h4>${group === "inference" ? "推理参数" : "筛选参数 · 仅推理＋筛选流程"}</h4><div class="declaration-parameter-list">${Object.entries(
+          `<h4>${esc(groupLabels[group] || group)}</h4><div class="declaration-parameter-list">${Object.entries(
             fields,
           )
             .map(([key, source]) => {
@@ -316,7 +349,7 @@ export async function mountDeclaration(container) {
     $("json").value = json(d);
     $("execution").textContent = json(d.execution);
     $("source").innerHTML =
-      `<p>依据修订：<code>${esc(d.source_reference?.revision)}</code></p><ul>${(d.source_reference?.paths || []).map((path) => `<li><a href="https://github.com/QUHONGYE-gif/ai4s-workspace/blob/${encodeURIComponent(d.source_reference.revision)}/${path.split("/").map(encodeURIComponent).join("/")}" target="_blank" rel="noopener noreferrer">${esc(path)}</a></li>`).join("")}</ul>`;
+      `<p>依据修订：<code>${esc(d.source_reference?.revision)}</code></p><ul>${(d.source_reference?.paths || []).map((path) => `<li><a href="https://github.com/${esc(d.source_reference.repository)}/blob/${encodeURIComponent(d.source_reference.revision)}/${path.split("/").map(encodeURIComponent).join("/")}" target="_blank" rel="noopener noreferrer">${esc(path)}</a></li>`).join("")}</ul>`;
     $("events").innerHTML =
       state.events
         .slice(-10)
@@ -330,7 +363,16 @@ export async function mountDeclaration(container) {
       state.messages
         .map(
           (m) =>
-            `<article class="chat-message ${m.role === "user" ? "user" : "assistant"}"><div class="who">${m.role === "user" ? "你" : "登记助手"}</div><div class="message-body">${m.role === "user" ? esc(m.text) : renderMessage(m.text, Object.keys(reference.parameters.inference))}</div>${m.proposal ? `<p>${m.proposal.status === "pending" ? "提案待确认，尚未写入" : m.proposal.status === "applied" ? "已确认写入" : "已取消"}</p>${m.proposal.status === "pending" ? `<button class="button soft" data-proposal="${esc(m.proposal.id)}">查看修改并确认</button>` : ""}` : ""}${m.usage ? `<p class="chat-meta">${esc(m.usage.model)} · ${m.usage.elapsed_seconds.toFixed(2)}s</p>` : ""}</article>`,
+            `<article class="chat-message ${m.role === "user" ? "user" : "assistant"}"><div class="who">${m.role === "user" ? "你" : "登记助手"}</div><div class="message-body">${
+              m.role === "user"
+                ? esc(m.text)
+                : renderMessage(
+                    m.text,
+                    Object.values(reference.parameters).flatMap((group) =>
+                      Object.keys(group),
+                    ),
+                  )
+            }</div>${m.proposal ? `<p>${m.proposal.status === "pending" ? "提案待确认，尚未写入" : m.proposal.status === "applied" ? "已确认写入" : "已取消"}</p>${m.proposal.status === "pending" ? `<button class="button soft" data-proposal="${esc(m.proposal.id)}">查看修改并确认</button>` : ""}` : ""}${m.usage ? `<p class="chat-meta">${esc(m.usage.model)} · ${m.usage.elapsed_seconds.toFixed(2)}s</p>` : ""}</article>`,
         )
         .join("") ||
       '<p class="declaration-greeting">可以问“为什么种子不能为0”，或要求“根据真实接口补齐缺少的输入、参数和输出”。助手只提出修改，确认后才保存。</p>';
@@ -340,6 +382,7 @@ export async function mountDeclaration(container) {
   async function refreshList() {
     const list = await api("/api/declaration-drafts");
     $("drafts").innerHTML = list.drafts
+      .filter((d) => d.task_id === reference.task_id)
       .map(
         (d) =>
           `<option value="${esc(d.id)}" ${d.id === state?.id ? "selected" : ""}>${esc(d.name)} · r${d.revision} · ${esc(d.id.slice(-6))}</option>`,
@@ -348,9 +391,11 @@ export async function mountDeclaration(container) {
   }
   async function accept(value) {
     state = value;
-    localStorage.setItem("ai4s-declaration-draft-id", state.id);
     render();
-    await refreshList();
+    if (!readOnly) {
+      localStorage.setItem("ai4s-declaration-draft-id", state.id);
+      await refreshList();
+    }
   }
   function formDocument() {
     const d = structuredClone(state.declaration);
@@ -561,6 +606,9 @@ export async function mountDeclaration(container) {
         expected_revision: state.revision,
         operation_id: operationId(),
       });
+      state.status = result.status;
+      $("revision").textContent =
+        "草稿 r" + state.revision + " · 已导出，未部署";
       download(state.declaration.version + ".json", result.declaration);
       $("status").textContent =
         "已导出声明。交付路径：" +
@@ -583,7 +631,11 @@ export async function mountDeclaration(container) {
     }),
   );
   async function acceptFromServer(id) {
-    await accept(await api("/api/declaration-drafts/" + id));
+    const value = await api("/api/declaration-drafts/" + id);
+    reference = await api(
+      `/api/task-declarations/${encodeURIComponent(value.reference.task_id)}/${encodeURIComponent(value.reference.version)}`,
+    );
+    await accept(value);
   }
   listen($("drafts"), "change", () =>
     run(async () => {
@@ -594,13 +646,6 @@ export async function mountDeclaration(container) {
       await acceptFromServer($("drafts").value);
     }),
   );
-  async function create(template) {
-    requireSaved();
-    await accept(await post("/api/declaration-drafts", { template }));
-    container.querySelector(".declaration-draft-menu").open = false;
-  }
-  listen($("new"), "click", () => run(() => create("empty")));
-  listen($("complete"), "click", () => run(() => create("complete")));
   listen($("source-file"), "change", () =>
     run(async () => {
       const file = $("source-file").files[0];
@@ -684,15 +729,30 @@ export async function mountDeclaration(container) {
       }
     });
   });
+  listen($("back"), "click", () =>
+    run(async () => {
+      requireSaved();
+      await onBack?.();
+    }),
+  );
   disabled(true);
-  reference = await api("/api/task-declarations/proteinmpnn/1");
-  await loadSettings();
-  const list = await api("/api/declaration-drafts");
-  const saved = localStorage.getItem("ai4s-declaration-draft-id");
-  const existing = list.drafts.find((d) => d.id === saved) || list.drafts[0];
-  if (existing) await acceptFromServer(existing.id);
-  else
-    await accept(await post("/api/declaration-drafts", { template: "empty" }));
+  if (readOnly) {
+    reference = await api(
+      `/api/task-declarations/${encodeURIComponent(taskId)}/${encodeURIComponent(version)}`,
+    );
+    await accept({
+      declaration: reference,
+      revision: 0,
+      issues: [],
+      messages: [],
+      events: [],
+      status: "repository_loaded",
+    });
+  } else {
+    if (!draftId) throw new Error("请从任务注册中心选择或新建编辑草稿。");
+    await acceptFromServer(draftId);
+    await loadSettings();
+  }
   disabled(false);
   return {
     destroy() {

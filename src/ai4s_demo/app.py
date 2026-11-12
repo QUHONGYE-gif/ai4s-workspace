@@ -16,6 +16,7 @@ from .declarations import DeclarationService, DeclarationCreate, DeclarationPrev
 from .declaration_agent import DeclarationAgent
 from .agent import AgentGateway
 from .catalog import CATALOG, knowledge
+from .task_catalog import task_catalog
 from .files import upload
 from .lock import acquire_lock, release_lock
 from .models import (ChangeRequest, ChatRequest, CreateWorkflow, GenerateRequest,
@@ -93,18 +94,30 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
     def declaration_list():
         return {"declarations": registry.list()}
 
+    @app.get("/api/task-catalog")
+    def registration_catalog():
+        return task_catalog(registry)
+
     @app.get("/api/task-declarations/{task_id}/{version}")
     def declaration_definition(task_id: str, version: str):
         try: return registry.get(task_id, version)
         except KeyError: raise Problem(404, "invalid_declaration") from None
 
     @app.get("/api/declaration-drafts")
-    def declaration_drafts():
-        return {"drafts": declarations.list()}
+    def declaration_drafts(deleted: bool = False):
+        return {"drafts": declarations.list(deleted=deleted)}
 
     @app.post("/api/declaration-drafts", status_code=201)
     def declaration_create(request: DeclarationCreate):
         return declarations.create(request)
+
+    @app.post("/api/declaration-drafts/{draft_id}/delete")
+    def delete_declaration(draft_id: str, request: RevisionRequest):
+        return store.set_deleted("declaration_drafts", draft_id, request.expected_revision, True)
+
+    @app.post("/api/declaration-drafts/{draft_id}/restore")
+    def restore_declaration(draft_id: str, request: RevisionRequest):
+        return store.set_deleted("declaration_drafts", draft_id, request.expected_revision, False)
 
     @app.get("/api/declaration-drafts/{draft_id}")
     def declaration_draft(draft_id: str):
@@ -143,12 +156,20 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
         return await gateway.test_connection()
 
     @app.get("/api/workflows")
-    def list_workflows():
-        return {"workflows": store.list_workflows()}
+    def list_workflows(deleted: bool = False):
+        return {"workflows": store.list_workflows(deleted=deleted)}
 
     @app.post("/api/workflows", status_code=201)
     def create_workflow(request: CreateWorkflow):
         return service.create(request)
+
+    @app.post("/api/workflows/{workflow_id}/delete")
+    def delete_workflow(workflow_id: str, request: RevisionRequest):
+        return store.set_deleted("workflows", workflow_id, request.expected_revision, True)
+
+    @app.post("/api/workflows/{workflow_id}/restore")
+    def restore_workflow(workflow_id: str, request: RevisionRequest):
+        return store.set_deleted("workflows", workflow_id, request.expected_revision, False)
 
     @app.get("/api/workflows/{workflow_id}")
     def get_workflow(workflow_id: str):
@@ -200,6 +221,6 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
 
     @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
     def index():
-        return RedirectResponse("../#/workflows/new?mode=ai", status_code=307)
+        return RedirectResponse("../workbench.html#/workflows/editor", status_code=307)
 
     return app

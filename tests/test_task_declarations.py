@@ -65,6 +65,43 @@ def test_published_definition_matches_contract_appendix():
     )
 
 
+def test_registration_catalog_does_not_claim_execution(client):
+    catalog = client.get("/api/task-catalog").json()
+    assert catalog["engine_status"] == "not_connected"
+    assert [task["task_id"] for task in catalog["tasks"]] == ["proteinmpnn"]
+    version = catalog["tasks"][0]["versions"][0]
+    assert version["definition_status"] == "repository_loaded"
+    assert version["adapter_status"] == "source_supported"
+    assert version["web_execution_connected"] is False
+    assert {task["task_id"] for task in catalog["planned"]} == {"rfdiffusion", "boltz", "mmseqs2"}
+    before = client.get("/api/declaration-drafts").json()
+    for task_id, version in [("boltz", "1"), ("proteinmpnn", "999")]:
+        response = client.post("/api/declaration-drafts", json={"task_id": task_id, "version": version})
+        assert response.status_code == 422
+    assert client.get("/api/declaration-drafts").json() == before
+
+
+def test_export_status_is_tied_to_exact_draft_revision(client):
+    state = create(client, "complete")
+    assert state["reference"] == {"task_id": "proteinmpnn", "version": "1"}
+    assert state["status"] == "draft"
+    exported = client.post(endpoint(state, "export"), json=request(state))
+    assert exported.status_code == 200
+    listed = client.get("/api/declaration-drafts").json()["drafts"][0]
+    assert listed["task_id"] == "proteinmpnn"
+    assert listed["version"] == "1"
+    assert listed["status"] == "exported_not_deployed"
+    assert listed["issue_count"] == 0
+    updated = copy.deepcopy(state["declaration"])
+    updated["version"] = "2"
+    proposal = preview(client, state, updated).json()["proposal"]
+    confirmed = client.post(endpoint(state, "confirm"), json=request(state, proposal_id=proposal["id"], operation_id="confirm-version"))
+    assert confirmed.status_code == 200
+    assert confirmed.json()["status"] == "draft"
+    assert confirmed.json()["reference"]["version"] == "1"
+    assert client.get("/api/task-declarations/proteinmpnn/1").json() == state["declaration"]
+
+
 @pytest.mark.parametrize("kind", ["invalid", "duplicate_key", "wrong_path", "missing"])
 def test_registry_fails_closed(tmp_path, kind):
     directory = tmp_path / "proteinmpnn"
@@ -334,3 +371,43 @@ def test_agent_rejects_incomplete_or_illegal_batch_without_partial_save(
     assert "proposal" not in response.json()["message"]
     assert response.json()["state"]["revision"] == 0
     assert response.json()["state"]["declaration"] == state["declaration"]
+
+
+@pytest.mark.parametrize("kind", ["declaration-drafts", "workflows"])
+def test_deleted_drafts_are_isolated_recoverable_and_revision_protected(client, kind):
+    payload = {"template": "complete"} if kind == "declaration-drafts" else {"template": "protein"}
+    first = client.post(f"/api/{kind}", json=payload).json()
+    second = client.post(f"/api/{kind}", json=payload).json()
+    body = first if kind == "declaration-drafts" else first["draft"]
+    other = second if kind == "declaration-drafts" else second["draft"]
+    url = f"/api/{kind}/{body['id']}"
+    published = client.get("/api/task-declarations/proteinmpnn/1").json()
+    request_body = {"expected_revision": body["revision"] + 1, "operation_id": "delete-record"}
+    assert client.post(url + "/delete", json=request_body).status_code == 409
+    assert client.get(url).status_code == 200
+    request_body["expected_revision"] = body["revision"]
+    removed = client.post(url + "/delete", json=request_body)
+    assert removed.status_code == 200
+    assert client.get(url).status_code == 404
+    list_key = "drafts" if kind == "declaration-drafts" else "workflows"
+    assert [item["id"] for item in client.get(f"/api/{kind}").json()[list_key]] == [other["id"]]
+    trash = client.get(f"/api/{kind}?deleted=true").json()[list_key]
+    assert len(trash) == 1 and trash[0]["id"] == body["id"]
+    # Deleted records cannot be edited or exported by stale pages.
+    suffix = "export" if kind == "declaration-drafts" else "undo"
+    assert client.post(url + "/" + suffix, json=request_body).status_code == 404
+    assert client.post(url + "/restore", json=request_body).status_code == 409
+    request_body["expected_revision"] = removed.json()["revision"]
+    assert client.post(url + "/restore", json=request_body).status_code == 200
+    restored = client.get(url).json()
+    restored_body = restored if kind == "declaration-drafts" else restored["draft"]
+    assert restored_body["revision"] == body["revision"] + 2
+    if kind == "declaration-drafts":
+        assert restored["declaration"] == first["declaration"]
+        assert restored["reference"] == first["reference"]
+    else:
+        for key in ("nodes", "edges", "name"):
+            assert restored_body[key] == body[key]
+    assert client.get(f"/api/{kind}?deleted=true").json()[list_key] == []
+    assert client.get("/api/task-declarations/proteinmpnn/1").json() == published
+    assert client.get(f"/api/{kind}/{other['id']}").json() == second

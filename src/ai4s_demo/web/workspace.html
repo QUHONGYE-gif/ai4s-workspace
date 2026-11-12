@@ -1,41 +1,20 @@
-<nav class="assistant-modes" aria-label="AI 辅助任务">
-  <button class="button primary" id="declaration-mode" aria-pressed="true">ProteinMPNN 任务登记 · 约定①</button>
-  <button class="button" id="legacy-mode" aria-pressed="false">流程配置演示</button>
-</nav>
 <div id="declaration-registration"></div>
 <div id="legacy-workspace" hidden>
-<section class="ai-workspace" aria-label="AI 辅助生成工作流">
+<div id="workflow-empty" class="panel workflow-empty" hidden><h2>还没有工作流草稿</h2><p class="field-hint">新建工作流开始编排，或从回收站恢复历史草稿。</p><button class="button primary" id="manage-empty-workflows">新建或管理工作流</button></div>
+<section id="workflow-content" class="ai-workspace" aria-label="AI 辅助生成工作流">
   <div class="ai-toolbar">
-    <div>
-      <h2>
-        和助手一起整理工作流
-      </h2>
-      <p>
-        选择模型、导入资料或对话配置，核对后回填到接入草稿。
-      </p>
-    </div>
+    <div class="ai-toolbar-summary"><span class="pill">配置原型</span><span class="field-hint">草稿自动保存 · 网页执行未接通</span></div>
     <div class="ai-toolbar-actions">
-      <button class="button" id="top-settings">
-        模型 API 设置 ·
-        <span id="api-status">
-          未配置
-        </span>
-      </button>
-      <button class="button" id="refresh-button">
-        读取保存草稿
-      </button>
-      <button class="button" id="export-button">
-        导出 AI 草稿
-      </button>
-      <button class="button" id="request-button">
-        查看请求
-      </button>
-      <button class="button primary" id="apply-workflow" disabled>
-        应用到接入草稿
-      </button>
+      <button class="button" id="top-settings">模型 API · <span id="api-status">未配置</span></button>
+      <details class="workspace-more"><summary>更多</summary><div>
+        <button class="button" id="refresh-button">读取保存草稿</button>
+        <button class="button" id="request-button">查看演示请求</button>
+        <button class="button" id="apply-workflow" disabled>回填旧接入表单</button>
+      </div></details>
+      <button class="button primary" id="export-button">导出工作流草稿</button>
     </div>
   </div>
-  <p id="sidebar-api" class="ai-api-status" role="status">
+  <p id="sidebar-api" class="sr-only" role="status">
     正在读取模型配置
   </p>
   <div id="global-error" class="global-error" role="alert" hidden>
@@ -56,7 +35,7 @@
             r0
           </span>
           <button class="button compact" id="workflow-button">
-            切换 / 新建
+            历史 / 新建
           </button>
           <button class="button compact" id="add-button">
             ＋ 步骤
@@ -68,27 +47,19 @@
           <button class="button compact" id="zoom-out" data-view-control aria-label="缩小画布">
             −
           </button>
-          <output id="zoom-value" aria-live="polite">
-            100%
-          </output>
+          <button class="button compact" id="zoom-reset" data-view-control aria-label="重置画布为100%"><output id="zoom-value" aria-live="polite">100%</output></button>
           <button class="button compact" id="zoom-in" data-view-control aria-label="放大画布">
             ＋
           </button>
           <button class="button compact" id="fit-graph" data-view-control>
             适应画布
           </button>
-          <button class="button compact" id="focus-node" data-view-control>
-            聚焦所选
-          </button>
         </div>
-        <div>
-          <button class="button compact" id="graph-json-button">
-            图结构 / 操作
-          </button>
-          <button class="button compact" id="expand-graph" data-view-control aria-pressed="false">
-            展开画布
-          </button>
-        </div>
+        <details class="workspace-more"><summary>更多画布操作</summary><div>
+          <button class="button compact" id="focus-node" data-view-control>聚焦所选</button>
+          <button class="button compact" id="graph-json-button">图结构与操作</button>
+          <button class="button compact" id="expand-graph" data-view-control aria-pressed="false">展开画布</button>
+        </div></details>
       </div>
       <div class="graph demo-graph" id="graph" tabindex="0" aria-label="工作流画布：拖动空白平移，Ctrl 或 Command 加滚轮缩放，方向键移动镜头，0 适应画布">
         <div id="graph-world">
@@ -103,7 +74,7 @@
       </p>
       <div class="graph-caption">
         <span id="flow-caption">
-          所有步骤均未提交执行
+          所有节点均未提交执行
         </span>
         <div class="inline-actions">
           <button class="text-button" id="rename-button">
@@ -132,7 +103,7 @@
           点线：反馈／参考设计关系
         </span>
         <span>
-          端口为模型声明；尚未执行或生成文件
+          演示端口 · 不等同于正式任务声明
         </span>
       </div>
     </section>
@@ -179,18 +150,18 @@
             删除步骤
           </button>
           <button class="button primary compact" id="register-button">
-            确认登记
+            确认节点配置
           </button>
         </div>
       </div>
     </section>
-    <aside class="panel agent-panel" aria-label="Agent 接入助手">
+    <aside class="panel agent-panel" aria-label="工作流助手">
       <div class="panel-heading agent-heading">
         <h2>
           <span class="agent-mark">
             ✧
           </span>
-          接入助手
+          工作流助手
         </h2>
         <button class="button soft compact" id="import-button">
           导入资料
@@ -375,7 +346,7 @@
     <div class="fields">
       <label class="field">
         <span class="field-label">
-          登记范围
+          配置范围
         </span>
         <select id="request-scope">
           <option value="node">
@@ -388,7 +359,7 @@
       </label>
       <div class="request-actions">
         <button class="button" id="register-scope">
-          确认登记该范围
+          确认配置快照
         </button>
         <button class="button primary" id="generate-request">
           生成请求
@@ -440,7 +411,7 @@
         <input id="add-label" maxlength="80" required>
       </label>
       <p class="field-hint">
-        添加后采用明确标注的演示值，仍需检查输入并确认登记。
+        添加后采用明确标注的演示值，仍需检查输入并确认节点配置。
       </p>
     </div>
     <div class="modal-foot">
@@ -585,9 +556,9 @@
       <select id="workflow-list">
       </select>
     </label>
-    <button id="open-workflow" class="button spaced">
-      打开所选
-    </button>
+    <div class="inline-actions spaced"><button id="open-workflow" class="button">打开所选</button><button id="delete-workflow" class="text-button danger-text">删除所选</button></div>
+    <details class="spaced"><summary>回收站</summary><p class="field-hint">工作流配置与对话记录移入回收站，不影响输入文件或实验结果。</p><label class="field"><span>已删除的工作流</span><select id="workflow-trash"></select></label><button id="restore-workflow" class="button spaced">恢复所选</button></details>
+    <p id="workflow-list-error" class="inline-error" role="alert" hidden></p>
     <hr>
     <form id="new-workflow-form">
       <label class="field">

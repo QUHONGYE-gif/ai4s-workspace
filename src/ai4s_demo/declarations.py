@@ -14,6 +14,8 @@ from .storage import Problem
 
 class DeclarationCreate(Contract):
     template: Literal["complete", "empty"] = "empty"
+    task_id: Identifier = "proteinmpnn"
+    version: str = Field(default="1", pattern=r"^[1-9][0-9]{0,7}$")
 
 
 class DeclarationPreview(RevisionRequest):
@@ -75,32 +77,42 @@ class DeclarationService:
     def __init__(self, store, registry):
         self.store, self.registry = store, registry
 
-    def list(self):
+    def list(self, *, deleted=False):
         with self.store.lock:
             return [
                 {
                     "id": value["id"],
                     "revision": value["revision"],
                     "name": value["declaration"].get("name", "未命名声明"),
+                    "task_id": value["declaration"].get("task_id"),
+                    "version": value["declaration"].get("version"),
+                    "status": self.lifecycle(value),
+                    "issue_count": len(self.issues(value["declaration"])),
                 }
                 for path in sorted(
                     (self.store.root / "declaration_drafts").glob("*.json"),
                     key=lambda p: p.stat().st_mtime,
                     reverse=True,
                 )
-                if (value := self.store.read("declaration_drafts", path.stem))
+                if bool((value := self.store.read("declaration_drafts", path.stem, include_deleted=True)).get("deleted")) == deleted
             ]
 
     def create(self, request):
-        declaration = self.registry.get()
+        try:
+            declaration = self.registry.get(request.task_id, request.version)
+        except KeyError:
+            raise Problem(
+                422, "该任务版本尚无受支持的声明，不能建立可校验声明"
+            ) from None
         if request.template == "empty":
             declaration["inputs"] = {}
-            declaration["parameters"] = {"inference": {}, "filter": {}}
+            declaration["parameters"] = {group: {} for group in declaration["parameters"]}
             declaration["outputs"] = {}
         value = {
             "id": uid("decl"),
             "revision": 0,
             "declaration": declaration,
+            "reference": {"task_id": request.task_id, "version": request.version},
             "messages": [],
             "proposals": {},
             "operations": {},
@@ -128,15 +140,37 @@ class DeclarationService:
     def issues(self, document):
         return validate_declaration(document)
 
+    def reference(self, value):
+        # Old drafts predate this metadata and use the original verified version.
+        key = value.get(
+            "reference", {"task_id": value["declaration"]["task_id"], "version": "1"}
+        )
+        return self.registry.get(key["task_id"], key["version"])
+
+    def lifecycle(self, value):
+        exported = value.get("last_export", {})
+        if (
+            exported.get("revision") == value["revision"]
+            and exported.get("sha256") == fingerprint(value["declaration"])
+        ):
+            return "exported_not_deployed"
+        return "draft"
+
     def view(self, value):
         return {
             key: copy.deepcopy(value[key])
             for key in ("id", "revision", "declaration", "messages", "events")
-        } | {"issues": self.issues(value["declaration"])}
+        } | {
+            "issues": self.issues(value["declaration"]),
+            "reference": copy.deepcopy(value.get(
+                "reference", {"task_id": value["declaration"]["task_id"], "version": "1"}
+            )),
+            "status": self.lifecycle(value),
+        }
 
-    def candidate(self, document, edits, source_text=""):
+    def candidate(self, document, edits, source_text="", *, reference=None):
         result = copy.deepcopy(document)
-        canonical = self.registry.get()
+        canonical = reference or self.registry.get(document["task_id"], "1")
         for edit in edits:
             tokens = edit.path.split(".")
             if any(
@@ -223,7 +257,7 @@ class DeclarationService:
             "origin": origin,
             "evidence": evidence
             or {
-                "source_revision": self.registry.get()["source_reference"]["revision"],
+                "source_revision": self.reference(value)["source_reference"]["revision"],
                 "kind": "verified_definition",
             },
             "status": "pending",
@@ -327,6 +361,12 @@ class DeclarationService:
                 published = None
             if published and not strict_equal(published, document):
                 raise Problem(409, "同一发布版本内容不可改写，请使用新的接口版本后导出")
+            value["last_export"] = {
+                "revision": value["revision"],
+                "sha256": fingerprint(document),
+                "time": now(),
+            }
+            self.store.write("declaration_drafts", draft_id, value)
             return {
                 "declaration": copy.deepcopy(document),
                 "sha256": fingerprint(document),
