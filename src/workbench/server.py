@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import atexit
 import http.client
+import socket
+import subprocess
+import sys
 from functools import partial
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -23,12 +27,13 @@ MAX_BODY = 2 * 1024 * 1024
 
 class DemoHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, store, fixtures, directory, pymol, agent_port, engine_url,
-                 **kwargs):
+                 engine_mode="off", **kwargs):
         self.store = store
         self.pymol = pymol
         self.fixtures = fixtures
         self.agent_port = agent_port
         self.engine_url = urlsplit(engine_url) if engine_url else None
+        self.engine_mode = engine_mode
         self.frontend = Path(directory).resolve()
         super().__init__(*args, directory=str(self.frontend), **kwargs)
 
@@ -60,7 +65,10 @@ class DemoHandler(SimpleHTTPRequestHandler):
                     return self.reply(503, {"error": "PyMOL 会话未启动或暂不可用"})
             if path == "/api/health":
                 return self.reply(
-                    200, {"status": "ok", "mode": "simulation", "state_version": 1}
+                    200, {"status": "ok", "mode": "simulation",
+                          "state_version": 1,
+                          "engine": {"mode": self.engine_mode,
+                                     "base": self.engine_url.geturl() if self.engine_url else None}}
                 )
             if path == "/api/demo/bootstrap":
                 return self.reply(
@@ -255,8 +263,24 @@ class DemoHandler(SimpleHTTPRequestHandler):
         super().log_message(format, *args)
 
 
+def start_mock_engine(base_url):
+    """仅在 --engine-mode mock 时启动；端口被占用就直接失败，避免打到别人的服务。"""
+    parsed = urlsplit(base_url)
+    host, port = parsed.hostname or "127.0.0.1", parsed.port or 3010
+    with socket.socket() as probe:
+        if probe.connect_ex((host, port)) == 0:
+            raise SystemExit(
+                f"{host}:{port} 已被占用；请先停止占用该端口的进程，再以 --engine-mode mock 启动")
+    process = subprocess.Popen(
+        [sys.executable, str(ROOT / "scripts/mock_engine.py"), "--host", host, "--port", str(port)],
+        cwd=str(ROOT))
+    atexit.register(process.terminate)
+    print(f"mock engine started at {base_url}（演示数据，不是真实计算）", flush=True)
+    return process
+
+
 def create_server(host="127.0.0.1", port=3000, data_dir=None, agent_port=3002,
-                  engine_url=None):
+                  engine_url=None, engine_mode="off"):
     fixtures = json.loads(
         (ROOT / "configs/workbench-demo.json").read_text(encoding="utf-8")
     )
@@ -264,7 +288,7 @@ def create_server(host="127.0.0.1", port=3000, data_dir=None, agent_port=3002,
     handler = partial(
         DemoHandler, store=store, fixtures=fixtures, directory=ROOT / "web/demo",
         pymol=PyMOLSession(store.directory.parent / "pymol-inputs"), agent_port=agent_port,
-        engine_url=engine_url
+        engine_url=engine_url, engine_mode=engine_mode
     )
     return ThreadingHTTPServer((host, port), handler)
 
@@ -274,10 +298,19 @@ def main():
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default=3000, type=int)
     parser.add_argument("--data-dir", type=Path, default=ROOT / ".local/workbench-api")
-    parser.add_argument("--engine-url", default=os.environ.get("AI4S_ENGINE_URL", "http://127.0.0.1:3010"),
-                        help="约定②的引擎服务地址；默认指向模拟引擎")
+    parser.add_argument("--engine-base", default=os.environ.get("AI4S_ENGINE_URL"),
+                        help="约定②的引擎服务地址，例如 http://10.0.0.5:3010；不填则 /api/engine/* 返回 503")
+    parser.add_argument("--engine-mode", choices=("off", "mock", "real"), default="off",
+                        help="off=不接引擎（默认）；mock=使用模拟引擎，页面会显示 MOCK 标识；real=接真实引擎")
     args = parser.parse_args()
-    server = create_server(args.host, args.port, args.data_dir, engine_url=args.engine_url)
+    if args.engine_mode == "real" and not args.engine_base:
+        parser.error("--engine-mode real 需要同时给出 --engine-base")
+    if args.engine_mode == "mock" and not args.engine_base:
+        args.engine_base = "http://127.0.0.1:3010"
+    if args.engine_mode == "mock":
+        start_mock_engine(args.engine_base)
+    server = create_server(args.host, args.port, args.data_dir,
+                           engine_url=args.engine_base, engine_mode=args.engine_mode)
     print(
         f"Demo frontend and API at http://{args.host}:{server.server_port}/", flush=True
     )
