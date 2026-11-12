@@ -10,6 +10,8 @@
 - [PyMOL](tools/pymol_web/README.md)：在已有工作区启动结构查看、网页命令和完整界面。
 - [蛋白质设计](docs/protein_pipeline.md)：配置、运行与输出约定。
 - [实验记录与复用讨论](docs/protein_reuse.md)：个人分支保留的 R001–R004 证据及讨论材料。
+- [AiiDA 单任务接入](docs/aiida_tasks.md)与 [C 模块](README_C.md)：真实 ProteinMPNN、两阶段编排及重筛选；[运行记录](experiments/R005-aiida-proteinmpnn/record.md)保存已验证范围。
+- [AiiDA 查询与来源](src/ai4s_query/README.md)：原生状态、文件、来源及工作台只读快照导出。
 - [成员协作](docs/collaboration.md)：个人工作区、预览与 PR 合并。
 
 - [智能体工作流接入 Demo](docs/agent_demo_run.md)：DeepSeek 对话、参数登记、请求生成与联合启动。
@@ -30,9 +32,13 @@
 
 - `web/demo/`：页面、交互、API 客户端与嵌入式查看器。
 - `src/workbench/`：HTTP API、模拟快照和 PyMOL 接口。
+- `src/ai4s_tasks/`、`src/ai4s_workflows/`：AiiDA 任务执行／解析与两阶段流程，尚未接入工作台 API。
+- `src/ai4s_query/`：只读查询、来源报告与离线快照导出；不提交科学任务。
 - `scripts/`：应用、蛋白质流程和管理入口。
 - `tools/pymol_web/`：PyMOL 启动与路径代理。
 - `configs/`、`coder/`、`docker/`、`compose*.yaml`：配置、模板与镜像定义。
 - `tests/`：已有的输入边界、状态接口及前端逻辑检查。
 
 凭据、模型、数据库、缓存和运行产物不提交到 Git。个人环境参数由实际部署配置提供。
+
+Agent 资料与对话配置接入见 [运行说明](docs/agent_demo_run.md)；继续使用已有工作台与 PyMOL 联合启动入口。

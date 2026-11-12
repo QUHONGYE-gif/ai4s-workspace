@@ -150,6 +150,11 @@ class HTTPTests(unittest.TestCase):
     def test_only_frontend_is_served_and_assets_have_correct_types(self):
         status, headers, data = self.request("GET", "/")
         self.assertEqual(status, 200)
+        self.assertIn(b"./assets/landing.js", data)
+        self.assertIn(b"./workbench.html", data)
+        self.assertNotIn(b"<style>", data)
+        status, headers, data = self.request("GET", "/workbench.html")
+        self.assertEqual(status, 200)
         self.assertIn(b"./assets/app.js", data)
         self.assertNotIn(b"<style>", data)
         status, headers, _ = self.request("GET", "/assets/styles.css")
