@@ -102,6 +102,38 @@ check('agent cannot re-run an already created experiment', () => {
   assert.throws(() => applyAgentOperations(d, [{type: 'run_experiment'}]),
     /实验已创建/);
 });
+check('engine payload splits inference and filter params and carries reuse policy', () => {
+  const id = 'wf-engine-test';
+  workflowInfo[id] = {
+    id, name: 'Engine test', template: 'custom', custom: true,
+    registrationSource: { kind: 'test' },
+    defaults: { 'mpnn-1__chains': 'A', 'mpnn-1__num_sequences': 4, 'mpnn-1__sampling_temperature': 0.1,
+      'mpnn-1__seed': 41, 'screen__score_threshold': 0.82, 'screen__top_k': 2 },
+    steps: [
+      { id: 'mpnn-1', name: 'ProteinMPNN', model: 'proteinmpnn', deps: [], file: 'x.fa', kind: 'FASTA',
+        codeIdentity: 'mpnn', parameters: [
+          { key: 'mpnn-1__chains', modelKey: 'chains', type: 'string', category: 'inference', required: true },
+          { key: 'mpnn-1__num_sequences', modelKey: 'num_sequences', type: 'integer', category: 'inference', required: true },
+          { key: 'mpnn-1__sampling_temperature', modelKey: 'sampling_temperature', type: 'number', category: 'inference', required: true },
+          { key: 'mpnn-1__seed', modelKey: 'seed', type: 'integer', category: 'inference', required: true }] },
+      { id: 'screen', name: 'Screening', model: 'sequence_filter', deps: ['mpnn-1'], file: 'y.fa', kind: 'FASTA',
+        parameters: [
+          { key: 'screen__score_threshold', modelKey: 'score_threshold', type: 'number', category: 'filter', required: true },
+          { key: 'screen__top_k', modelKey: 'top_k', type: 'integer', category: 'filter', required: true }] },
+    ],
+    executionDefinition: { inputPath: 'registered-input', environment: 'simulation', steps: [] },
+  };
+  const d = createExperimentDraft(id);
+  d.reusePolicy = 'new_sample';
+  const payload = buildEnginePayload(d, 'up-test');
+  assert.equal(payload.workflow, 'mpnn_filter');
+  assert.equal(payload.reuse_policy, 'new_sample');
+  assert.equal(payload.params.inference.num_sequences, 4);
+  assert.equal(payload.params.inference.sampling_temperature, 0.1);
+  assert.equal(payload.params.filter.top_k, 2);
+  assert.ok(!('top_k' in payload.params.inference));
+  assert.equal(payload.inputs.pdb_file.upload_id, 'up-test');
+});
 check('creation saves a ready experiment before simulation starts', () => {
   createExperimentDraft('protein');
   createExperiment();

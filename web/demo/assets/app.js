@@ -52,6 +52,7 @@
   const DEMO_KEY = 'yanxu-product-loop-v1',
     DEMO_VERSION = 1;
   const ME = { id: 'me', name: '我（演示研究者）' };
+  let engineInfo = { mode: 'off', base: null };
   const initialWorkflows = JSON.parse(JSON.stringify(workflowInfo));
   let product = {
     version: DEMO_VERSION,
@@ -759,6 +760,7 @@ ${esc(step[key] || '')}</textarea
       parameterOverrides: from ? copy(from.parameterOverrides || {}) : {},
       policy: 'cost',
       intent: 'replay',
+      reusePolicy: 'allow_reuse',
       reuseScope: 'team',
       shareOutput: 'team',
       inputSource: workflowInfo[id].registrationSource ? 'registered' : definition ? 'path' : 'sample',
@@ -1240,10 +1242,87 @@ ${esc(step[key] || '')}</textarea
       }
     selectWorkflowContext(product.selectedWorkflow);
   };
+  // ---- 约定② 引擎提交 ---------------------------------------------------
+  const SAMPLE_PDB = [
+    'ATOM      1  N   ALA A   1      11.104  13.207   9.415  1.00 20.00           N',
+    'ATOM      2  CA  ALA A   1      12.560  13.250   9.900  1.00 20.00           C',
+    'ATOM      3  C   ALA A   1      13.100  14.600   9.500  1.00 20.00           C',
+    'END',
+  ].join('\n') + '\n';
+
+  const engineReady = () => engineInfo.mode === 'mock' || engineInfo.mode === 'real';
+
+  const engineCall = async function (path, options = {}) {
+    const response = await fetch(new URL(path, document.baseURI), {
+      credentials: 'same-origin', cache: 'no-store', ...options,
+    });
+    let body = null;
+    try { body = await response.json(); } catch { body = null; }
+    if (!response.ok) {
+      throw Error((body && body.error && (body.error.message || body.error)) || ('引擎请求失败：' + response.status));
+    }
+    return body;
+  };
+
+  const coerceParam = function (item, value) {
+    if (item.type === 'integer') return Number.parseInt(value, 10);
+    if (item.type === 'number') return Number(value);
+    if (item.type === 'boolean') return value === true || value === 'true';
+    return String(value);
+  };
+
+  // 按约定②组装请求；推理参数与筛选参数分开，复用选择取自页面。
+  const buildEnginePayload = function (d, uploadId) {
+    const inference = {}, filter = {};
+    for (const item of steps.flatMap((step) => registeredParameters(step))) {
+      const value = d.config?.[item.key];
+      if (value === undefined || value === '') continue;
+      const target = item.category === 'filter' ? filter : inference;
+      target[item.modelKey || item.key] = coerceParam(item, value);
+    }
+    const twoStage = Object.keys(filter).length > 0;
+    return {
+      schema_version: 'ai4s-request-1',
+      requester: { member_id: ME.id, display_name: ME.name },
+      declaration: { task_id: 'proteinmpnn', version: '1' },
+      workflow: twoStage ? 'mpnn_filter' : 'single',
+      inputs: { pdb_file: { source: 'upload', upload_id: uploadId } },
+      params: twoStage ? { inference, filter } : { inference },
+      reuse_policy: d.reusePolicy || 'allow_reuse',
+    };
+  };
+
+  const submitToEngine = async function (experiment, draft) {
+    experiment.engine = { state: 'uploading', request_id: null, decision: null,
+                          cached_from: null, error: null, outputs: null };
+    saveProduct(); render();
+    try {
+      const upload = await fetch(new URL('api/engine/uploads', document.baseURI), {
+        method: 'POST', credentials: 'same-origin', body: SAMPLE_PDB,
+        headers: { 'X-File-Name': 'sample-backbone.pdb' },
+      }).then((response) => response.json());
+      const status = await engineCall('api/engine/requests', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildEnginePayload(draft, upload.upload_id)),
+      });
+      Object.assign(experiment.engine, status, { request_id: status.request_id });
+      saveProduct(); render();
+      while (['accepted', 'submitted', 'running'].includes(experiment.engine.state)) {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        const next = await engineCall('api/engine/requests/' + encodeURIComponent(experiment.engine.request_id));
+        Object.assign(experiment.engine, next);
+        saveProduct(); render();
+      }
+    } catch (error) {
+      experiment.engine.error = { code: 'engine_unavailable', message: error.message };
+      experiment.engine.state = 'failed';
+      saveProduct(); render();
+    }
+  };
+
   const createExperiment = function createExperiment() {
     const d = currentDraft();
-    if (!d) return;
-    const error = validateExperiment(d);
+    if (!d) return;    const error = validateExperiment(d);
     if (error) {
       notify(error);
       return;
@@ -2516,9 +2595,14 @@ ${esc(policyDraft.description)}</textarea
       onConfirm(d, p);
     };
   };
-  const createAndRun = function createAndRun() {
+  const createAndRun = function createAndRun(draft) {
     const experiment = createExperiment();
-    if (experiment) startExperiment(experiment.id);
+    if (!experiment) return;
+    if (engineReady()) {
+      void submitToEngine(experiment, draft);
+      return;
+    }
+    startExperiment(experiment.id);
   };
   const agentContext = function agentContext(d, selected, experiment = null) {
     const workflow = experiment?.workflowSnapshot || workflowInfo[d.workflowId];
@@ -2581,7 +2665,7 @@ ${esc(policyDraft.description)}</textarea
         // Agent 自主运行：先弹摘要让用户确认，确认后依次创建实验并启动。
         const draft = currentDraft();
         if (!draft || draft.id !== d.id) throw Error('实验已创建或草稿已失效，不能再次运行');
-        confirmCreation(() => createAndRun());
+        confirmCreation((draft) => createAndRun(draft));
         return d;
       }
     }
@@ -2668,6 +2752,11 @@ ${esc(policyDraft.description)}</textarea
                     ${choiceField('新产物共享范围', 'shareOutput', d.shareOutput, [
                       ['team', '团队共享（模拟）'],
                       ['private', '仅自己（模拟）'],
+                    ])}
+                    ${choiceField('复用选择', 'reusePolicy', d.reusePolicy, [
+                      ['allow_reuse', '允许复用 · 有合格候选就用'],
+                      ['force_rerun', '强制重算 · 忽略候选'],
+                      ['new_sample', '新采样 · 换种子重新推理'],
                     ])}
                     ${choiceField('复用与保存策略', 'policy', d.policy, allPolicies().map((item) => [item.id, item.name]))}
                     ${choiceField('模拟读取位置', 'config.remote', String(!!d.config.remote), [
@@ -2801,6 +2890,24 @@ ${esc(policyDraft.description)}</textarea
       viewSwitch,
     )}</div>`;
   };
+  const engineStatusPanel = function engineStatusPanel(e) {
+    const engine = e.engine || {};
+    const rows = [
+      ['引擎模式', engineInfo.mode === 'mock' ? 'MOCK（演示数据，非真实计算）' : engineInfo.mode === 'real' ? 'REAL ' + (engineInfo.base || '') : '未接入'],
+      ['请求编号', engine.request_id || '—'],
+      ['状态', engine.state || '—'],
+      ['过程 UUID', (engine.process && engine.process.uuid) || '—'],
+      ['复用来源', engine.cached_from || '无（本次重新运行）'],
+      ['决定', engine.decision ? engine.decision.action + ' / ' + engine.decision.reason_code : '—'],
+      ['实际种子', (engine.effective && engine.effective.seed) ?? '—'],
+      ['产物', engine.outputs ? Object.keys(engine.outputs.artifacts || {}).join('、') || '—' : '—'],
+      ['错误', engine.error ? engine.error.code + '：' + engine.error.message : '无'],
+    ];
+    return panel('引擎返回（约定②）', `<div class="detail-body"><div class="kv">${rows
+      .map(([key, value]) => `<span>${esc(key)}</span><strong>${esc(String(value))}</strong>`)
+      .join('')}</div></div>`);
+  };
+
   const experimentPage = function experimentPage(e) {
     if (!e) return missingPage('找不到这次实验');
     const live = ['running', 'waiting'].includes(e.status) && !e.fixture,
@@ -2823,6 +2930,7 @@ ${esc(policyDraft.description)}</textarea
       ) +
       /* HTML */ `<div class="workspace-grid">
         <div class="left-stack">
+          ${e.engine ? engineStatusPanel(e) : ''}
           ${experimentFlowPanel(e, p, selected?.id || '')}
           ${selected ? nodeDetailPanel(selected, e, selectedPlan, e) : ''}
           ${agentPanel(e, selected, e)}
@@ -3720,7 +3828,10 @@ ${esc(policyDraft.description)}</textarea
       return;
     }
     if (action === 'check') return checkDraft();
-    if (action === 'create-experiment') return confirmCreation(() => createExperiment());
+    if (action === 'create-experiment') return confirmCreation((draft) => {
+      const experiment = createExperiment();
+      if (experiment && engineReady()) void submitToEngine(experiment, draft);
+    });
     if (action === 'experiment-flow-view') {
       if (page.name !== 'experiment' || !['config', 'results'].includes(value)) return;
       page.query.set('view', value);
@@ -4491,6 +4602,22 @@ ${esc(policyDraft.description)}</textarea
     render();
   };
   bootProduct();
+  fetch(new URL('api/health', document.baseURI))
+    .then((response) => response.json())
+    .then((health) => {
+      engineInfo = (health && health.engine) || engineInfo;
+      if (engineInfo.mode !== 'off') {
+        const host = document.querySelector('.topbar .top-right');
+        if (host) {
+          const badge = document.createElement('span');
+          badge.className = 'demo-badge';
+          badge.title = '引擎地址：' + (engineInfo.base || '');
+          badge.textContent = engineInfo.mode === 'mock' ? 'MOCK · 演示数据' : 'REAL';
+          host.prepend(badge);
+        }
+      }
+    })
+    .catch(() => {});
   void refreshRegisteredWorkflows();
 })().catch((error) => {
   console.error(error);
