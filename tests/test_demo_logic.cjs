@@ -86,6 +86,22 @@ check('selected node fields come from the workflow step definition', () => {
   assert.match(html, /data-draft="config\.seed"/);
   assert.doesNotMatch(html, /体验场景/);
 });
+check('agent panel sits in the right column and summary moved to run-time confirm', () => {
+  createExperimentDraft('protein');
+  const html = workflowPage();
+  assert.match(html, /实验配置 Agent/);
+  assert.match(html, /data-agent-input/);
+  assert.ok(html.indexOf('实验配置 Agent') < html.indexOf('实验范围与策略'),
+    'agent panel should render before the strategy panel inside the right column');
+  assert.ok(!html.includes('打开 Agent'), 'agent panel must not link to the agent/API settings page');
+  assert.doesNotMatch(html, /创建前摘要/);
+});
+check('agent cannot re-run an already created experiment', () => {
+  const d = createExperimentDraft('protein');
+  createExperiment();
+  assert.throws(() => applyAgentOperations(d, [{type: 'run_experiment'}]),
+    /实验已创建/);
+});
 check('creation saves a ready experiment before simulation starts', () => {
   createExperimentDraft('protein');
   createExperiment();

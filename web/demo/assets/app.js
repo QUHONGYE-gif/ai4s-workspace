@@ -1288,6 +1288,7 @@ ${esc(step[key] || '')}</textarea
     selectedPlanStep = '';
     saveProduct();
     nav('experiment', e.id);
+    return e;
   };
   const startExperiment = function startExperiment(id = page.id) {
     const e = experimentById(id);
@@ -2476,7 +2477,7 @@ ${esc(policyDraft.description)}</textarea
   const experimentDiagram = function experimentDiagram(p, selectedId = '') {
     return panel('工作流', liveFlow(p, selectedId));
   };
-  const creationSummaryPanel = function creationSummaryPanel(d, p) {
+  const creationSummaryBody = function creationSummaryBody(d, p) {
     const defaults = d.workflowDefaults || {};
     const changed = Object.entries(d.parameterOverrides || {}).filter(([key, value]) => String(defaults[key]) !== String(value));
     const labels = Object.fromEntries(steps.flatMap((step) => registeredParameters(step).map((item) => [item.key, item.label])));
@@ -2488,12 +2489,36 @@ ${esc(policyDraft.description)}</textarea
     for (const item of p.flatMap((step) => registeredParameters(step))) {
       if (item.required && (d.config?.[item.key] === undefined || d.config?.[item.key] === '')) missing.push(item.label || item.key);
     }
-    return panel('创建前摘要', `<div class="creation-summary-grid">
+    return `<div class="creation-summary-grid">
       <div><span>输入</span><strong>${esc(d.inputMeta?.name || d.config.input || '待选择')}</strong></div>
       <div><span>请求步骤</span><strong>${p.map((item) => esc(item.name)).join(' → ')}</strong></div>
       <div><span>参数覆盖</span><strong>${changed.length ? changed.map(([key, value]) => `${esc(labels[key] || key)}：${esc(defaults[key] ?? '未设置')} → ${esc(value)}`).join('；') : '沿用工作流默认值'}</strong></div>
       <div><span>缺失项</span><strong class="${missing.length ? 'warning-text' : 'success-text'}">${missing.length ? missing.join('、') : '无'}</strong></div>
-    </div><p class="field-hint">工作流默认配置与本次实验覆盖值分开保存；修改参数不会改变已登记工作流。</p>`);
+    </div><p class="field-hint">工作流默认配置与本次实验覆盖值分开保存；修改参数不会改变已登记工作流。</p>`;
+  };
+  const creationSummaryPanel = function creationSummaryPanel(d, p) {
+    return panel('创建前摘要', creationSummaryBody(d, p));
+  };
+  const confirmCreation = function confirmCreation(onConfirm) {
+    const d = currentDraft();
+    if (!d) return;
+    const error = validateExperiment(d);
+    if (error) {
+      notify(error);
+      return;
+    }
+    const p = packPlan(d);
+    openModal('运行前确认', `<div class="detail-body">${creationSummaryBody(d, p)}
+      <div class="create-page-action"><button class="btn" type="button" data-summary-cancel>返回检查</button><button class="btn primary" type="button" data-summary-confirm>确认并运行</button></div></div>`);
+    document.querySelector('[data-summary-cancel]').onclick = () => closeModal();
+    document.querySelector('[data-summary-confirm]').onclick = () => {
+      closeModal();
+      onConfirm(d, p);
+    };
+  };
+  const createAndRun = function createAndRun() {
+    const experiment = createExperiment();
+    if (experiment) startExperiment(experiment.id);
   };
   const agentContext = function agentContext(d, selected, experiment = null) {
     const workflow = experiment?.workflowSnapshot || workflowInfo[d.workflowId];
@@ -2552,6 +2577,13 @@ ${esc(policyDraft.description)}</textarea
           saveProduct(); nav('workflow', activeWorkflow);
         }
       }
+      if (operation.type === 'run_experiment') {
+        // Agent 自主运行：先弹摘要让用户确认，确认后依次创建实验并启动。
+        const draft = currentDraft();
+        if (!draft || draft.id !== d.id) throw Error('实验已创建或草稿已失效，不能再次运行');
+        confirmCreation(() => createAndRun());
+        return d;
+      }
     }
     return target;
   };
@@ -2584,7 +2616,7 @@ ${esc(policyDraft.description)}</textarea
   const agentPanel = function agentPanel(d, selected, experiment = null) {
     const messages = d.agentMessages || [];
     const context = agentContext(d, selected, experiment);
-    return panel('实验配置 Agent', `<p class="small" data-agent-status>${esc(experimentAgentStatus)}</p><a href="./agent/" target="_blank" rel="noopener">打开 Agent / 模型 API 设置 ↗</a><div class="agent-context">当前节点：<strong>${esc(selected?.name || '未选择，请先点击流程图节点')}</strong><span>仅围绕当前实验、当前节点和当前输入回答</span></div>
+    return panel('实验配置 Agent', `<p class="small" data-agent-status>${esc(experimentAgentStatus)}</p><div class="agent-context">当前节点：<strong>${esc(selected?.name || '未选择，请先点击流程图节点')}</strong><span>仅围绕当前实验、当前节点和当前输入回答</span></div>
       <div class="agent-artifact-context">当前产物：${context.artifacts.filter((a) => a.kind === 'FASTA').length ? `<select data-agent-artifact aria-label="Agent 当前序列产物">${context.artifacts.filter((a) => a.kind === 'FASTA').map((a) => `<option value="${esc(a.id)}" ${context.currentArtifact?.id === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.id)} · ${a.recordCount ?? '?'} 条</option>`).join('')}</select>` : '暂无可读取的序列产物'}${experiment ? `<p class="field-hint">实验快照只读。可询问失败原因，或引用产物生成新的筛选草稿。</p>` : ''}</div>
       <div class="agent-messages" aria-live="polite">${messages.length ? messages.map((item) => `<div class="agent-message ${item.role === 'user' ? 'user' : 'assistant'}"><span>${item.role === 'user' ? '你' : 'Agent'}</span><p>${esc(item.text)}</p></div>`).join('') : '<p class="muted small">点击序列设计询问温度；点击序列筛选修改数量；结果页选择序列后可重新筛选。</p>'}</div>
       <div class="agent-compose"><input data-agent-input type="text" placeholder="询问当前节点或修改当前实验配置" maxlength="500" /><button class="btn primary" type="button" data-agent-send ${agentPending ? 'disabled' : ''}>${agentPending ? '正在回复…' : '发送'}</button></div>`);
@@ -2604,7 +2636,7 @@ ${esc(policyDraft.description)}</textarea
       flowRibbon(0) +
       /* HTML */ `<div class="workspace-grid experiment-create-grid">
           <div class="left-stack">
-            ${creationSummaryPanel(d, p)}${panel(
+            ${panel(
               '实验信息与输入',
               /* HTML */ `<div class="create-body">
                 <div class="registration-grid">
@@ -2616,9 +2648,9 @@ ${esc(policyDraft.description)}</textarea
               </div>`,
             )}${experimentDiagram(p, selected?.id || '')}
             ${selected ? nodeDetailPanel(selected, d, p.find((item) => item.id === selected.id)) : ''}
-            ${agentPanel(d, selected)}
           </div>
           <aside class="right-stack">
+            ${agentPanel(d, selected)}
             ${panel(
               '实验范围与策略',
               /* HTML */ `<div class="detail-body">
@@ -3688,7 +3720,7 @@ ${esc(policyDraft.description)}</textarea
       return;
     }
     if (action === 'check') return checkDraft();
-    if (action === 'create-experiment') return createExperiment();
+    if (action === 'create-experiment') return confirmCreation(() => createExperiment());
     if (action === 'experiment-flow-view') {
       if (page.name !== 'experiment' || !['config', 'results'].includes(value)) return;
       page.query.set('view', value);
