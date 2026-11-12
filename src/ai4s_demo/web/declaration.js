@@ -10,16 +10,17 @@ export async function mountDeclaration(container) {
     dirty = false,
     settings;
   let activeSection = "inputs";
+  let editingItem;
   const endpoint = (suffix) =>
     "/api/declaration-drafts/" + state.id + "/" + suffix;
   container.innerHTML = `
     <section class="declaration-workspace" aria-label="ProteinMPNN 任务声明登记">
-      <header class="declaration-heading"><div><h2>ProteinMPNN 任务登记</h2><p>定义模型的输入、参数和输出，供实验页面与引擎使用。</p></div><div class="declaration-actions"><button class="button" id="dp-assistant-toggle" aria-expanded="false" aria-controls="dp-assistant">AI 助手</button><button class="button primary" id="dp-export" type="button">校验并导出</button></div></header>
+      <header class="declaration-heading"><div><h2>ProteinMPNN 任务登记</h2><p>定义模型的输入、参数和输出，供实验页面与引擎使用。</p></div><div class="declaration-actions"><button class="button primary" id="dp-export" type="button">校验并导出</button></div></header>
       <div class="declaration-draftbar"><label><span class="sr-only">当前声明草稿</span><select id="dp-drafts" aria-label="当前声明草稿"></select></label><span id="dp-revision" class="declaration-state"></span><details class="declaration-draft-menu"><summary>草稿操作</summary><div><button class="button" id="dp-reload">读取保存版本</button><button class="button" id="dp-new">新建空白声明</button><button class="button" id="dp-complete">从完整定义新建</button></div></details></div>
       <p class="declaration-notice">登记任务接口，不会启动计算。导出后需交给引擎部署。</p>
       <div class="inline-error" id="dp-error" role="alert" hidden></div><p class="inline-result" id="dp-status" role="status" aria-live="polite"></p>
-      <div class="declaration-columns" id="dp-columns"><div class="declaration-main">
-        <section class="declaration-map panel" aria-labelledby="dp-map-title"><div class="panel-heading"><div><h3 id="dp-map-title">任务接口</h3><p>点击节点查看定义</p></div><span class="declaration-caption">已保存的定义 · 非运行状态</span></div><div id="dp-flow"></div><div class="declaration-validation"><div id="dp-issues" role="status"></div><button class="button soft" id="dp-restore">补齐缺项</button></div></section>
+      <div class="declaration-columns with-assistant" id="dp-columns"><div class="declaration-main">
+        <section class="declaration-map panel" aria-labelledby="dp-map-title"><div class="panel-heading"><div><h3 id="dp-map-title">任务接口</h3><p>点击节点查看定义</p></div><span class="declaration-caption">已保存的定义 · 非运行状态</span></div><div id="dp-flow"></div><div class="declaration-validation"><div id="dp-issues" role="status"></div></div></section>
         <section class="panel declaration-editor" aria-label="任务声明定义">
           <nav class="declaration-tabs" aria-label="查看任务定义">${[
             ["inputs", "输入"],
@@ -37,7 +38,7 @@ export async function mountDeclaration(container) {
             <section id="dp-section-parameters" data-detail-section="parameters" hidden><div class="declaration-section-heading"><h3>参数规则</h3><p>展开查看类型、必填性和默认值。这里编辑规则，实验时再填写具体值。</p></div><div id="dp-parameters"></div><details class="declaration-disclosure"><summary>试填联调参数</summary><p class="field-hint">以下是示例值，不是默认值，也不会启动实验。</p><div id="dp-example"></div></details></section>
             <section id="dp-section-outputs" data-detail-section="outputs" hidden><div class="declaration-section-heading"><h3>会产生什么输出</h3><p>这是产物定义，文件和结果节点将在实际计算后产生。</p></div><div id="dp-outputs"></div></section>
             <section id="dp-section-advanced" data-detail-section="advanced" hidden><div class="declaration-section-heading"><h3>任务信息</h3><p>维护接口版本与来源，保持已发布定义不变。</p></div><div class="fields"><label class="field"><span>任务名称</span><input id="dp-name" required maxlength="200"></label><label class="field"><span>接口版本</span><input id="dp-version" required pattern="[1-9][0-9]{0,7}"></label></div><dl class="declaration-metadata"><div><dt>任务标识</dt><dd><code>proteinmpnn</code></dd></div><div><dt>声明格式</dt><dd><code>ai4s-task-declaration-1</code></dd></div><div><dt>适用模型版本</dt><dd><code id="dp-release"></code></dd></div></dl>
-              <details class="declaration-disclosure"><summary>完整 JSON 与高级编辑</summary><p class="field-hint">JSON 编辑单独校验，核对差异后确认写入。</p><textarea id="dp-json" aria-label="完整声明 JSON" spellcheck="false"></textarea><button class="button" id="dp-json-preview" type="button">校验 JSON 修改</button></details>
+              <details class="declaration-disclosure"><summary>批量补齐</summary><p class="field-hint">按已核实定义补齐所有缺项，保留已有内容；也可在各项旁单独填写。</p><button class="button" id="dp-restore" type="button">预览补齐全部缺项</button></details><details class="declaration-disclosure"><summary>完整 JSON 与高级编辑</summary><p class="field-hint">JSON 编辑单独校验，核对差异后确认写入。</p><textarea id="dp-json" aria-label="完整声明 JSON" spellcheck="false"></textarea><button class="button" id="dp-json-preview" type="button">校验 JSON 修改</button></details>
               <details class="declaration-disclosure"><summary>来源与执行映射</summary><div id="dp-source"></div><pre id="dp-execution" class="json-code"></pre></details>
               <details class="declaration-disclosure"><summary>确认记录</summary><div id="dp-events"></div></details>
             </section>
@@ -45,11 +46,12 @@ export async function mountDeclaration(container) {
           </form></div>
         </section>
       </div>
-      <aside class="panel declaration-assistant" id="dp-assistant" aria-label="任务声明助手" hidden><div class="panel-heading"><div><h3>登记助手</h3><span id="dp-api" class="declaration-caption"></span></div><button class="button" id="dp-assistant-close" type="button">收起</button></div><button class="declaration-settings" id="dp-settings" type="button">模型 API 设置</button><div class="declaration-chat" id="dp-chat" role="log" aria-label="任务声明对话"></div>
+      <aside class="panel declaration-assistant" id="dp-assistant" aria-label="任务声明助手"><div class="panel-heading"><div class="declaration-assistant-title"><h3>登记助手</h3><span id="dp-api" class="declaration-caption"></span></div><button class="declaration-icon-button" id="dp-assistant-toggle" type="button" aria-label="收起登记助手" title="收起登记助手" aria-expanded="true" aria-controls="dp-assistant-content"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></div><div id="dp-assistant-content"><button class="declaration-settings" id="dp-settings" type="button">模型 API 设置</button><div class="declaration-chat" id="dp-chat" role="log" aria-label="任务声明对话"></div>
         <p id="dp-pending" role="status" hidden>正在核对真实接口并生成回复…</p>
         <details class="declaration-disclosure declaration-material"><summary>参考资料</summary><p class="field-hint">粘贴或读取资料，由助手核对并提出修改。</p><input type="file" id="dp-source-file" accept=".md,.txt,.json" aria-label="读取模型参考资料"><textarea id="dp-material" aria-label="模型参考资料" maxlength="30000" placeholder="粘贴模型文档或参数说明"></textarea></details>
         <form id="dp-chat-form" class="declaration-composer"><label class="sr-only" for="dp-message">向任务声明助手提问</label><textarea id="dp-message" maxlength="8000" placeholder="提问，或描述希望修改的内容…"></textarea><button class="button primary" type="submit">发送</button></form><p class="field-hint declaration-footnote">普通问答不改声明；修改需确认后保存。</p>
-      </aside></div>
+      </div></aside></div>
+      <dialog class="modal small-modal" id="dp-item-dialog" aria-labelledby="dp-item-title"><div class="modal-head"><h2 id="dp-item-title">填写定义</h2><button class="declaration-icon-button" id="dp-item-close" type="button" aria-label="关闭定义编辑">×</button></div><form id="dp-item-form" novalidate><div class="modal-body"><p id="dp-item-path" class="field-hint"></p><p class="field-hint">填写此项的接口定义；实验输入文件和具体参数值在实验页设置。</p><div id="dp-item-fields"></div><p id="dp-item-error" class="inline-error" role="alert" hidden></p><button class="button soft" id="dp-item-reference" type="button">使用此项已核实定义</button></div><div class="modal-foot"><button class="button" id="dp-item-cancel" type="button">取消</button><button class="button primary" type="submit">预览此项修改</button></div></form></dialog>
       <dialog class="modal" id="dp-confirm" aria-labelledby="dp-confirm-title"><div class="modal-head"><h2 id="dp-confirm-title">核对声明修改</h2></div><div class="modal-body"><p>以下修改尚未写入。确认后整批保存到编辑草稿。</p><p id="dp-evidence" class="field-hint"></p><div id="dp-diff"></div></div><div class="modal-foot"><button class="button" id="dp-cancel">取消修改</button><button class="button primary" id="dp-apply">确认并写入</button></div></dialog>
       <dialog class="modal small-modal" id="dp-discard" aria-labelledby="dp-discard-title"><div class="modal-head"><h2 id="dp-discard-title">读取保存版本？</h2></div><div class="modal-body"><p>尚未确认的表单和 JSON 编辑会被放弃，已保存的声明保持不变。</p></div><div class="modal-foot"><button class="button" id="dp-discard-cancel">继续编辑</button><button class="button primary" id="dp-discard-apply">放弃编辑并读取</button></div></dialog>
       <dialog class="modal small-modal" id="dp-settings-dialog" aria-labelledby="dp-settings-title"><div class="modal-head"><h2 id="dp-settings-title">模型 API 设置</h2><button class="button" id="dp-settings-close">关闭</button></div><form id="dp-settings-form"><div class="modal-body"><label class="field"><span>DeepSeek 模型名</span><input id="dp-model" required></label><label class="field"><span>API key（仅存服务端，留空保留）</span><input type="password" id="dp-key" autocomplete="off"></label><p id="dp-key-info"></p><p id="dp-settings-error" class="inline-error" role="alert"></p></div><div class="modal-foot"><button class="button primary">保存 API 设置</button></div></form></dialog>
@@ -93,11 +95,36 @@ export async function mountDeclaration(container) {
     number: "数值",
     boolean: "开关",
   };
-  function fieldsTable(ports) {
-    const rows = Object.entries(ports || {});
-    return rows.length
-      ? `<div class="declaration-port-list">${rows.map(([port, p]) => `<article class="declaration-port"><div class="declaration-port-title"><strong>${esc(p.label || p.filename || port)}</strong><span class="declaration-tag">${esc(p.format || p.aiida_type)}</span><span class="declaration-caption">${p.required_if ? "保存概率时必需" : p.required ? "必需" : "可选"}${p.owner ? " · " + (p.owner === "filter" ? "筛选阶段" : "推理阶段") : ""}</span></div><code>${esc(port)}</code><p>${esc(p.description || p.label || "")}</p></article>`).join("")}</div>`
-      : '<p class="declaration-missing">端口尚未补齐，可点击“补齐缺项”。</p>';
+  function itemAt(document, path) {
+    const parts = path.split(".");
+    return parts[0] === "parameters"
+      ? document.parameters?.[parts[1]]?.[parts[2]]
+      : document[parts[0]]?.[parts.slice(1).join(".")];
+  }
+  function putItem(document, path, value) {
+    const [section, group, key] = path.split(".");
+    if (section === "parameters") {
+      document.parameters ??= {};
+      document.parameters[group] ??= {};
+      document.parameters[group][key] = value;
+    } else {
+      document[section] ??= {};
+      document[section][path.slice(section.length + 1)] = value;
+    }
+  }
+  function itemButtons(path, exists) {
+    return `<div class="declaration-item-actions"><button class="button soft" type="button" data-edit-item="${esc(path)}">${exists ? "编辑" : "填写定义"}</button><button class="declaration-inline-action" type="button" data-ask-item="${esc(path)}">请助手协助</button></div>`;
+  }
+  function fieldsTable(section) {
+    return `<div class="declaration-port-list">${Object.entries(
+      reference[section],
+    )
+      .map(([port, expected]) => {
+        const p = state.declaration[section]?.[port];
+        const path = section + "." + port;
+        return `<article class="declaration-port ${p ? "" : "is-missing"}"><div class="declaration-port-title"><strong>${esc(p?.label || expected.label || expected.filename || port)}</strong><span class="declaration-tag">${esc(p?.format || expected.format || expected.aiida_type)}</span><span class="declaration-caption">${!p ? "待填写" : p.required_if ? "保存概率时必需" : p.required ? "必需" : "可选"}${expected.owner ? " · " + (expected.owner === "filter" ? "筛选阶段" : "推理阶段") : ""}</span></div><code>${esc(port)}</code><p>${esc(p?.description || (p ? p.label : "尚未定义，可手动填写或请助手协助。"))}</p>${itemButtons(path, !!p)}</article>`;
+      })
+      .join("")}</div>`;
   }
   function selectSection(section) {
     activeSection = section;
@@ -112,10 +139,98 @@ export async function mountDeclaration(container) {
     });
   }
   function toggleAssistant(open) {
-    $("assistant").hidden = !open;
+    $("assistant-content").hidden = !open;
+    $("assistant").classList.toggle("is-collapsed", !open);
     $("columns").classList.toggle("with-assistant", open);
+    $("columns").classList.toggle("assistant-collapsed", !open);
     $("assistant-toggle").setAttribute("aria-expanded", String(open));
-    if (open) $("message").focus();
+    $("assistant-toggle").setAttribute(
+      "aria-label",
+      open ? "收起登记助手" : "展开登记助手",
+    );
+    $("assistant-toggle").title = open ? "收起登记助手" : "展开登记助手";
+  }
+  function renderItemFields(value) {
+    const source = itemAt(reference, editingItem.path);
+    const parameter = editingItem.path.startsWith("parameters.");
+    const field = (label, control) =>
+      `<label class="field"><span>${label}</span>${control}</label>`;
+    const fields = [];
+    if (Object.hasOwn(source, "label")) {
+      fields.push(
+        field(
+          "名称",
+          `<input data-item-field="label" value="${esc(value.label || "")}" placeholder="${esc(source.label)}">`,
+        ),
+      );
+    }
+    const types = parameter ? Object.keys(typeLabels) : [source.aiida_type];
+    fields.push(
+      field(
+        parameter ? "参数类型" : "数据类型",
+        `<select data-item-field="${parameter ? "type" : "aiida_type"}">${types.map((type) => `<option value="${esc(type)}" ${type === (value.type || value.aiida_type) ? "selected" : ""}>${esc(typeLabels[type] || type)}</option>`).join("")}</select>`,
+      ),
+    );
+    if (source.format) {
+      fields.push(
+        field(
+          "文件格式",
+          `<input data-item-field="format" value="${esc(value.format || source.format)}">`,
+        ),
+      );
+    }
+    if (source.filename) {
+      fields.push(
+        field(
+          "输出文件名",
+          `<input data-item-field="filename" value="${esc(value.filename || source.filename)}">`,
+        ),
+      );
+    }
+    fields.push(
+      `<label class="declaration-checkbox"><input type="checkbox" data-item-field="required" ${value.required ? "checked" : ""}> ${parameter ? "实验请求必填" : "必需端口"}</label>`,
+    );
+    if (parameter && Object.hasOwn(source, "default")) {
+      const control =
+        source.type === "boolean"
+          ? `<select data-item-field="default"><option value="">请选择</option><option value="true" ${value.default === true ? "selected" : ""}>true · 开启</option><option value="false" ${value.default === false ? "selected" : ""}>false · 关闭</option></select>`
+          : `<input data-item-field="default" type="${["integer", "number"].includes(source.type) ? "number" : "text"}" step="${source.type === "integer" ? "1" : "any"}" value="${esc(value.default ?? "")}" placeholder="${esc(source.default)}">`;
+      fields.push(field("后端默认值", control));
+    }
+    const description = Object.hasOwn(source, "description")
+      ? `<label class="field declaration-item-description"><span>说明</span><textarea data-item-field="description" placeholder="说明此项的用途">${esc(value.description || "")}</textarea></label>`
+      : "";
+    const hints = [];
+    if (parameter && !Object.hasOwn(source, "default"))
+      hints.push("此参数没有后端默认值。");
+    if (source.required_if) hints.push("保存概率时必须提供此输出。");
+    hints.push(
+      "类型、必填性与其他约束按真实接口校验；其余固定约束沿用已核实定义，均会在预览中展示。",
+    );
+    $("item-fields").innerHTML =
+      `<div class="fields">${fields.join("")}</div>${description}<p class="field-hint">${esc(hints.join(" "))}</p>`;
+  }
+  function openItem(path) {
+    requireSaved();
+    const source = itemAt(reference, path);
+    if (!source) throw new Error("不支持的接口字段");
+    const current = itemAt(state.declaration, path);
+    // Fixed interface constraints come from the verified definition; only this item is edited.
+    editingItem = { path, base: structuredClone(current || source) };
+    $("item-title").textContent =
+      (current ? "编辑 · " : "填写 · ") +
+      (source.label || source.filename || path.split(".").at(-1));
+    $("item-path").textContent = path;
+    $("item-error").hidden = true;
+    renderItemFields(
+      current || {
+        ...source,
+        label: "",
+        description: "",
+        ...(Object.hasOwn(source, "default") ? { default: "" } : {}),
+      },
+    );
+    $("item-dialog").showModal();
   }
   function renderFlow(d) {
     const inputs = Object.entries(d.inputs || {});
@@ -154,8 +269,8 @@ export async function mountDeclaration(container) {
     selectSection(activeSection);
     $("savebar").hidden = true;
     $("restore").hidden = !state.issues.length;
-    $("inputs").innerHTML = fieldsTable(d.inputs);
-    $("outputs").innerHTML = fieldsTable(d.outputs);
+    $("inputs").innerHTML = fieldsTable("inputs");
+    $("outputs").innerHTML = fieldsTable("outputs");
     $("issues").innerHTML = state.issues.length
       ? `<details class="check-list"><summary>导出前需处理 ${state.issues.length} 项 · 查看详情</summary><ul>${state.issues.map((i) => `<li><code>${esc(i.path)}</code>：${esc(i.message)}</li>`).join("")}</ul></details>`
       : '<p class="declaration-valid">定义完整 <span>· 导出时校验发布版本</span></p>';
@@ -168,7 +283,7 @@ export async function mountDeclaration(container) {
             .map(([key, source]) => {
               const f = d.parameters?.[group]?.[key];
               if (!f)
-                return `<div class="declaration-missing"><code>${esc(key)}</code> · 缺少定义</div>`;
+                return `<article class="declaration-port is-missing"><strong>${esc(source.label || key)}</strong><code>${esc(key)}</code><p class="declaration-caption">待填写 · ${esc(typeLabels[source.type])}</p>${itemButtons("parameters." + group + "." + key, false)}</article>`;
               const constraints = [
                 f.minimum !== undefined ? "≥ " + f.minimum : "",
                 f.maximum !== undefined ? "≤ " + f.maximum : "",
@@ -180,16 +295,7 @@ export async function mountDeclaration(container) {
               ]
                 .filter(Boolean)
                 .join("；");
-              return `<details class="declaration-parameter" data-definition="${group}.${key}"><summary><span class="declaration-parameter-name"><strong>${esc(f.label || key)}</strong><code>${esc(key)}</code></span><span class="declaration-parameter-meta">${esc(typeLabels[f.type] || f.type)} · ${f.required ? "必填" : "可选"}${f.default !== undefined ? " · 默认 " + esc(f.default) : ""}</span></summary><div class="declaration-parameter-body"><div class="fields"><label class="field"><span>显示名</span><input data-meta="label" aria-label="${group}.${key} 显示名" value="${esc(f.label)}"></label><label class="field"><span>类型</span><select data-meta="type" aria-label="${group}.${key} 类型">${Object.entries(
-                typeLabels,
-              )
-                .map(
-                  ([t, label]) =>
-                    `<option value="${t}" ${f.type === t ? "selected" : ""}>${label} · ${t}</option>`,
-                )
-                .join(
-                  "",
-                )}</select></label><label class="field"><span>后端默认值</span>${source.type === "boolean" ? `<select data-meta="default" data-value-type="boolean" aria-label="${group}.${key} 默认值"><option value="true" ${f.default === true ? "selected" : ""}>true</option><option value="false" ${f.default === false ? "selected" : ""}>false</option></select>` : `<input data-meta="default" data-value-type="${source.type}" aria-label="${group}.${key} 默认值" placeholder="无默认值" value="${esc(f.default ?? "")}">`}</label><label class="declaration-checkbox"><input type="checkbox" data-meta="required" aria-label="${group}.${key} 必填" ${f.required ? "checked" : ""}> 实验请求必填</label></div><label class="field"><span>说明</span><textarea data-meta="description" aria-label="${group}.${key} 说明">${esc(f.description)}</textarea></label>${constraints ? `<p class="field-hint">约束：${esc(constraints)}</p>` : ""}</div></details>`;
+              return `<details class="declaration-parameter"><summary><span class="declaration-parameter-name"><strong>${esc(f.label || key)}</strong><code>${esc(key)}</code></span><span class="declaration-parameter-meta">${esc(typeLabels[f.type] || f.type)} · ${f.required ? "必填" : "可选"}${f.default !== undefined ? " · 默认 " + esc(f.default) : ""}</span></summary><div class="declaration-parameter-body"><p>${esc(f.description)}</p>${constraints ? `<p class="field-hint">约束：${esc(constraints)}</p>` : ""}${itemButtons("parameters." + group + "." + key, true)}</div></details>`;
             })
             .join("")}</div>`,
       )
@@ -250,21 +356,6 @@ export async function mountDeclaration(container) {
     const d = structuredClone(state.declaration);
     d.name = $("name").value;
     d.version = $("version").value;
-    container.querySelectorAll("[data-definition]").forEach((row) => {
-      const [group, key] = row.dataset.definition.split(".");
-      const f = d.parameters[group][key];
-      row.querySelectorAll("[data-meta]").forEach((input) => {
-        const key = input.dataset.meta;
-        if (key === "default") {
-          const value =
-            input.tagName === "SELECT"
-              ? input.value === "true"
-              : inputValue(input);
-          if (value === undefined || value === "") delete f.default;
-          else f.default = value;
-        } else f[key] = input.type === "checkbox" ? input.checked : input.value;
-      });
-    });
     container.querySelectorAll("[data-example]").forEach((input) => {
       const [group, key] = input.dataset.example.split(".");
       const value =
@@ -341,11 +432,75 @@ export async function mountDeclaration(container) {
     if (button && !busy) selectSection(button.dataset.section);
   });
   listen($("assistant-toggle"), "click", () =>
-    toggleAssistant($("assistant").hidden),
+    toggleAssistant($("assistant-content").hidden),
   );
-  listen($("assistant-close"), "click", () => {
-    toggleAssistant(false);
-    $("assistant-toggle").focus();
+  listen(container, "click", (event) => {
+    const edit = event.target.closest("[data-edit-item]");
+    const ask = event.target.closest("[data-ask-item]");
+    if (edit) run(() => openItem(edit.dataset.editItem));
+    if (ask && !busy) {
+      toggleAssistant(true);
+      const request =
+        "请帮我核对并补齐 " +
+        ask.dataset.askItem +
+        " 这一项的定义，只针对这一项提出修改，供我确认。";
+      $("message").value = [$("message").value.trim(), request]
+        .filter(Boolean)
+        .join("\n\n");
+      $("message").focus();
+    }
+  });
+  const closeItem = () => $("item-dialog").close();
+  listen($("item-close"), "click", closeItem);
+  listen($("item-cancel"), "click", closeItem);
+  listen($("item-reference"), "click", () =>
+    renderItemFields(itemAt(reference, editingItem.path)),
+  );
+  listen($("item-form"), "submit", (event) => {
+    event.preventDefault();
+    run(async () => {
+      $("item-error").hidden = true;
+      try {
+        const value = structuredClone(editingItem.base);
+        $("item-fields")
+          .querySelectorAll("[data-item-field]")
+          .forEach((input) => {
+            const key = input.dataset.itemField;
+            if (key === "required") value[key] = input.checked;
+            else if (key === "default") {
+              if (!input.value.trim())
+                throw new Error("请填写默认值，或引用此项已核实定义。");
+              const type = $("item-fields").querySelector(
+                '[data-item-field="type"]',
+              ).value;
+              if (type === "boolean") {
+                if (!["true", "false"].includes(input.value.trim()))
+                  throw new Error("开关默认值只能为 true 或 false。");
+                value[key] = input.value.trim() === "true";
+              } else
+                value[key] = ["integer", "number"].includes(type)
+                  ? Number(input.value)
+                  : input.value;
+            } else value[key] = input.value;
+          });
+        const candidate = structuredClone(state.declaration);
+        putItem(candidate, editingItem.path, value);
+        const response = await post(endpoint("preview"), {
+          expected_revision: state.revision,
+          operation_id: operationId(),
+          declaration: candidate,
+        });
+        closeItem();
+        showProposal(response.proposal);
+      } catch (e) {
+        $("item-error").textContent =
+          e.message +
+          (Array.isArray(e.details)
+            ? "：" + e.details.map((i) => i.path + " " + i.message).join("；")
+            : "");
+        $("item-error").hidden = false;
+      }
+    });
   });
   listen($("form"), "input", (event) => {
     if (event.target === $("json")) return;
