@@ -8,6 +8,7 @@ from functools import partial
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
 from urllib.parse import urlsplit
 from xmlrpc.client import Error as PyMOLError
@@ -21,11 +22,13 @@ MAX_BODY = 2 * 1024 * 1024
 
 
 class DemoHandler(SimpleHTTPRequestHandler):
-    def __init__(self, *args, store, fixtures, directory, pymol, agent_port, **kwargs):
+    def __init__(self, *args, store, fixtures, directory, pymol, agent_port, engine_url,
+                 **kwargs):
         self.store = store
         self.pymol = pymol
         self.fixtures = fixtures
         self.agent_port = agent_port
+        self.engine_url = urlsplit(engine_url) if engine_url else None
         self.frontend = Path(directory).resolve()
         super().__init__(*args, directory=str(self.frontend), **kwargs)
 
@@ -47,6 +50,8 @@ class DemoHandler(SimpleHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path == "/agent" or path.startswith("/agent/"):
             return self.proxy_agent()
+        if path.startswith("/api/engine/"):
+            return self.proxy_engine()
         try:
             if path == "/api/tools/pymol":
                 try:
@@ -129,6 +134,8 @@ class DemoHandler(SimpleHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path.startswith("/agent/"):
             return self.proxy_agent()
+        if path.startswith("/api/engine/"):
+            return self.proxy_engine()
         if path not in (
             "/api/tools/pymol/load", "/api/tools/pymol/style",
             "/api/tools/pymol/mode", "/api/tools/pymol/command",
@@ -165,6 +172,39 @@ class DemoHandler(SimpleHTTPRequestHandler):
             return self.reply(400, {"error": str(error)})
         except (OSError, PyMOLError):
             return self.reply(503, {"error": "PyMOL 操作未返回，请检查会话；耗时命令可能仍在运行"})
+
+    def proxy_engine(self):
+        """Forward /api/engine/* to the engine service (约定②), keeping the path."""
+        if self.engine_url is None:
+            return self.reply(503, {"error": "未配置引擎服务，请启动 scripts/mock_engine.py 或指定 --engine-url"})
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            return self.reply(400, {"error": "Invalid Content-Length"})
+        if length < 0 or length > 6 * 1024 * 1024:
+            self.close_connection = True
+            return self.reply(413, {"error": "引擎请求超过 6 MiB"})
+        excluded = {"connection", "keep-alive", "transfer-encoding", "upgrade", "proxy-connection", "host"}
+        headers = {k: v for k, v in self.headers.items() if k.lower() not in excluded}
+        connection = http.client.HTTPConnection(
+            self.engine_url.hostname, self.engine_url.port or 80, timeout=120)
+        try:
+            connection.request(self.command, self.path[len(self.engine_url.path):] or self.path,
+                               self.rfile.read(length) if length else None, headers)
+            response = connection.getresponse()
+            body = response.read()
+        except (OSError, http.client.HTTPException):
+            return self.reply(503, {"error": "引擎服务暂不可用，请检查其进程与日志"})
+        finally:
+            connection.close()
+        self.send_response(response.status)
+        for key, value in response.getheaders():
+            if key.lower() not in excluded | {"content-length", "server", "date"}:
+                self.send_header(key, value)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
 
     def proxy_agent(self):
         """Forward only the fixed Agent service; preserve the browser's Host/Origin."""
@@ -215,14 +255,16 @@ class DemoHandler(SimpleHTTPRequestHandler):
         super().log_message(format, *args)
 
 
-def create_server(host="127.0.0.1", port=3000, data_dir=None, agent_port=3002):
+def create_server(host="127.0.0.1", port=3000, data_dir=None, agent_port=3002,
+                  engine_url=None):
     fixtures = json.loads(
         (ROOT / "configs/workbench-demo.json").read_text(encoding="utf-8")
     )
     store = SnapshotStore(Path(data_dir) if data_dir else ROOT / ".local/workbench-api")
     handler = partial(
         DemoHandler, store=store, fixtures=fixtures, directory=ROOT / "web/demo",
-        pymol=PyMOLSession(store.directory.parent / "pymol-inputs"), agent_port=agent_port
+        pymol=PyMOLSession(store.directory.parent / "pymol-inputs"), agent_port=agent_port,
+        engine_url=engine_url
     )
     return ThreadingHTTPServer((host, port), handler)
 
@@ -232,8 +274,10 @@ def main():
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default=3000, type=int)
     parser.add_argument("--data-dir", type=Path, default=ROOT / ".local/workbench-api")
+    parser.add_argument("--engine-url", default=os.environ.get("AI4S_ENGINE_URL", "http://127.0.0.1:3010"),
+                        help="约定②的引擎服务地址；默认指向模拟引擎")
     args = parser.parse_args()
-    server = create_server(args.host, args.port, args.data_dir)
+    server = create_server(args.host, args.port, args.data_dir, engine_url=args.engine_url)
     print(
         f"Demo frontend and API at http://{args.host}:{server.server_port}/", flush=True
     )
