@@ -76,13 +76,13 @@ Parser 依次检查包装命令成功结束、固定 release、输入 PDB SHA-25
 
 上述检查全部通过后才发布正式文件和 `result`。显式失败码 300–308 对应运行记录缺失、模型失败、版本不符、输入不符、输出缺失、设计不符、分数不符、概率内容不符及输出损坏，均标记 `invalidates_cache=True`。损坏 JSON／NPZ 或缺失内部字段返回 308，清单先构造成功才发布任何正式输出。
 
-权重 SHA-256 和上游源码提交由包装命令记录并写入清单；当前 Parser 只核对权重路径后缀及 release，没有与预先固定的权重哈希／源码提交比较。数值与样本映射规则通过了合成文件检查，并对既有真实任务 pk22 的取回产物作了只读复核，新 Parser 通过且数据库节点数未变化。本轮没有重新执行 GPU 模型，不构成新版本 GPU 全流程验收。
+权重 SHA-256 和上游源码提交由包装命令记录并写入清单。通过新引擎提交时，Parser 另将运行后的 release、源码提交和权重 SHA-256 与提交时的 `ai4s_model_identity` 比较，不一致即拒绝发布正式输出。直接使用旧入口、没有提交身份的任务仍只具备原有路径／release 检查。数值与样本映射规则通过了合成文件检查，并对既有真实任务 pk22 的取回产物作了只读复核，新 Parser 通过且数据库节点数未变化。本轮没有重新执行 GPU 模型，不构成新版本 GPU 全流程验收。
 
 ## 缓存与能力边界
 
 单任务已有一次原生缓存命中证据，见运行记录。可在受控环境中显式使用 `aiida.manage.caching.enable_caching` 测试，默认是否启用以当前 profile 配置为准。`model_launches` 与 CalcJob 节点数不是外部程序实际启动次数，尤其要排除缓存命中。
 
-当前没有统一 `reuse/recompute/new_sample` 请求接口、旧输出重新解析入口或 checkpoint 恢复。权重与环境身份保存在执行后记录中，未完整进入稳定的计算输入；若共享程序、权重或环境改变，不应直接沿用旧缓存，应禁用缓存并重新验证部署身份。不要将本次命中推广为完整的缓存失效条件验收。
+独立引擎已提供②的三种策略请求接口及③的提交前身份，见[引擎说明](engine_service.md)。旧命令行入口没有自动补齐模型身份，不应在共享部署变化后直接沿用旧缓存。旧输出重新解析入口与 checkpoint 恢复仍未提供。不要将本次命中推广为完整的缓存失效条件验收。
 
 六项轻量检查覆盖参数、FASTA、分数和概率内容／样本对应；NumPy 来自 AiiDA 环境：
 
@@ -90,7 +90,7 @@ Parser 依次检查包装命令成功结束、固定 release、输入 PDB SHA-25
 PYTHONPATH=src python -m pytest -q tests/test_ai4s_tasks.py
 ```
 
-CalcJob 与 Parser 的 `CACHE_VERSION` 均已提升为 2，清单的 `validator_version` 为 `proteinmpnn-2`。旧规则的缓存不会与新规则直接匹配；C 也拒绝直接消费旧验证版本的真实结果。旧过程与输出继续保留，当前没有把旧结果重新解析为新版本的公共入口。
+CalcJob 与 Parser 的 `CACHE_VERSION` 均已提升为 3，清单的 `validator_version` 为 `proteinmpnn-3`。旧规则的缓存不会与新规则直接匹配；C 也拒绝直接消费旧验证版本的真实结果。旧过程与输出继续保留，当前没有把旧结果重新解析为新版本的公共入口。
 
 `python tests/test_aiida_workflows.py` 在独立临时 profile 检查实际 Parser 的合成损坏文件、C 的重试与连续重筛选，以及 B 的 ORM 查询与只读导出；不运行模型。真实恢复、GPU 新规则验收和网页提交需分别验证。上述实现不等于两个任务已共用一个通用 CalcJob／Parser，筛选目前是 C 的 `calcfunction`。
 

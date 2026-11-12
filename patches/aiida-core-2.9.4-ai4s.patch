@@ -1,0 +1,119 @@
+--- a/src/aiida/__init__.py
++++ b/src/aiida/__init__.py
+@@ -27,7 +27,7 @@
+     'For further information please visit http://www.aiida.net/. All rights reserved.'
+ )
+ __license__ = 'MIT license, see LICENSE.txt file.'
+-__version__ = '2.9.4'
++__version__ = '2.9.4+ai4s.1'
+ __authors__ = 'The AiiDA team.'
+ __paper__ = (
+     'S. P. Huber et al., "AiiDA 1.0, a scalable computational infrastructure for automated reproducible workflows and '
+--- a/src/aiida/orm/nodes/data/code/abstract.py
++++ b/src/aiida/orm/nodes/data/code/abstract.py
+@@ -434,6 +434,23 @@
+         type_check(value, bool)
+         self.base.extras.set(self._KEY_EXTRA_IS_HIDDEN, value)
+ 
++    @property
++    def model_identity(self) -> dict | None:
++        """Immutable scientific model identity included in the native Code hash."""
++        return self.base.attributes.get('model_identity', None)
++
++    @model_identity.setter
++    def model_identity(self, value: dict) -> None:
++        import re
++        fields = {'model_id', 'release', 'source_commit', 'model_name', 'weights_family', 'weights_sha256'}
++        if not isinstance(value, dict) or set(value) != fields:
++            raise ValueError('model_identity must contain the six agreement-3 fields')
++        if any(not isinstance(item, str) or not item.strip() for item in value.values()):
++            raise ValueError('model identity fields must be non-empty strings')
++        if not re.fullmatch(r'[0-9a-f]{64}', value['weights_sha256']):
++            raise ValueError('weights_sha256 must be a full lowercase SHA-256')
++        self.base.attributes.set('model_identity', dict(value))
++
+     def get_builder(self) -> ProcessBuilder:
+         """Create and return a new ``ProcessBuilder`` for the ``CalcJob`` class of the plugin configured for this code.
+ 
+--- a/src/aiida/engine/processes/calcjobs/calcjob.py
++++ b/src/aiida/engine/processes/calcjobs/calcjob.py
+@@ -266,6 +266,8 @@
+         :param spec: the calculation job process spec to define.
+         """
+         super().define(spec)
++        spec.input('metadata.ai4s_context', valid_type=dict, required=False,
++                   is_metadata=True, help='Trusted request context; excluded from the scientific hash.')
+         spec.inputs.validator = validate_calc_job  # type: ignore[assignment]  # takes only PortNamespace not Port
+         spec.input(
+             'code',
+@@ -701,6 +703,9 @@
+ 
+     def _setup_metadata(self, metadata: dict) -> None:
+         """Store the metadata on the ProcessNode."""
++        context = metadata.pop('ai4s_context', None)
++        if context is not None:
++            self.node.base.extras.set('ai4s_context', context)
+         computer = metadata.pop('computer', None)
+         if computer is not None:
+             self.node.computer = computer
+@@ -714,6 +719,16 @@
+     def _setup_inputs(self) -> None:
+         """Create the links between the input nodes and the ProcessNode that represents this process."""
+         super()._setup_inputs()
++        code = self.inputs.get('code')
++        if code is not None and code.model_identity is not None:
++            import hashlib
++            import json
++            identity = code.model_identity
++            self.node.base.attributes.set('ai4s_model_identity', identity)
++            digest = hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
++            self.node.base.extras.set('ai4s_identity_digest', digest)
++        elif code is not None and code.base.attributes.get('ai4s_identity_unresolved', None):
++            self.node.base.attributes.set('ai4s_identity_unresolved', code.base.attributes.get('ai4s_identity_unresolved'))
+ 
+         # If a computer has not yet been set, which should have been done in ``_setup_metadata`` if it was specified
+         # in the ``metadata`` inputs, set the computer associated with the ``code`` input. Note that not all ``code``s
+--- a/src/aiida/orm/nodes/process/calculation/calcjob.py
++++ b/src/aiida/orm/nodes/process/calculation/calcjob.py
+@@ -38,6 +38,41 @@
+ 
+ class CalcJobNodeCaching(ProcessNodeCaching):
+     """Interface to control caching of a node instance."""
++
++    def should_use_cache(self) -> bool:
++        if self._node.base.extras.get('ai4s_context', None):
++            return True
++        if self._node.base.attributes.get('ai4s_identity_unresolved', None):
++            return False
++        return super().should_use_cache()
++
++    @property
++    def is_valid_cache(self) -> bool:
++        if self._node.base.attributes.get('ai4s_identity_unresolved', None):
++            return False
++        return super().is_valid_cache
++
++    @is_valid_cache.setter
++    def is_valid_cache(self, value: bool) -> None:
++        ProcessNodeCaching.is_valid_cache.fset(self, value)
++
++    def _get_same_node(self):
++        import importlib
++        import os
++        context = self._node.base.extras.get('ai4s_context', None)
++        hook = os.environ.get('AIIDA_AI4S_CACHE_DECISION', '')
++        if not context:
++            return super()._get_same_node()
++        # A configured AI4S request must never fall back silently to first-match reuse.
++        if not hook:
++            raise RuntimeError('AI4S request requires AIIDA_AI4S_CACHE_DECISION')
++        module, name = hook.split(':', 1)
++        candidates = [] if self._node.base.attributes.get('ai4s_identity_unresolved', None) else list(
++            self._iter_all_same_nodes(allow_before_store=True))
++        selected = getattr(importlib.import_module(module), name)(self._node, candidates)
++        if selected is not None and all(selected.uuid != candidate.uuid for candidate in candidates):
++            raise ValueError('cache decision selected a node outside native valid candidates')
++        return selected
+ 
+     def get_objects_to_hash(self) -> list[Any]:
+         """Return a list of objects which should be included in the hash.

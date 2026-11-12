@@ -2,11 +2,12 @@
 
 面向科学中间产物的身份、依赖、共享与复用，首个场景为蛋白质设计。
 
-当前包含工作台演示前后端、独立蛋白质设计程序及嵌入式 PyMOL。工作流执行、产物目录和复用策略仍为模拟；真实 PyMOL 结构查看已接入。能力边界见 [当前状态](docs/status.md)。
+当前包含工作台演示前后端、独立蛋白质设计程序及嵌入式 PyMOL。模拟工作台继续保留；另有真实 ProteinMPNN 提交、状态、产物和来源入口，PyMOL 结构查看已接入。能力边界见 [当前状态](docs/status.md)。
 
 ## 开发入口
 
 - [工作台前后端](web/README.md)：文件职责、启动、API 与已有测试。
+- [真实引擎服务](docs/engine_service.md)：模型身份指纹、② HTTP 提交、三种策略与真实验收记录。
 - [PyMOL](tools/pymol_web/README.md)：在已有工作区启动结构查看、网页命令和完整界面。
 - [蛋白质设计](docs/protein_pipeline.md)：配置、运行与输出约定。
 - [AiiDA 单任务接入](docs/aiida_tasks.md)与 [C 模块](README_C.md)：真实 ProteinMPNN、两阶段编排及重筛选；[运行记录](experiments/R005-aiida-proteinmpnn/record.md)保存已验证范围。
@@ -29,13 +30,14 @@
 
 - `web/demo/`：页面、交互、API 客户端与嵌入式查看器。
 - `src/workbench/`：HTTP API、模拟快照和 PyMOL 接口。
-- `src/ai4s_tasks/`、`src/ai4s_workflows/`：AiiDA 任务执行／解析与两阶段流程，尚未接入工作台 API。
+- `src/ai4s_tasks/`、`src/ai4s_workflows/`：AiiDA 任务执行／解析与两阶段流程。
+- `src/ai4s_engine/`、`src/ai4s_declarations/`：独立引擎 HTTP 服务、身份解析与声明校验。
 - `src/ai4s_query/`：只读查询、来源报告与离线快照导出；不提交科学任务。
 - `scripts/`：应用、蛋白质流程和管理入口。
 - `tools/pymol_web/`：PyMOL 启动与路径代理。
 - `configs/`、`coder/`、`docker/`、`compose*.yaml`：配置、模板与镜像定义。
 - `tests/`：已有的输入边界、状态接口及前端逻辑检查。
 
-凭据、模型、数据库、缓存和运行产物不提交到 Git。个人环境参数由实际部署配置提供。
+凭据、模型、数据库、缓存和大型运行产物不提交到 Git；小型验收 JSON 可随运行记录保留。个人环境参数由实际部署配置提供。
 
 Agent 资料与对话配置接入见 [运行说明](docs/agent_demo_run.md)；继续使用已有工作台与 PyMOL 联合启动入口。

@@ -28,7 +28,7 @@ from .proteinmpnn_outputs import (
 EXPECTED_RELEASE = "8907e667-py312-torch260cu124"
 SCHEMA_VERSION = "ai4s-artifacts-1"
 CONTRACT_VERSION = "1"
-VALIDATOR_VERSION = "proteinmpnn-2"
+VALIDATOR_VERSION = "proteinmpnn-3"
 
 INPUT_PDB = "input.pdb"
 OUTPUT_FOLDER = "outputs"
@@ -48,7 +48,7 @@ def validate_params(value, _context):
 class ProteinMPNNCalculation(CalcJob):
     """Design sequences for one PDB structure with the shared ProteinMPNN."""
 
-    CACHE_VERSION = 2
+    CACHE_VERSION = 3
 
     @classmethod
     def define(cls, spec):
@@ -129,7 +129,7 @@ class ProteinMPNNCalculation(CalcJob):
 class ProteinMPNNParser(Parser):
     """Check run identity, designs and score files, then publish outputs."""
 
-    CACHE_VERSION = 2
+    CACHE_VERSION = 3
 
     def parse(self, **kwargs):
         try:
@@ -161,6 +161,14 @@ class ProteinMPNNParser(Parser):
         if record.get("effective_seeds") != [parameters["seed"]]:
             return self.exit_codes.ERROR_INPUT_MISMATCH.format(
                 reason=f"effective seeds {record.get('effective_seeds')}")
+
+        # Compare execution observations with the identity captured before cache lookup.
+        identity = self.node.base.attributes.get("ai4s_model_identity", None)
+        if identity:
+            if record.get("release") != identity["release"] or record.get("source_commit") != identity["source_commit"]:
+                return self.exit_codes.ERROR_RELEASE_MISMATCH.format(release=record.get("release"))
+            if record["weights"]["sha256"] != identity["weights_sha256"]:
+                return self.exit_codes.ERROR_INPUT_MISMATCH.format(reason="weights SHA-256 differs from submitted identity")
 
         # 3. Designs, scores and optional probabilities must match the request.
         required = [SEQUENCES_FILE, SCORES_FILE]

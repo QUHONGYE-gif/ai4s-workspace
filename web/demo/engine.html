@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>真实实验 · 研序</title>
+    <style>
+      body {
+        margin: 0;
+        background: #f2f5fb;
+        color: #24324b;
+        font:
+          15px/1.6 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 1060px;
+        margin: 40px auto;
+        padding: 0 24px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      h1 {
+        margin: 4px 0;
+        font-size: 28px;
+      }
+      h2 {
+        font-size: 19px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 24px;
+      }
+      .card {
+        padding: 24px;
+        background: white;
+        border: 1px solid #dce3ee;
+        border-radius: 16px;
+        margin-bottom: 24px;
+      }
+      label {
+        display: block;
+        margin: 12px 0;
+        color: #47556b;
+      }
+      input,
+      select,
+      button {
+        box-sizing: border-box;
+        border: 1px solid #c8d2e2;
+        border-radius: 8px;
+        padding: 10px;
+        font: inherit;
+        width: 100%;
+        background: white;
+      }
+      input[type="checkbox"] {
+        width: auto;
+      }
+      button {
+        background: #244d8d;
+        color: white;
+        cursor: pointer;
+        margin-top: 16px;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+      .fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 16px;
+      }
+      .muted {
+        color: #6b778c;
+      }
+      a {
+        color: #244d8d;
+      }
+      #status {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: 100px 1fr;
+        gap: 8px;
+        margin: 12px 0;
+      }
+      dt {
+        color: #6b778c;
+      }
+      dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+      ul {
+        padding-left: 20px;
+      }
+      summary {
+        cursor: pointer;
+      }
+      pre {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        max-height: 350px;
+        overflow: auto;
+        font-size: 12px;
+      }
+      .error {
+        color: #b22532;
+      }
+      #health {
+        font-size: 13px;
+      }
+      @media (max-width: 760px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        main {
+          margin-top: 20px;
+        }
+        .fields {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <a href="./workbench.html#/runs">← 工作台</a>
+          <h1>ProteinMPNN 真实实验</h1>
+          <span class="muted">提交计算，查看产物、来源和复用理由。</span>
+        </div>
+        <span id="health" role="status">正在连接引擎…</span>
+      </header>
+      <div class="grid">
+        <section class="card">
+          <h2>实验设置</h2>
+          <form id="form">
+            <label
+              >输入结构（PDB）<input
+                id="pdb"
+                type="file"
+                accept=".pdb"
+                required
+            /></label>
+            <div class="fields">
+              <label
+                >任务流程<select id="workflow">
+                  <option value="single">ProteinMPNN</option>
+                  <option value="mpnn_filter">ProteinMPNN → 序列筛选</option>
+                </select></label
+              ><label
+                >复用选择<select id="policy">
+                  <option value="allow_reuse">允许复用</option>
+                  <option value="force_rerun">强制重算</option>
+                  <option value="new_sample">新采样</option>
+                </select></label
+              >
+            </div>
+            <div id="inference" class="fields"></div>
+            <div id="filter" class="fields" hidden></div>
+            <button type="submit" id="submit" disabled>提交真实实验</button>
+            <p id="error" class="error" role="alert"></p>
+          </form>
+        </section>
+        <section>
+          <div class="card">
+            <h2>运行与结果</h2>
+            <div id="status" aria-live="polite">提交后可在此查看进度。</div>
+            <div id="outputs"></div>
+            <details id="source" hidden>
+              <summary>来源与决策记录</summary>
+              <pre id="provenance"></pre>
+            </details>
+          </div>
+          <div class="card">
+            <h2>最近提交</h2>
+            <ul id="history"></ul>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script src="./assets/engine.js"></script>
+  </body>
+</html>

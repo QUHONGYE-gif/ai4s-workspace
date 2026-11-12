@@ -85,3 +85,7 @@ node tests/test_api_client.cjs
 界面改动按需验证真实预览中的资源、路由、刷新、交互与 WebSocket。Node.js 仅用于上述逻辑检查。
 
 返回 [仓库入口](../README.md) · [成员协作](../docs/collaboration.md)。
+
+## 真实实验入口
+
+`web/demo/engine.html` 使用已发布声明生成参数表单，并通过标准库工作台后端调用独立引擎。接口、启动与范围统一见 [引擎说明](../docs/engine_service.md)；实际 API／原生计算证据见 [R006](../experiments/R006-aiida-engine/record.md)。原模拟实验流程继续保留。

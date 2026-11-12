@@ -1,0 +1,226 @@
+{
+  "schema_version": "ai4s-task-declaration-1",
+  "task_id": "proteinmpnn",
+  "version": "1",
+  "name": "ProteinMPNN 蛋白质序列设计",
+  "model": {
+    "model_id": "proteinmpnn",
+    "release": "8907e667-py312-torch260cu124",
+    "weights_family": "vanilla"
+  },
+  "workflow_modes": [
+    "single",
+    "mpnn_filter"
+  ],
+  "inputs": {
+    "pdb_file": {
+      "label": "输入骨架",
+      "aiida_type": "SinglefileData",
+      "format": "PDB",
+      "required": true
+    }
+  },
+  "parameters": {
+    "inference": {
+      "chains": {
+        "label": "设计链",
+        "type": "string",
+        "required": true,
+        "category": "inference",
+        "description": "PDB 中待设计的链；本轮验收使用 A。",
+        "minLength": 1
+      },
+      "num_sequences": {
+        "label": "设计序列数",
+        "type": "integer",
+        "required": true,
+        "category": "inference",
+        "description": "设计记录数，不计原生序列记录；须为 batch_size 的整数倍。",
+        "minimum": 1
+      },
+      "sampling_temperature": {
+        "label": "采样温度",
+        "type": "number",
+        "required": true,
+        "category": "inference",
+        "description": "单个有限正数。",
+        "exclusiveMinimum": 0
+      },
+      "seed": {
+        "label": "随机种子",
+        "type": "integer",
+        "required": true,
+        "category": "inference",
+        "description": "非零种子；新采样的实际种子由决策环节生成并回传。",
+        "minimum": 1,
+        "maximum": 4294967295
+      },
+      "model_name": {
+        "label": "权重名",
+        "type": "string",
+        "required": false,
+        "category": "inference",
+        "description": "当前真实任务支持的 vanilla 权重名；实际文件须由引擎核实。",
+        "default": "v_48_020",
+        "enum": [
+          "v_48_002",
+          "v_48_010",
+          "v_48_020",
+          "v_48_030"
+        ]
+      },
+      "batch_size": {
+        "label": "批大小",
+        "type": "integer",
+        "required": false,
+        "category": "inference",
+        "description": "正整数；本轮验收使用 1。",
+        "default": 1,
+        "minimum": 1
+      },
+      "save_probabilities": {
+        "label": "保存概率",
+        "type": "boolean",
+        "required": false,
+        "category": "inference",
+        "description": "控制是否请求并发布概率文件。",
+        "default": true
+      }
+    },
+    "filter": {
+      "score_threshold": {
+        "label": "分数阈值",
+        "type": "number",
+        "required": true,
+        "category": "filter",
+        "description": "有限数；保留 score 小于或等于此阈值的设计记录。"
+      },
+      "top_k": {
+        "label": "最多保留条数",
+        "type": "integer",
+        "required": true,
+        "category": "filter",
+        "description": "按 (score, sample_id) 升序，最多保留 top_k 条；不是保证产出条数。",
+        "minimum": 1
+      }
+    }
+  },
+  "constraints": [
+    {
+      "rule": "num_sequences_multiple_of_batch_size",
+      "scope": "inference",
+      "message": "num_sequences 必须为 batch_size 的整数倍。"
+    }
+  ],
+  "execution": {
+    "calculation_entry_point": "ai4s.proteinmpnn",
+    "workflow_entry_point": "ai4s.protein-mpnn-filter",
+    "inference_parameter_port": {
+      "single": "params",
+      "mpnn_filter": "mpnn_params"
+    },
+    "filter_parameter_port": "filter_params",
+    "code_binding": "engine_configured"
+  },
+  "outputs": {
+    "result": {
+      "owner": "inference",
+      "aiida_type": "Dict",
+      "required": true,
+      "schema_version": "ai4s-artifacts-1",
+      "role": "manifest",
+      "description": "清单、内联样本、分数、运行身份及校验结论。"
+    },
+    "artifacts.sequences": {
+      "owner": "inference",
+      "aiida_type": "SinglefileData",
+      "format": "FASTA",
+      "filename": "design.fa",
+      "required": true,
+      "role": "primary",
+      "description": "包含原生序列和设计记录；原生序列不计入 num_sequences。"
+    },
+    "artifacts.scores": {
+      "owner": "inference",
+      "aiida_type": "SinglefileData",
+      "format": "NPZ",
+      "filename": "scores.npz",
+      "required": true,
+      "role": "auxiliary",
+      "description": "与设计样本对应的分数数组。"
+    },
+    "artifacts.probabilities": {
+      "owner": "inference",
+      "aiida_type": "SinglefileData",
+      "format": "NPZ",
+      "filename": "probabilities.npz",
+      "required": false,
+      "required_if": {
+        "path": "params.inference.save_probabilities",
+        "equals": true
+      },
+      "role": "auxiliary",
+      "description": "请求保存时必须提供并通过概率及样本对应检查。"
+    },
+    "retrieved": {
+      "owner": "inference",
+      "aiida_type": "FolderData",
+      "required": false,
+      "role": "diagnostic",
+      "description": "AiiDA 原生取回目录，保存运行记录和日志；不新增同义端口。"
+    },
+    "selected_sequences": {
+      "owner": "filter",
+      "aiida_type": "Dict",
+      "required": true,
+      "role": "primary",
+      "description": "两阶段流程的筛选记录，当前不是 FASTA 文件；entries 可能为空，其候选资格按约定④判断，过程状态按约定②判断。"
+    },
+    "sample_table": {
+      "owner": "filter",
+      "aiida_type": "Dict",
+      "required": true,
+      "role": "auxiliary",
+      "description": "两阶段流程的筛选样本与筛选条件。"
+    },
+    "selection_report": {
+      "owner": "filter",
+      "aiida_type": "Dict",
+      "required": true,
+      "role": "report",
+      "description": "两阶段流程的筛选数量和执行摘要；不代替约定⑤。"
+    }
+  },
+  "example": {
+    "input_description": "真实 1CRN PDB，A 链；示例不携带可直接提交的上传编号。",
+    "workflow": "mpnn_filter",
+    "params": {
+      "inference": {
+        "chains": "A",
+        "num_sequences": 4,
+        "sampling_temperature": 0.1,
+        "seed": 41,
+        "model_name": "v_48_020",
+        "batch_size": 1,
+        "save_probabilities": true
+      },
+      "filter": {
+        "score_threshold": 0.82,
+        "top_k": 2
+      }
+    }
+  },
+  "source_reference": {
+    "repository": "QUHONGYE-gif/ai4s-workspace",
+    "revision": "8b9569f627957cfde6879cddd01e802d4619e778",
+    "paths": [
+      "docs/aiida_tasks.md",
+      "src/ai4s_tasks/proteinmpnn.py",
+      "src/ai4s_tasks/proteinmpnn_outputs.py",
+      "src/ai4s_workflows/workflows.py",
+      "src/ai4s_workflows/filtering.py",
+      "src/ai4s_tasks/submit.py",
+      "pyproject.toml"
+    ]
+  }
+}
