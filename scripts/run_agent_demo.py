@@ -21,15 +21,26 @@ def main():
     parser.add_argument("--with-workbench", action="store_true", help="在同一预览运行工作台，并以 /agent/ 接入智能体")
     parser.add_argument("--agent-port", type=int, default=3002, help="联合模式下仅监听回环地址的内部端口")
     parser.add_argument("--workbench-data-dir", default=None)
+    parser.add_argument("--engine-base", default=os.environ.get("AI4S_ENGINE_URL"),
+                        help="约定②的引擎服务地址；不填则 /api/engine/* 返回 503")
+    parser.add_argument("--engine-mode", choices=("off", "mock", "real"), default="off",
+                        help="off=不接引擎（默认）；mock=模拟引擎（页面显示 MOCK）；real=真实引擎")
     args = parser.parse_args()
+    if args.engine_mode == "real" and not args.engine_base:
+        parser.error("--engine-mode real 需要同时给出 --engine-base")
+    if args.engine_mode == "mock" and not args.engine_base:
+        args.engine_base = "http://127.0.0.1:3010"
     if args.with_workbench:
-        from workbench.server import create_server
+        from workbench.server import create_server, start_mock_engine
 
         if args.agent_port == args.port:
             parser.error("工作台与内部 Agent 端口不能相同")
         state_home = Path(os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state")))
         workbench_data = args.workbench_data_dir or state_home / "ai4s-workbench-demo/api-state"
-        server = create_server(args.host, args.port, workbench_data, agent_port=args.agent_port)
+        if args.engine_mode == "mock":
+            start_mock_engine(args.engine_base)
+        server = create_server(args.host, args.port, workbench_data, agent_port=args.agent_port,
+                               engine_url=args.engine_base, engine_mode=args.engine_mode)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         print(f"Workbench: http://{args.host}:{server.server_port}/ ; Agent: ./agent/", flush=True)
