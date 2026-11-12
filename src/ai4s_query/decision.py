@@ -339,7 +339,9 @@ def save(record: dict, process=None, directory=None, targets=None, force: bool =
     if "file" in wanted:
         path = _write_file(raw, directory)
         result["written"].append(f"file:{path}")
-    if "attributes" in wanted:
+    # extras 与 attributes 走同一个写入函数：函数内部优先 extras，
+    # attributes 只对未 seal 的过程有效，二者取其一即可。
+    if "extras" in wanted or "attributes" in wanted:
         ref = process or raw.get("process_uuid")
         if ref:
             uid, holder = _write_node(ref, raw)

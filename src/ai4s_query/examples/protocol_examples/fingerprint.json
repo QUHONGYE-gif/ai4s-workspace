@@ -1,0 +1,8 @@
+{
+  "protocol": "③ 计算指纹",
+  "status": "placeholder",
+  "value": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+  "algorithm": "sha256",
+  "source": "AiiDA node.extras._aiida_hash（真实运行产出）",
+  "note": "③ 的示例文件到位后，只替换本文件的 value/algorithm 两个键，代码不动。支持 64 位全值或前 16 位前缀。"
+}

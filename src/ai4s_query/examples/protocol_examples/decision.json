@@ -1,0 +1,46 @@
+{
+  "protocol": "⑤ 决策记录",
+  "status": "placeholder",
+  "record": {
+    "request_id": "req-6f1c2a9e-3b7d-4c51-9a0e-1d2f3c4b5a6e",
+    "process_uuid": "de4ba3d8-8c52-4762-9245-6390748c51ca",
+    "reuse_policy": "allow_reuse",
+    "candidate_compare_list": [
+      {
+        "uuid": "cf51c226-1402-4d72-af26-3d8ece208310",
+        "fingerprint": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+        "member": "吴昱慧",
+        "location": "lab2/cf51c226",
+        "qualified": true,
+        "reason": null
+      },
+      {
+        "uuid": "de4ba3d8-8c52-4762-9245-6390748c51ca",
+        "fingerprint": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+        "member": "陈思睿",
+        "location": "lab/de4ba3d8",
+        "qualified": true,
+        "reason": null
+      },
+      {
+        "uuid": "0c042232-4035-46eb-adaf-17021bf3e1f8",
+        "fingerprint": "2a20461daa76ff27705dbf439799ce67e64191585ffdffa7e0738a63dae8ba2e",
+        "member": "陈思睿",
+        "location": "lab/0c042232",
+        "qualified": true,
+        "reason": null
+      }
+    ],
+    "final_decision": {
+      "action": "reuse",
+      "selected_candidate_uuid": "cf51c226-1402-4d72-af26-3d8ece208310",
+      "effective_seed": 37
+    },
+    "reason": {
+      "reason_code": "R01",
+      "reason_text": "策略为允许复用，存在合格候选，按规则选中第一条（成员 吴昱慧）"
+    },
+    "timestamp": "2026-11-11T08:48:58Z"
+  },
+  "note": "⑤ 的示例文件到位后，只替换 record 一个键，代码不动；校验规则（R01–R05、action 一致性）照旧执行。"
+}
