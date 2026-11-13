@@ -1,0 +1,296 @@
+{
+  "status": "passed",
+  "started_at": "2026-11-13T08:13:49Z",
+  "request_id": "req-f433676d-d4b0-429b-8b44-cb8a21813678",
+  "checks": {
+    "isolated_profile": "passed",
+    "pdb_exists": "passed",
+    "force_action": "passed",
+    "force_reason": "passed",
+    "force_seed": "passed",
+    "force_calcjob": "passed",
+    "force_calcjob_seed": "passed",
+    "force_no_cache": "passed",
+    "force_result": "passed",
+    "force_result_type": "passed",
+    "reuse_action": "passed",
+    "reuse_reason": "passed",
+    "reuse_no_launch": "passed",
+    "reuse_no_calcjob": "passed",
+    "reuse_candidate": "passed",
+    "reuse_source": "passed",
+    "sample_action": "passed",
+    "sample_reason": "passed",
+    "sample_new_seed": "passed",
+    "sample_calcjob": "passed",
+    "sample_calcjob_seed": "passed",
+    "sample_no_cache": "passed",
+    "kernel_record_7": "passed",
+    "request_id_7": "passed",
+    "kernel_record_24": "passed",
+    "request_id_24": "passed",
+    "kernel_record_33": "passed",
+    "request_id_33": "passed",
+    "three_records": "passed",
+    "three_policies": "passed",
+    "three_processes": "passed"
+  },
+  "inputs": {
+    "code": "proteinmpnn-8907e667@localhost",
+    "pdb": "/opt/ai4s/proteinmpnn/releases/8907e667-py312-torch260cu124/examples/1CRN.pdb",
+    "chains": "A",
+    "num_sequences": 4,
+    "temperature": 0.1,
+    "original_seed": 41,
+    "score_threshold": 0.82,
+    "top_k": 2
+  },
+  "runs": [
+    {
+      "policy": "force_rerun",
+      "workchain": {
+        "pk": 7,
+        "uuid": "5d994ce7-bc9f-40ea-91f5-3ba20cefc644",
+        "label": "same-request-f433676d-force-rerun",
+        "process_state": "finished",
+        "exit_status": 0,
+        "cache_source": null
+      },
+      "selection_report": {
+        "attempts": [
+          {
+            "attempt": 1,
+            "label": "ai4s-mpnn:5d994ce7-bc9f-40ea-91f5-3ba20cefc644:01",
+            "model_launches_before": 0,
+            "model_launches_after": 1,
+            "status": "succeeded",
+            "calcjob_pk": 8,
+            "calcjob_uuid": "da701192-e199-43f6-9993-117378de6067",
+            "process_state": "finished",
+            "exit_status": 0,
+            "cache_source": null
+          }
+        ],
+        "attempt_count": 1,
+        "max_attempts": 2,
+        "retry_attempt": 0,
+        "model_launches": 1,
+        "calcjob_submissions": 1,
+        "request_id": "req-f433676d-d4b0-429b-8b44-cb8a21813678",
+        "reuse_policy": "force_rerun",
+        "reuse_decision": "rerun",
+        "reason_code": "R03",
+        "selected_candidate_uuid": null,
+        "effective_seed": 41,
+        "cached_from": null,
+        "status": "completed",
+        "mpnn_cache_source": null,
+        "upstream_result_uuid": "0e78b564-4df5-46c3-9db9-7ee966728801",
+        "filter_params": {
+          "score_threshold": 0.82,
+          "top_k": 2
+        },
+        "selected_count": 2
+      },
+      "calcjobs": [
+        {
+          "pk": 8,
+          "uuid": "da701192-e199-43f6-9993-117378de6067",
+          "label": "ai4s-mpnn:5d994ce7-bc9f-40ea-91f5-3ba20cefc644:01",
+          "process_state": "finished",
+          "exit_status": 0,
+          "cache_source": null
+        }
+      ]
+    },
+    {
+      "policy": "allow_reuse",
+      "workchain": {
+        "pk": 24,
+        "uuid": "88ecb08e-cb90-4acb-a09e-ea5da92bbfbf",
+        "label": "same-request-f433676d-allow-reuse",
+        "process_state": "finished",
+        "exit_status": 0,
+        "cache_source": null
+      },
+      "selection_report": {
+        "attempts": [],
+        "attempt_count": 0,
+        "max_attempts": 2,
+        "retry_attempt": 0,
+        "model_launches": 0,
+        "calcjob_submissions": 0,
+        "request_id": "req-f433676d-d4b0-429b-8b44-cb8a21813678",
+        "reuse_policy": "allow_reuse",
+        "reuse_decision": "reuse",
+        "reason_code": "R01",
+        "selected_candidate_uuid": "0e78b564-4df5-46c3-9db9-7ee966728801",
+        "effective_seed": 41,
+        "cached_from": "da701192-e199-43f6-9993-117378de6067",
+        "status": "completed",
+        "mpnn_cache_source": "da701192-e199-43f6-9993-117378de6067",
+        "upstream_result_uuid": "0e78b564-4df5-46c3-9db9-7ee966728801",
+        "filter_params": {
+          "score_threshold": 0.82,
+          "top_k": 2
+        },
+        "selected_count": 2
+      },
+      "calcjobs": []
+    },
+    {
+      "policy": "new_sample",
+      "workchain": {
+        "pk": 33,
+        "uuid": "79a480dc-737a-40b5-bc19-8021fc10a1b1",
+        "label": "same-request-f433676d-new-sample",
+        "process_state": "finished",
+        "exit_status": 0,
+        "cache_source": null
+      },
+      "selection_report": {
+        "attempts": [
+          {
+            "attempt": 1,
+            "label": "ai4s-mpnn:79a480dc-737a-40b5-bc19-8021fc10a1b1:01",
+            "model_launches_before": 0,
+            "model_launches_after": 1,
+            "status": "succeeded",
+            "calcjob_pk": 34,
+            "calcjob_uuid": "1d25e8fd-a72a-46ab-93d5-a39d52a971e8",
+            "process_state": "finished",
+            "exit_status": 0,
+            "cache_source": null
+          }
+        ],
+        "attempt_count": 1,
+        "max_attempts": 2,
+        "retry_attempt": 0,
+        "model_launches": 1,
+        "calcjob_submissions": 1,
+        "request_id": "req-f433676d-d4b0-429b-8b44-cb8a21813678",
+        "reuse_policy": "new_sample",
+        "reuse_decision": "new_sample",
+        "reason_code": "R04",
+        "selected_candidate_uuid": null,
+        "effective_seed": 883420096,
+        "cached_from": null,
+        "status": "completed",
+        "mpnn_cache_source": null,
+        "upstream_result_uuid": "046beecc-273c-42fb-ad0c-8e8d5e1f71ed",
+        "filter_params": {
+          "score_threshold": 0.82,
+          "top_k": 2
+        },
+        "selected_count": 2
+      },
+      "calcjobs": [
+        {
+          "pk": 34,
+          "uuid": "1d25e8fd-a72a-46ab-93d5-a39d52a971e8",
+          "label": "ai4s-mpnn:79a480dc-737a-40b5-bc19-8021fc10a1b1:01",
+          "process_state": "finished",
+          "exit_status": 0,
+          "cache_source": null
+        }
+      ]
+    }
+  ],
+  "decision_records": [
+    {
+      "request_id": "req-f433676d-d4b0-429b-8b44-cb8a21813678",
+      "process_uuid": "5d994ce7-bc9f-40ea-91f5-3ba20cefc644",
+      "reuse_policy": "force_rerun",
+      "candidate_compare_list": [],
+      "final_decision": {
+        "action": "rerun",
+        "selected_candidate_uuid": null,
+        "effective_seed": 41
+      },
+      "reason": {
+        "reason_code": "R03",
+        "reason_text": "force_rerun ignores candidates and reruns with the original seed"
+      },
+      "timestamp": "2026-11-13T08:13:51Z"
+    },
+    {
+      "request_id": "req-f433676d-d4b0-429b-8b44-cb8a21813678",
+      "process_uuid": "88ecb08e-cb90-4acb-a09e-ea5da92bbfbf",
+      "reuse_policy": "allow_reuse",
+      "candidate_compare_list": [
+        {
+          "member": "吴昱慧",
+          "location": "profile://ai4s-wyh-reuse/0e78b564-4df5-46c3-9db9-7ee966728801/result.json",
+          "size_bytes": 2022,
+          "elapsed_s": 31,
+          "reason": null,
+          "note": "source_workchain=5d994ce7-bc9f-40ea-91f5-3ba20cefc644; source_calcjob=da701192-e199-43f6-9993-117378de6067",
+          "uuid": "0e78b564-4df5-46c3-9db9-7ee966728801",
+          "qualified": true,
+          "fingerprint": "a63f4ab6b9597e49"
+        }
+      ],
+      "final_decision": {
+        "action": "reuse",
+        "selected_candidate_uuid": "0e78b564-4df5-46c3-9db9-7ee966728801",
+        "effective_seed": 41
+      },
+      "reason": {
+        "reason_code": "R01",
+        "reason_text": "allow_reuse selected the first qualified candidate 0e78b564-4df5-46c3-9db9-7ee966728801"
+      },
+      "timestamp": "2026-11-13T08:14:24Z"
+    },
+    {
+      "request_id": "req-f433676d-d4b0-429b-8b44-cb8a21813678",
+      "process_uuid": "79a480dc-737a-40b5-bc19-8021fc10a1b1",
+      "reuse_policy": "new_sample",
+      "candidate_compare_list": [
+        {
+          "member": "吴昱慧",
+          "location": "profile://ai4s-wyh-reuse/0e78b564-4df5-46c3-9db9-7ee966728801/result.json",
+          "size_bytes": 2022,
+          "elapsed_s": 31,
+          "reason": null,
+          "note": "source_workchain=5d994ce7-bc9f-40ea-91f5-3ba20cefc644; source_calcjob=da701192-e199-43f6-9993-117378de6067",
+          "uuid": "0e78b564-4df5-46c3-9db9-7ee966728801",
+          "qualified": true,
+          "fingerprint": "a63f4ab6b9597e49"
+        }
+      ],
+      "final_decision": {
+        "action": "new_sample",
+        "selected_candidate_uuid": null,
+        "effective_seed": 883420096
+      },
+      "reason": {
+        "reason_code": "R04",
+        "reason_text": "new_sample ignores candidates and reruns with a different seed"
+      },
+      "timestamp": "2026-11-13T08:14:26Z"
+    }
+  ],
+  "profile": {
+    "name": "ai4s-wyh-reuse",
+    "aiida_version": "2.9.4",
+    "aiida_file": "/home/coder/aiida-core-dev-wyh-clean2/src/aiida/__init__.py"
+  },
+  "candidate": {
+    "result_uuid": "0e78b564-4df5-46c3-9db9-7ee966728801",
+    "source_calcjob_pk": 8,
+    "source_calcjob_uuid": "da701192-e199-43f6-9993-117378de6067",
+    "fingerprint": "a63f4ab6b9597e49",
+    "candidate": {
+      "uuid": "0e78b564-4df5-46c3-9db9-7ee966728801",
+      "fingerprint": "a63f4ab6b9597e49",
+      "member": "吴昱慧",
+      "location": "profile://ai4s-wyh-reuse/0e78b564-4df5-46c3-9db9-7ee966728801/result.json",
+      "size_bytes": 2022,
+      "elapsed_s": 31,
+      "qualified": true,
+      "reason": null,
+      "note": "source_workchain=5d994ce7-bc9f-40ea-91f5-3ba20cefc644; source_calcjob=da701192-e199-43f6-9993-117378de6067"
+    }
+  },
+  "finished_at": "2026-11-13T08:14:53Z"
+}
