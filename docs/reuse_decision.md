@@ -2,7 +2,7 @@
 
 本页说明项目 WorkChain 与团队 AiiDA fork 之间的复用决策接入、候选映射、持久化记录和验证边界。字段口径与 [约定⑤](https://lcnzinmktf6r.feishu.cn/wiki/WRgGwqdcKiqvFNkwqSscY7pMn8c) 对齐，候选结构直接使用 [约定④](https://lcnzinmktf6r.feishu.cn/wiki/YH74w7cq6iZLdVkpVBBcMEtcnlc)。
 
-当前 `ProteinMPNNFilterWorkChain` 通过 `get_reuse_configuration()` 将 `request_id`、`reuse_policy`、候选、决策函数和 `materialization=CONSUME_CANDIDATE` 提交给团队 AiiDA fork；内核产生唯一决策记录后，WorkChain 再核对策略、动作、候选、实际种子和注入结果。2026-11-13 在 Coder 独立环境验证：主项目 15 项 CPU mock 集成检查通过，fork 的 `tests/engine/test_reuse.py` 使用 ZeroMQ 后端 15 项测试通过。2026-11-11 的授权 GPU 三策略复验发生在此次 fork 接入前，仍需在独立 profile 上按新链路复验。
+当前 `ProteinMPNNFilterWorkChain` 通过 `get_reuse_configuration()` 将 `request_id`、`reuse_policy`、候选、决策函数和 `materialization=CONSUME_CANDIDATE` 提交给团队 AiiDA fork；内核产生唯一决策记录后，WorkChain 再核对策略、动作、候选、实际种子和注入结果。2026-11-13 在 Coder 独立环境验证：主项目 15 项 CPU mock 集成检查通过，fork 的 `tests/engine/test_reuse.py` 使用 ZeroMQ 后端 15 项测试通过；同日又在独立 profile `ai4s-wyh-reuse` 上完成 fork 接入后的同一 `request_id` 真实 GPU 三策略复验，得到 R03／R01／R04 三条记录。2026-11-11 的授权 GPU 三策略复验发生在此次 fork 接入前，作为历史证据保留。
 
 ## 内核接入
 
@@ -170,12 +170,12 @@ python scripts/verify_same_request_reuse_policies.py \
   --member 吴昱慧
 ```
 
-脚本默认生成新的 request id；不要把此前 PK 74／94／107 的三个不同请求号拼成同一请求证据。当前脚本已提供，但尚未在独立 profile 上执行真实 GPU 复验。
+脚本默认生成新的 request id；不要把此前 PK 74／94／107 的三个不同请求号拼成同一请求证据。2026-11-13 已在独立 profile `ai4s-wyh-reuse` 上执行真实 GPU 验收：同一 `request_id=req-f433676d-d4b0-429b-8b44-cb8a21813678` 下 WorkChain PK 7／24／33 分别对应 `force_rerun`／`allow_reuse`／`new_sample`，脚本状态为 `passed`，按请求查询到 3 条决策记录。证据见 `experiments/R005-aiida-proteinmpnn/same-request-f433676d.json`。
 
 ## 验证边界
 
 2026-11-13 在 Coder 独立环境和临时 profile 中验证两条链路：主项目 `python tests/test_aiida_workflows.py` 的 15 项 CPU mock 集成检查通过；fork 的 `python -m pytest -q -o addopts='' --broker-backend=zmq tests/engine/test_reuse.py` 为 15 项通过。fork 测试必须使用 ZeroMQ，因为该独立环境未配置默认 RabbitMQ。
 
-主项目检查覆盖三种策略、真实种子、证据清单、决策记录、daemon 停止与恢复、重试上限、失效清单和 schema 门禁；fork 检查覆盖受控决策、候选结果消费、原生缓存边界和用户策略约束。2026-11-11 的真实 GPU 三策略、R01／R03／R04 决策记录和同一 profile 内候选复用仍然有效，但发生在此次 fork 接入前，不能替代接入后的真实 GPU 复验。真实 daemon 中断恢复、网页实时回显、团队共享 profile 查询与跨成员复用仍未验证。
+主项目检查覆盖三种策略、真实种子、证据清单、决策记录、daemon 停止与恢复、重试上限、失效清单和 schema 门禁；fork 检查覆盖受控决策、候选结果消费、原生缓存边界和用户策略约束。2026-11-11 的项目适配层真实 GPU 三策略仍作为历史证据；2026-11-13 又在 fork 接入后的独立 profile 上完成同一 `request_id` 的真实 GPU 复验，补齐了接入后的运行证据。真实 daemon 中断恢复、网页实时回显、团队共享 profile 查询与跨成员复用仍未验证。
 
 返回：[C 模块](../README_C.md) · [当前状态](status.md) · [实施计划](implementation_plan.md) · [仓库](../README.md)。

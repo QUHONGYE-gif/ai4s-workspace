@@ -1,6 +1,6 @@
 # R005：AiiDA ProteinMPNN 接入与两阶段最小验证
 
-状态：2026-11-05 的四次历史运行和 2026-11-11 的真实 GPU 三种复用策略复验均已完成；2026-11-13 又完成 fork 内核接入的 CPU mock 隔离验证。各部分分别保留当时的环境和身份，旧运行不能替代新链路证据。目标是验证真实任务接入、单任务缓存、局部重算和复用决策记录，不评价蛋白质功能或模型优劣。入口：[A 模块](../../docs/aiida_tasks.md)、[C 模块](../../README_C.md)、[当前状态](../../docs/status.md)。
+状态：2026-11-05 的四次历史运行和 2026-11-11 的真实 GPU 三种复用策略复验均已完成；2026-11-13 完成 fork 内核接入的 CPU mock 隔离验证，并在独立 profile `ai4s-wyh-reuse` 上完成同一 `request_id` 的真实 GPU 三策略复验。各部分分别保留当时的环境和身份，旧运行不能替代新链路证据。目标是验证真实任务接入、单任务缓存、局部重算和复用决策记录，不评价蛋白质功能或模型优劣。入口：[A 模块](../../docs/aiida_tasks.md)、[C 模块](../../README_C.md)、[当前状态](../../docs/status.md)。
 
 ## 代码与执行环境
 
@@ -189,6 +189,22 @@ reason_code: R04
 
 主项目检查覆盖三种复用策略、实际种子与启动次数、候选注入、决策记录、daemon 停止／重启恢复、重试上限、无效清单和 schema 门禁；fork 检查覆盖受控决策、跨类型候选结果消费、原生缓存边界和用户策略约束。默认 RabbitMQ 后端未配置，因此 fork 测试使用 ZeroMQ。
 
-本轮证明接入代码在隔离 CPU mock 环境中可用，不代表 fork 接入后的真实 GPU 三策略、网页实时回显、共享 profile、跨成员复用或真实 daemon 恢复已经验收。
+本轮证明接入代码在隔离 CPU mock 环境中可用；同一 fork 接入后的真实 GPU 同一请求复验见下一节，二者不能互相替代。
+
+## 2026-11-13 同一 request_id 三策略真实 GPU 复验（fork 接入）
+
+在 Coder 独立 profile `ai4s-wyh-reuse` 上执行 `scripts/verify_same_request_reuse_policies.py`。Python 指向独立 fork `/home/coder/aiida-core-dev-wyh-clean2/src/aiida/__init__.py`，daemon 使用独立环境，未修改共享 `ai4s` profile。真实运行使用 release `8907e667-py312-torch260cu124` 的 `examples/1CRN.pdb`，链 A、原种子 41、阈值 0.82、`top_k=2`。
+
+同一请求编号为 `req-f433676d-d4b0-429b-8b44-cb8a21813678`，三个 WorkChain 和两个实际 CalcJob 均为 `Finished [0]`，CalcJob 的 `cache_source` 均为 `null`：
+
+| 策略 | WorkChain PK／UUID | 决策 | 有效种子 | 模型启动 | CalcJob |
+| --- | --- | --- | ---: | ---: | --- |
+| `force_rerun` | PK 7 / `5d994ce7-bc9f-40ea-91f5-3ba20cefc644` | `rerun`／R03 | 41 | 1 | PK 8 / `da701192-e199-43f6-9993-117378de6067` |
+| `allow_reuse` | PK 24 / `88ecb08e-cb90-4acb-a09e-ea5da92bbfbf` | `reuse`／R01 | 41 | 0 | 无；`cached_from=da701192-e199-43f6-9993-117378de6067` |
+| `new_sample` | PK 33 / `79a480dc-737a-40b5-bc19-8021fc10a1b1` | `new_sample`／R04 | `883420096` | 1 | PK 34 / `1d25e8fd-a72a-46ab-93d5-a39d52a971e8` |
+
+脚本最终输出 `status=passed`、`decision_record_count=3`，按该 `request_id` 查回的决策记录恰好为 R03／R01／R04 三条。证据文件为 `experiments/R005-aiida-proteinmpnn/same-request-f433676d.json`。
+
+本次证明 fork 接入后的独立 profile 可以完成同一请求下的真实 GPU 三策略：强制重跑使用原种子启动真实 CalcJob，允许复用消费前一条真实结果且不启动 CalcJob，新采样更换种子后再次启动真实 CalcJob。它不证明网页实时回显、共享 profile、跨成员／跨 profile 复用或真实 daemon 中断恢复已经完成。
 
 返回：[A 模块](../../docs/aiida_tasks.md) · [C 模块](../../README_C.md) · [当前状态](../../docs/status.md) · [仓库](../../README.md)。

@@ -40,7 +40,7 @@ verdi daemon restart
 
 项目通过 `ProteinMPNNFilterWorkChain.get_reuse_configuration()` 向 fork 提交 `request_id`、`reuse_policy`、候选、决策函数和 `ReuseMaterialization.CONSUME_CANDIDATE`。`reuse` 注入已有候选结果且不创建 CalcJob；`rerun`／`new_sample` 禁止回退到原生整进程缓存；内核写入决策记录后，WorkChain 会再次校验策略、动作、候选和实际种子。
 
-验证使用独立环境 `~/.venvs/aiida-reuse`、独立 fork 工作区和临时 profile，未修改共享个人 profile。fork 为 `https://github.com/WuYuhui01/aiida-core.git` 的 `dev-wyh` 分支，验证提交为 `9a1e474f2`。
+验证使用独立环境 `~/.venvs/aiida-reuse`、独立 fork 工作区和独立 profile `ai4s-wyh-reuse`，未修改共享 `ai4s` profile。fork 为 `https://github.com/WuYuhui01/aiida-core.git` 的 `dev-wyh` 分支，验证提交为 `9a1e474f2`。
 
 ```bash
 source ~/.venvs/aiida-reuse/bin/activate
@@ -51,7 +51,7 @@ cd ~/aiida-core-dev-wyh-clean2
 python -m pytest -q -o addopts='' --broker-backend=zmq tests/engine/test_reuse.py
 ```
 
-2026-11-13 的结果分别为主项目 15 项 CPU mock 集成检查通过、fork 15 项复用内核测试通过。fork 测试必须使用 ZeroMQ，因为临时环境未配置默认 RabbitMQ。真实 GPU 三策略、网页实时回显、共享 profile 和跨成员复用仍需后续联调，不能由本轮 CPU mock 测试替代。
+2026-11-13 的结果分别为主项目 15 项 CPU mock 集成检查通过、fork 15 项复用内核测试通过；同日又在独立 profile `ai4s-wyh-reuse` 上完成同一 `request_id` 的真实 GPU 三策略复验，3 条决策记录分别为 R03／R01／R04。fork 测试必须使用 ZeroMQ，因为独立环境未配置默认 RabbitMQ。网页实时回显、共享 profile 和跨成员复用仍需后续联调，不能由本轮 CPU mock 或单机真实运行替代。
 
 使用指向 `mock_mpnn.py` 的本人 `InstalledCode`，调用 `submit_workchain("mock-mpnn@localhost", threshold=1.08, top_k=2)`。mock 有 40% 的随机失败概率，仅用于观察重试，不能据此评价真实模型可靠性。mock Code 必须声明 `ai4s.light-mpnn`；真实 Code 未声明默认插件时回退到 `ai4s.proteinmpnn`。
 
