@@ -1,6 +1,6 @@
 # C模块：编排、重算与恢复
 
-当前提供推理 CalcJob → 清单门禁 → 筛选 calcfunction 的两阶段 WorkChain，可调用轻量 mock 或 [A 的真实 ProteinMPNN 任务](docs/aiida_tasks.md)。WorkChain 使用 AiiDA 原生 `submit`、outline 等待和持久化上下文；推理与筛选参数分开输入，上游结果通过原生 `Dict` 端口连接。真实任务和仅重筛选的历史运行见 [R005 记录](experiments/R005-aiida-proteinmpnn/record.md)，整体进展见 [当前状态](docs/status.md)。
+当前提供推理 CalcJob → 清单门禁 → 筛选 calcfunction 的两阶段 WorkChain，可调用轻量 mock 或 [A 的真实 ProteinMPNN 任务](docs/aiida_tasks.md)。WorkChain 使用 AiiDA 原生 `submit`、outline 等待和持久化上下文；推理与筛选参数分开输入，上游结果通过原生 `Dict` 端口连接。复用策略已通过 `get_reuse_configuration()` 接入团队 AiiDA fork，内核接入与验证命令见下文；完整字段见 [复用决策](docs/reuse_decision.md)。真实任务和仅重筛选的历史运行见 [R005 记录](experiments/R005-aiida-proteinmpnn/record.md)，整体进展见 [当前状态](docs/status.md)。
 
 ## 流程与公共端口
 
@@ -35,6 +35,23 @@ verdi daemon restart
 ```
 
 首次启动可用 `verdi daemon start 1`。插件新增或代码修改后，需要刷新 editable 安装并重启本人 daemon，确保 worker 加载新模块；已有终止任务保留，另行提交新任务验证。不要操作其他成员的 daemon。
+
+## AiiDA 内核复用接入与隔离验证
+
+项目通过 `ProteinMPNNFilterWorkChain.get_reuse_configuration()` 向 fork 提交 `request_id`、`reuse_policy`、候选、决策函数和 `ReuseMaterialization.CONSUME_CANDIDATE`。`reuse` 注入已有候选结果且不创建 CalcJob；`rerun`／`new_sample` 禁止回退到原生整进程缓存；内核写入决策记录后，WorkChain 会再次校验策略、动作、候选和实际种子。
+
+验证使用独立环境 `~/.venvs/aiida-reuse`、独立 fork 工作区和临时 profile，未修改共享个人 profile。fork 为 `https://github.com/WuYuhui01/aiida-core.git` 的 `dev-wyh` 分支，验证提交为 `9a1e474f2`。
+
+```bash
+source ~/.venvs/aiida-reuse/bin/activate
+cd ~/ai4s-workspace
+python tests/test_aiida_workflows.py
+
+cd ~/aiida-core-dev-wyh-clean2
+python -m pytest -q -o addopts='' --broker-backend=zmq tests/engine/test_reuse.py
+```
+
+2026-11-13 的结果分别为主项目 15 项 CPU mock 集成检查通过、fork 15 项复用内核测试通过。fork 测试必须使用 ZeroMQ，因为临时环境未配置默认 RabbitMQ。真实 GPU 三策略、网页实时回显、共享 profile 和跨成员复用仍需后续联调，不能由本轮 CPU mock 测试替代。
 
 使用指向 `mock_mpnn.py` 的本人 `InstalledCode`，调用 `submit_workchain("mock-mpnn@localhost", threshold=1.08, top_k=2)`。mock 有 40% 的随机失败概率，仅用于观察重试，不能据此评价真实模型可靠性。mock Code 必须声明 `ai4s.light-mpnn`；真实 Code 未声明默认插件时回退到 `ai4s.proteinmpnn`。
 

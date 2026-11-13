@@ -1,6 +1,6 @@
 # A 模块：ProteinMPNN 单任务接入
 
-本模块通过 AiiDA 原生 CalcJob 和 Parser 调用已部署的 ProteinMPNN，提供独立提交、输出校验和产物节点；与 C 的组合方式见 [工作流说明](../README_C.md)，已有执行证据见 [运行记录](../experiments/R005-aiida-proteinmpnn/record.md)。当前进展见 [状态](status.md)。
+本模块通过 AiiDA 原生 CalcJob 和 Parser 调用已部署的 ProteinMPNN，提供独立提交、输出校验和产物节点；与 C 的组合方式见 [工作流说明](../README_C.md)，复用内核接入见 [复用决策](reuse_decision.md)，已有执行证据见 [运行记录](../experiments/R005-aiida-proteinmpnn/record.md)。当前进展见 [状态](status.md)。
 
 ## 环境与入口
 
@@ -16,6 +16,8 @@ verdi plugin list aiida.parsers ai4s.proteinmpnn
 ```
 
 `aiida-core` 与 NumPy 由现有 AiiDA 环境提供，不通过工作台的 `uv.lock` 安装。通用依赖与个人配置规则见 [运行要求](environment.md)。安装或更新插件后，在本人无运行任务时启动或重启本人 daemon，使其加载相同源码；不要操作其他成员的 daemon。
+
+本轮 fork 内核接入验证使用独立环境 `~/.venvs/aiida-reuse` 和临时 profile，未修改共享的个人 `ai4s` profile；fork 地址、提交和测试命令见 [C 模块的内核验证说明](../README_C.md#aiida-内核复用接入与隔离验证)。
 
 本人 profile 还需存在 `localhost` Computer（本地传输、direct 调度），以及以下 Code。首次注册前先用 `verdi code list` 核对，已有 Code 不重复创建：
 

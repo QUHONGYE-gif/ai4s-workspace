@@ -1,6 +1,6 @@
 # R005：AiiDA ProteinMPNN 接入与两阶段最小验证
 
-状态：2026-11-05 的四次历史运行和 2026-11-11 的真实 GPU 三种复用策略复验均已完成；两部分分别保留当时的环境和身份，旧运行不能替代新链路证据。目标是验证真实任务接入、单任务缓存、局部重算和复用决策记录，不评价蛋白质功能或模型优劣。入口：[A 模块](../../docs/aiida_tasks.md)、[C 模块](../../README_C.md)、[当前状态](../../docs/status.md)。
+状态：2026-11-05 的四次历史运行和 2026-11-11 的真实 GPU 三种复用策略复验均已完成；2026-11-13 又完成 fork 内核接入的 CPU mock 隔离验证。各部分分别保留当时的环境和身份，旧运行不能替代新链路证据。目标是验证真实任务接入、单任务缓存、局部重算和复用决策记录，不评价蛋白质功能或模型优劣。入口：[A 模块](../../docs/aiida_tasks.md)、[C 模块](../../README_C.md)、[当前状态](../../docs/status.md)。
 
 ## 代码与执行环境
 
@@ -176,6 +176,19 @@ effective_seed: 3491716553
 reason_code: R04
 ```
 
-这次复验证明当前个人 profile 中的真实 ProteinMPNN CalcJob、两阶段筛选、三种复用策略和 `ai4s_decision_records` 查询均可用。`allow_reuse` 复用同一 profile 中由 PK 75 产生的真实结果候选，不是跨成员或跨 profile 共享证据。本次没有证明网页实时回显、真实 daemon 中断恢复或团队共享 profile；这些边界仍需后续联调。
+这次复验证明当前个人 profile 中的真实 ProteinMPNN CalcJob、两阶段筛选、三种复用策略和 `ai4s_decision_records` 查询均可用。`allow_reuse` 复用同一 profile 中由 PK 75 产生的真实结果候选，不是跨成员或跨 profile 共享证据。本次没有证明网页实时回显、真实 daemon 中断恢复或团队共享 profile；这些边界仍需后续联调。该次运行发生在此次 fork 内核接入之前，不能替代接入后的真实 GPU 复验。
+
+## 2026-11-13 AiiDA 内核接入隔离验证（CPU mock）
+
+本轮只验证项目 WorkChain 与团队 AiiDA fork 的接入和自动化测试，不运行真实 GPU 模型，也不修改共享 `ai4s` profile。fork 仓库为 `https://github.com/WuYuhui01/aiida-core.git`，分支 `dev-wyh`，验证提交 `9a1e474f2`；使用独立环境 `~/.venvs/aiida-reuse` 和临时 profile。
+
+| 验证项 | 命令 | 结果 |
+| --- | --- | --- |
+| 主项目 CPU mock 集成 | `python tests/test_aiida_workflows.py` | `Ran 15 tests`，`OK` |
+| fork 复用内核 | `python -m pytest -q -o addopts='' --broker-backend=zmq tests/engine/test_reuse.py` | `15 passed` |
+
+主项目检查覆盖三种复用策略、实际种子与启动次数、候选注入、决策记录、daemon 停止／重启恢复、重试上限、无效清单和 schema 门禁；fork 检查覆盖受控决策、跨类型候选结果消费、原生缓存边界和用户策略约束。默认 RabbitMQ 后端未配置，因此 fork 测试使用 ZeroMQ。
+
+本轮证明接入代码在隔离 CPU mock 环境中可用，不代表 fork 接入后的真实 GPU 三策略、网页实时回显、共享 profile、跨成员复用或真实 daemon 恢复已经验收。
 
 返回：[A 模块](../../docs/aiida_tasks.md) · [C 模块](../../README_C.md) · [当前状态](../../docs/status.md) · [仓库](../../README.md)。

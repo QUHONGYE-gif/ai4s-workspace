@@ -1,8 +1,16 @@
 # 复用决策与决策记录
 
-本页说明项目 WorkChain 适配层中的复用决策扩展点、候选映射、持久化记录和验证边界。字段口径与 [约定⑤](https://lcnzinmktf6r.feishu.cn/wiki/WRgGwqdcKiqvFNkwqSscY7pMn8c) 对齐，候选结构直接使用 [约定④](https://lcnzinmktf6r.feishu.cn/wiki/YH74w7cq6iZLdVkpVBBcMEtcnlc)。
+本页说明项目 WorkChain 与团队 AiiDA fork 之间的复用决策接入、候选映射、持久化记录和验证边界。字段口径与 [约定⑤](https://lcnzinmktf6r.feishu.cn/wiki/WRgGwqdcKiqvFNkwqSscY7pMn8c) 对齐，候选结构直接使用 [约定④](https://lcnzinmktf6r.feishu.cn/wiki/YH74w7cq6iZLdVkpVBBcMEtcnlc)。
 
-当前实现在 `ProteinMPNNFilterWorkChain` 中完成三种策略和决策记录适配。Windows 快速测试覆盖决策结构、策略选择、候选去重、记录替换和查询；Linux AiiDA 2.9.4 临时 profile 的完整 15 项 CPU mock 集成检查已通过；2026-11-11 又在授权 GPU 环境完成三种策略的真实复验：`allow_reuse` 复用真实结果节点且不创建 CalcJob，`force_rerun` 保留原种子重算，`new_sample` 使用新种子重算；决策记录分别可按 `request_id` 查回 R01／R03／R04。该实现仍是项目 WorkChain 适配层，不是团队 `aiida-core` fork 的内核改造。
+当前 `ProteinMPNNFilterWorkChain` 通过 `get_reuse_configuration()` 将 `request_id`、`reuse_policy`、候选、决策函数和 `materialization=CONSUME_CANDIDATE` 提交给团队 AiiDA fork；内核产生唯一决策记录后，WorkChain 再核对策略、动作、候选、实际种子和注入结果。2026-11-13 在 Coder 独立环境验证：主项目 15 项 CPU mock 集成检查通过，fork 的 `tests/engine/test_reuse.py` 使用 ZeroMQ 后端 15 项测试通过。2026-11-11 的授权 GPU 三策略复验发生在此次 fork 接入前，仍需在独立 profile 上按新链路复验。
+
+## 内核接入
+
+- fork 仓库：`https://github.com/WuYuhui01/aiida-core.git`，分支 `dev-wyh`，验证提交 `9a1e474f2`，基于 AiiDA 2.9.4。
+- `reuse`：内核选择候选后，项目使用 `ReuseMaterialization.CONSUME_CANDIDATE` 注入已有 AiiDA `Dict`，不创建 CalcJob，并继续通过原 schema 与清单门禁。
+- `rerun`／`new_sample`：内核明确返回重算动作，项目禁止回退到 AiiDA 原生整进程缓存；`new_sample` 的实际种子必须写入 CalcJob 输入和报告。
+- 自定义决策：只能返回用户策略允许的动作；`force_rerun` 只能返回 `rerun`，`new_sample` 只能返回 `new_sample`，`allow_reuse` 可以返回 `reuse` 或 `rerun`。
+- 持久化：内核写入决策记录，WorkChain 启动后校验记录恰好一条，并核对 `request_id`、`reuse_policy`、`process_uuid`、动作、候选 UUID 和实际种子。
 
 ## 三种策略
 
@@ -147,6 +155,8 @@ def choose(context):
 
 ## 验证边界
 
-Windows 快速测试覆盖决策结构、策略选择、候选去重、记录替换和查询；Linux AiiDA 2.9.4 临时 profile 的 15 项 CPU mock 集成检查通过，覆盖三种策略、真实种子、证据清单、决策记录、daemon 停止与恢复、重试上限、失效清单和 schema 门禁。2026-11-11 已在授权 GPU 环境验证三种策略的真实 WorkChain、实际种子和 R01／R03／R04 决策记录查询；其中 `allow_reuse` 复用同一 profile 内的真实结果候选。真实 daemon 中断恢复、网页实时回显、团队共享 profile 查询与跨成员复用仍未验证。
+2026-11-13 在 Coder 独立环境和临时 profile 中验证两条链路：主项目 `python tests/test_aiida_workflows.py` 的 15 项 CPU mock 集成检查通过；fork 的 `python -m pytest -q -o addopts='' --broker-backend=zmq tests/engine/test_reuse.py` 为 15 项通过。fork 测试必须使用 ZeroMQ，因为该独立环境未配置默认 RabbitMQ。
+
+主项目检查覆盖三种策略、真实种子、证据清单、决策记录、daemon 停止与恢复、重试上限、失效清单和 schema 门禁；fork 检查覆盖受控决策、候选结果消费、原生缓存边界和用户策略约束。2026-11-11 的真实 GPU 三策略、R01／R03／R04 决策记录和同一 profile 内候选复用仍然有效，但发生在此次 fork 接入前，不能替代接入后的真实 GPU 复验。真实 daemon 中断恢复、网页实时回显、团队共享 profile 查询与跨成员复用仍未验证。
 
 返回：[C 模块](../README_C.md) · [当前状态](status.md) · [实施计划](implementation_plan.md) · [仓库](../README.md)。
