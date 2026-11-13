@@ -1,5 +1,6 @@
 """Fast checks for manifest gates and attempt bookkeeping; no daemon or model."""
 
+import builtins
 import types
 
 import pytest
@@ -8,6 +9,7 @@ pytest.importorskip("aiida")
 
 from aiida.common.extendeddicts import AttributeDict
 
+import ai4s_workflows.workflows as workflows
 from ai4s_workflows.workflows import (
     MAX_ATTEMPTS,
     MAX_RETRY,
@@ -109,92 +111,329 @@ def test_report_details_expose_reuse_decision_and_effective_seed():
 
 
 
-class _DictData:
-    def __init__(self, data):
-        self._data = dict(data)
+class _FakeDict:
+    """Small AiiDA-Dict stand-in for pure logic tests without a profile."""
+
+    def __init__(self, data=None, *, uuid=None, creator=None, dict=None):
+        raw_data = dict if dict is not None else (data or {})
+        self._data = builtins.dict(raw_data)
+        self.uuid = uuid
+        self.creator = creator
 
     def get_dict(self):
         return dict(self._data)
 
+    def store(self):
+        return self
 
-def _decision_input_owner(inputs):
-    return types.SimpleNamespace(
-        ctx=AttributeDict(),
-        inputs=AttributeDict({
-            "mpnn_params": _DictData({"seed": 37}),
-            **inputs,
-        }),
-        invalid_reuse_request=lambda reason: ("invalid_reuse_request", reason),
+
+class _FakeList:
+    def __init__(self, values):
+        self._values = list(values)
+
+    def get_list(self):
+        return list(self._values)
+
+
+def _str(value):
+    return types.SimpleNamespace(value=value)
+
+
+def _inputs(**overrides):
+    inputs = {"mpnn_params": _FakeDict({"seed": 37})}
+    inputs.update(overrides)
+    return AttributeDict(inputs)
+
+
+REQUEST_ID = "req-6f1c2a9e-3b7d-4c51-9a0e-1d2f3c4b5a6e"
+PROCESS_UUID = "89fea7d1-1fdd-41c8-904d-788b674ab888"
+CANDIDATE_UUID = "f9633fef-132c-47d0-b81d-8f3644763518"
+SOURCE_UUID = "77f45c98-8471-4f88-8034-1e0198b3e0e7"
+
+
+def _record(
+    *,
+    request_id=REQUEST_ID,
+    process_uuid=PROCESS_UUID,
+    reuse_policy="allow_reuse",
+    action="reuse",
+    selected_candidate_uuid=CANDIDATE_UUID,
+    effective_seed=37,
+):
+    return {
+        "request_id": request_id,
+        "process_uuid": process_uuid,
+        "reuse_policy": reuse_policy,
+        "candidate_compare_list": [
+            {
+                "uuid": CANDIDATE_UUID,
+                "fingerprint": "fe5efe41b0d1fd42",
+                "qualified": True,
+            }
+        ],
+        "final_decision": {
+            "action": action,
+            "selected_candidate_uuid": selected_candidate_uuid,
+            "effective_seed": effective_seed,
+        },
+        "reason": {"reason_code": "R01", "reason_text": "命中合格候选"},
+        "timestamp": "2026-11-11T00:00:00Z",
+    }
+
+
+def _bind_workchain_helpers(owner):
+    """Attach the class helpers that the production WorkChain receives by inheritance."""
+    owner._present_reuse_ports = lambda inputs: ProteinMPNNFilterWorkChain._present_reuse_ports(inputs)
+    owner._reuse_request_problem = lambda inputs, **kwargs: ProteinMPNNFilterWorkChain._reuse_request_problem(
+        inputs, **kwargs
     )
+    return owner
+
+
+def _owner(monkeypatch, inputs, records=()):
+    monkeypatch.setattr(
+        workflows,
+        "get_reuse_decision_records",
+        lambda _node: [dict(record) for record in records],
+    )
+    owner = types.SimpleNamespace(
+        ctx=AttributeDict(),
+        inputs=inputs,
+        node=types.SimpleNamespace(uuid=PROCESS_UUID),
+        invalid_reuse_request=lambda reason: ("invalid_reuse_request", reason),
+        reuse_result_unavailable=lambda reason: ("reuse_result_unavailable", reason),
+        report=lambda _message: None,
+    )
+    return _bind_workchain_helpers(owner)
+
+
+def test_plain_run_does_not_consult_kernel(monkeypatch):
+    def unexpected_query(_node):
+        raise AssertionError("kernel must not be queried without reuse ports")
+
+    monkeypatch.setattr(workflows, "get_reuse_decision_records", unexpected_query)
+    owner = _bind_workchain_helpers(
+        types.SimpleNamespace(
+            ctx=AttributeDict(),
+            inputs=_inputs(),
+            report=lambda _message: None,
+        )
+    )
+
+    assert ProteinMPNNFilterWorkChain.initialize_ctx(owner) is None
+    assert owner.ctx.decision_record is None
+    assert owner.ctx.effective_seed == 37
 
 
 @pytest.mark.parametrize(
-    ("inputs", "expected"),
+    "inputs",
     [
-        (
-            {"reuse_policy": types.SimpleNamespace(value="allow_reuse")},
-            "必须同时提供",
+        {"reuse_policy": _str("allow_reuse")},
+        {"request_id": _str(REQUEST_ID)},
+        {"candidate_results": _FakeDict({})},
+    ],
+)
+def test_partial_reuse_ports_are_rejected(monkeypatch, inputs):
+    owner = _owner(monkeypatch, _inputs(**inputs), records=[])
+
+    outcome = ProteinMPNNFilterWorkChain.initialize_ctx(owner)
+
+    assert outcome[0] == "invalid_reuse_request"
+    assert "request_id and reuse_policy must be supplied together" in outcome[1]
+
+
+def test_reuse_ports_and_existing_result_are_not_mixed_without_kernel_record(monkeypatch):
+    owner = _owner(
+        monkeypatch,
+        _inputs(
+            request_id=_str(REQUEST_ID),
+            reuse_policy=_str("allow_reuse"),
+            existing_mpnn_result=object(),
         ),
-        (
-            {"request_id": types.SimpleNamespace(value="req-6f1c2a9e-3b7d-4c51-9a0e-1d2f3c4b5a6e")},
-            "必须同时提供",
+        records=[],
+    )
+
+    outcome = ProteinMPNNFilterWorkChain.initialize_ctx(owner)
+
+    assert outcome[0] == "invalid_reuse_request"
+    assert "cannot be combined" in outcome[1]
+
+
+@pytest.mark.parametrize("records", [[], [_record(), _record()]])
+def test_kernel_must_persist_exactly_one_decision_record(monkeypatch, records):
+    owner = _owner(
+        monkeypatch,
+        _inputs(
+            request_id=_str(REQUEST_ID),
+            reuse_policy=_str("allow_reuse"),
         ),
+        records=records,
+    )
+
+    outcome = ProteinMPNNFilterWorkChain.initialize_ctx(owner)
+
+    assert outcome[0] == "invalid_reuse_request"
+    assert "exactly one" in outcome[1]
+
+
+@pytest.mark.parametrize(
+    ("record", "expected"),
+    [
+        (_record(request_id="req-11111111-1111-4111-8111-111111111111"), "request_id"),
+        (_record(reuse_policy="force_rerun"), "reuse_policy"),
         (
-            {"candidate_results": _DictData({})},
-            "必须与 request_id、reuse_policy 一同提供",
-        ),
-        (
-            {
-                "request_id": types.SimpleNamespace(value="req-6f1c2a9e-3b7d-4c51-9a0e-1d2f3c4b5a6e"),
-                "reuse_policy": types.SimpleNamespace(value="allow_reuse"),
-                "existing_mpnn_result": object(),
-            },
-            "不能同时使用",
+            _record(process_uuid="599e385a-cb5a-4de7-9180-0ffdde836a8f"),
+            "process_uuid",
         ),
     ],
 )
-def test_reuse_decision_ports_are_required_together_and_exclusive(inputs, expected):
-    outcome = ProteinMPNNFilterWorkChain.initialize_ctx(_decision_input_owner(inputs))
+def test_kernel_record_identity_must_match_the_workchain(monkeypatch, record, expected):
+    owner = _owner(
+        monkeypatch,
+        _inputs(
+            request_id=_str(REQUEST_ID),
+            reuse_policy=_str("allow_reuse"),
+        ),
+        records=[record],
+    )
+
+    outcome = ProteinMPNNFilterWorkChain.initialize_ctx(owner)
 
     assert outcome[0] == "invalid_reuse_request"
     assert expected in outcome[1]
 
 
-@pytest.mark.parametrize(
-    ("candidate_results", "expected"),
-    [
-        ({}, "唯一定位"),
-        (
-            {
-                "f9633fef-132c-47d0-b81d-8f3644763518::fe5efe41b0d1fd42":
-                    "6d078da7-3963-4e53-acec-1fb51dc84531"
-            },
-            "不一致",
+def test_kernel_cannot_override_explicit_force_rerun_policy(monkeypatch):
+    owner = _owner(
+        monkeypatch,
+        _inputs(
+            request_id=_str(REQUEST_ID),
+            reuse_policy=_str("force_rerun"),
         ),
-    ],
-)
-def test_reuse_requires_an_unambiguous_candidate_result_mapping(candidate_results, expected):
-    decision_record = {
-        "final_decision": {
-            "action": "reuse",
-            "selected_candidate_uuid": "f9633fef-132c-47d0-b81d-8f3644763518",
-            "effective_seed": 37,
-        },
-        "candidate_compare_list": [
-            {
-                "uuid": "f9633fef-132c-47d0-b81d-8f3644763518",
-                "fingerprint": "fe5efe41b0d1fd42",
-                "qualified": True,
-            }
-        ],
-    }
-    owner = types.SimpleNamespace(
-        ctx=AttributeDict({"decision_record": decision_record}),
-        inputs=AttributeDict({"candidate_results": _DictData(candidate_results)}),
-        reuse_result_unavailable=lambda reason: ("reuse_result_unavailable", reason),
+        records=[_record(reuse_policy="force_rerun", action="reuse")],
     )
 
-    outcome = ProteinMPNNFilterWorkChain.maybe_skip_inference(owner)
+    outcome = ProteinMPNNFilterWorkChain.initialize_ctx(owner)
 
-    assert outcome[0] == "reuse_result_unavailable"
-    assert expected in outcome[1]
+    assert outcome[0] == "invalid_reuse_request"
+    assert "not allowed by policy" in outcome[1]
+
+
+def test_rewritten_effective_seed_must_be_present_in_mpnn_params(monkeypatch):
+    owner = _owner(
+        monkeypatch,
+        _inputs(
+            request_id=_str(REQUEST_ID),
+            reuse_policy=_str("new_sample"),
+        ),
+        records=[
+            _record(
+                reuse_policy="new_sample",
+                action="new_sample",
+                selected_candidate_uuid=None,
+                effective_seed=99,
+            )
+        ],
+    )
+
+    outcome = ProteinMPNNFilterWorkChain.initialize_ctx(owner)
+
+    assert outcome[0] == "invalid_reuse_request"
+    assert "effective_seed was not applied" in outcome[1]
+
+
+def test_kernel_reuse_records_candidate_and_source(monkeypatch):
+    result = _FakeDict(
+        {"schema_version": "ai4s-artifacts-1"},
+        uuid=CANDIDATE_UUID,
+        creator=types.SimpleNamespace(uuid=SOURCE_UUID),
+    )
+    monkeypatch.setattr(workflows, "Dict", _FakeDict)
+    owner = _owner(
+        monkeypatch,
+        _inputs(
+            request_id=_str(REQUEST_ID),
+            reuse_policy=_str("allow_reuse"),
+            candidate_results=_FakeDict(
+                {f"{CANDIDATE_UUID}::fe5efe41b0d1fd42": CANDIDATE_UUID}
+            ),
+            existing_mpnn_result=result,
+        ),
+        records=[_record()],
+    )
+
+    assert ProteinMPNNFilterWorkChain.initialize_ctx(owner) is None
+    assert ProteinMPNNFilterWorkChain.maybe_skip_inference(owner) is None
+
+    assert owner.ctx.skip_submit is True
+    assert owner.ctx.mpnn_result is result
+    assert owner.ctx.cached_from == SOURCE_UUID
+    assert owner.ctx.mpnn_cache_source == SOURCE_UUID
+    report = ProteinMPNNFilterWorkChain._report_details(owner)
+    assert report["reuse_decision"] == "reuse"
+    assert report["cached_from"] == SOURCE_UUID
+
+
+def test_legacy_filter_only_path_still_accepts_existing_result():
+    result = object()
+    owner = types.SimpleNamespace(
+        ctx=AttributeDict({"decision_record": None}),
+        inputs=AttributeDict({"existing_mpnn_result": result}),
+    )
+
+    ProteinMPNNFilterWorkChain.maybe_skip_inference(owner)
+
+    assert owner.ctx.mpnn_result is result
+    assert owner.ctx.skip_submit is True
+
+
+def test_kernel_rerun_keeps_original_seed():
+    inputs = _inputs()
+    decision = types.SimpleNamespace(
+        action=types.SimpleNamespace(value="rerun"),
+        effective_seed=37,
+        selected_candidate_uuid=None,
+        candidate_compare_list=[],
+    )
+
+    rewritten = ProteinMPNNFilterWorkChain._rewrite_reuse_inputs(None, inputs, decision)
+
+    assert rewritten["mpnn_params"].get_dict()["seed"] == 37
+
+
+def test_kernel_new_sample_uses_effective_seed(monkeypatch):
+    monkeypatch.setattr(workflows, "Dict", _FakeDict)
+    inputs = _inputs(mpnn_params=_FakeDict({"seed": 37}))
+    decision = types.SimpleNamespace(
+        action=types.SimpleNamespace(value="new_sample"),
+        effective_seed=99,
+        selected_candidate_uuid=None,
+        candidate_compare_list=[],
+    )
+
+    rewritten = ProteinMPNNFilterWorkChain._rewrite_reuse_inputs(None, inputs, decision)
+
+    assert rewritten["mpnn_params"].get_dict()["seed"] == 99
+
+
+def test_kernel_reuse_rewrite_injects_the_selected_result(monkeypatch):
+    result = _FakeDict({}, uuid=CANDIDATE_UUID, creator=types.SimpleNamespace(uuid=SOURCE_UUID))
+    monkeypatch.setattr(workflows, "Dict", _FakeDict)
+    monkeypatch.setattr(workflows, "load_node", lambda uuid_value: result)
+    inputs = _inputs(
+        candidate_results=_FakeDict(
+            {f"{CANDIDATE_UUID}::fe5efe41b0d1fd42": CANDIDATE_UUID}
+        )
+    )
+    decision = types.SimpleNamespace(
+        action=types.SimpleNamespace(value="reuse"),
+        effective_seed=37,
+        selected_candidate_uuid=CANDIDATE_UUID,
+        candidate_compare_list=[
+            {"uuid": CANDIDATE_UUID, "fingerprint": "fe5efe41b0d1fd42"}
+        ],
+    )
+
+    rewritten = ProteinMPNNFilterWorkChain._rewrite_reuse_inputs(None, inputs, decision)
+
+    assert rewritten["existing_mpnn_result"] is result
