@@ -153,6 +153,25 @@ def choose(context):
 | `208` | 复用请求字段不完整、互斥或取值非法 |
 | `209` | 已选择候选无法通过 `candidate_results` 唯一定位，或结果节点不可加载／不可记录来源 |
 
+## 同一 request_id 三策略复验
+
+`scripts/verify_same_request_reuse_policies.py` 用于在独立 profile 中按同一 `request_id` 依次运行 `force_rerun`、`allow_reuse`、`new_sample`：第一条产生真实结果，第二条消费该结果且不创建 CalcJob，第三条使用不同种子再次启动。脚本不创建或迁移 profile，默认拒绝共享 `ai4s` profile，也不会覆盖已存在的证据文件。成功或失败都会把输入、三个 WorkChain 的 PK／UUID、CalcJob、`selection_report` 和按 `request_id` 查询到的决策记录写入 `experiments/R005-aiida-proteinmpnn/same-request-<request 前 8 位>.json`。
+
+执行前必须确认 Python 指向团队 fork、daemon 使用 `~/.venvs/aiida-reuse/bin/python`，然后运行：
+
+```bash
+cd ~/ai4s-workspace
+source ~/.venvs/aiida-reuse/bin/activate
+python scripts/verify_same_request_reuse_policies.py \
+  --profile <独立 profile 名称> \
+  --code proteinmpnn-8907e667@localhost \
+  --pdb /opt/ai4s/proteinmpnn/releases/8907e667-py312-torch260cu124/examples/1CRN.pdb \
+  --seed 41 \
+  --member 吴昱慧
+```
+
+脚本默认生成新的 request id；不要把此前 PK 74／94／107 的三个不同请求号拼成同一请求证据。当前脚本已提供，但尚未在独立 profile 上执行真实 GPU 复验。
+
 ## 验证边界
 
 2026-11-13 在 Coder 独立环境和临时 profile 中验证两条链路：主项目 `python tests/test_aiida_workflows.py` 的 15 项 CPU mock 集成检查通过；fork 的 `python -m pytest -q -o addopts='' --broker-backend=zmq tests/engine/test_reuse.py` 为 15 项通过。fork 测试必须使用 ZeroMQ，因为该独立环境未配置默认 RabbitMQ。

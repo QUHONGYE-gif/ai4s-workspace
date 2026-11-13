@@ -373,80 +373,37 @@ if {invalid_manifest!r}:
         )
 
     def test_three_reuse_policies_launch_only_when_required_and_persist_records(self):
+        import hashlib
         from aiida.engine import get_reuse_decision_records
+        from ai4s_workflows import find_decisions_by_request
         from ai4s_workflows.samples import count_mpnn_launches, make_test_pdb
         from ai4s_workflows.workflows import ProteinMPNNFilterWorkChain
 
-        request_ids = {
-            "allow_reuse": "req-6f1c2a9e-3b7d-4c51-9a0e-1d2f3c4b5a6e",
-            "force_rerun": "req-7f2d3b0f-4c8e-4d62-a1f0-2e3c5d7b9a11",
-            "new_sample": "req-8a3e4c10-5d9f-4e73-b2a1-3f4d6e8c0b22",
-        }
+        request_id = "req-6f1c2a9e-3b7d-4c51-9a0e-1d2f3c4b5a6e"
         params_data = {"version": "v1.0", "num_seq": 4, "seed": 37}
         code = self.code("decision-source")
         pdb_file = make_test_pdb()
         params = self.orm.Dict(dict=params_data)
         filter_params = self.orm.Dict(dict={"score_threshold": 1.08, "top_k": 2})
 
-        source = self.wait(self.submit(
-            ProteinMPNNFilterWorkChain,
-            code=code,
-            pdb_file=pdb_file,
-            mpnn_params=params,
-            filter_params=filter_params,
-        ))
-        self.assert_ok(source)
-        source_calc = next(node for node in source.called if isinstance(node, self.orm.CalcJobNode))
-        source_result = source_calc.outputs.result
-        fingerprint = "fe5efe41b0d1fd42"
-        candidate = {
-            "uuid": source_result.uuid,
-            "fingerprint": fingerprint,
-            "member": "吴昱慧",
-            "location": f"profile://workflow-tests/{source_result.uuid}/result.json",
-            "size_bytes": 128,
-            "elapsed_s": 0,
-            "qualified": True,
-            "reason": None,
-            "note": f"cached_from={source_calc.uuid}",
-        }
-        candidates = self.orm.List(list=[candidate])
-        candidate_results = self.orm.Dict(dict={
-            f"{source_result.uuid}::{fingerprint}": source_result.uuid,
-        })
-
-        def run_with_policy(policy):
-            request_id = request_ids[policy]
-            node = self.wait(self.submit(
-                ProteinMPNNFilterWorkChain,
-                code=code,
-                pdb_file=pdb_file,
-                mpnn_params=params,
-                filter_params=filter_params,
-                request_id=self.orm.Str(request_id),
-                reuse_policy=self.orm.Str(policy),
-                reuse_candidates=candidates,
-                candidate_results=candidate_results,
-            ))
+        def run_with_policy(policy, candidates=None, candidate_results=None):
+            inputs = {
+                "code": code,
+                "pdb_file": pdb_file,
+                "mpnn_params": params,
+                "filter_params": filter_params,
+                "request_id": self.orm.Str(request_id),
+                "reuse_policy": self.orm.Str(policy),
+            }
+            if candidates is not None:
+                inputs["reuse_candidates"] = candidates
+                inputs["candidate_results"] = candidate_results
+            node = self.wait(self.submit(ProteinMPNNFilterWorkChain, **inputs))
             records = get_reuse_decision_records(node)
             self.assertEqual(len(records), 1, self.diagnostics(node))
             self.assertEqual(records[0]["request_id"], request_id)
             self.assertEqual(records[0]["reuse_policy"], policy)
             return node
-
-        reused = run_with_policy("allow_reuse")
-        self.assert_ok(reused)
-        reuse_report = reused.outputs.selection_report.get_dict()
-        self.assertEqual(reuse_report["reuse_decision"], "reuse")
-        self.assertEqual(reuse_report["reason_code"], "R01")
-        self.assertEqual(reuse_report["model_launches"], 0)
-        self.assertEqual(reuse_report["attempt_count"], 0)
-        self.assertEqual(reuse_report["cached_from"], source_calc.uuid)
-        self.assertEqual(reuse_report["mpnn_cache_source"], source_calc.uuid)
-        self.assertEqual([n for n in reused.called if isinstance(n, self.orm.CalcJobNode)], [])
-        self.assertEqual(count_mpnn_launches(reused.pk), 0)
-        self.assertIsNone(reused.base.caching.get_cache_source())
-        self.assertEqual((self.root / "decision-source.count").read_text(), "1")
 
         forced = run_with_policy("force_rerun")
         self.assert_ok(forced)
@@ -460,9 +417,45 @@ if {invalid_manifest!r}:
         self.assertEqual(force_children[0].inputs.params.get_dict()["seed"], 37)
         self.assertIsNone(forced.base.caching.get_cache_source())
         self.assertIsNone(force_children[0].base.caching.get_cache_source())
-        self.assertEqual((self.root / "decision-source.count").read_text(), "2")
+        self.assertEqual((self.root / "decision-source.count").read_text(), "1")
 
-        sampled = run_with_policy("new_sample")
+        source_calc = force_children[0]
+        source_result = source_calc.outputs.result
+        result_payload = json.dumps(
+            source_result.get_dict(), ensure_ascii=False, sort_keys=True
+        ).encode("utf-8")
+        fingerprint = hashlib.sha256(result_payload).hexdigest()[:16]
+        candidate = {
+            "uuid": source_result.uuid,
+            "fingerprint": fingerprint,
+            "member": "吴昱慧",
+            "location": f"profile://workflow-tests/{source_result.uuid}/result.json",
+            "size_bytes": len(result_payload),
+            "elapsed_s": 0,
+            "qualified": True,
+            "reason": None,
+            "note": f"cached_from={source_calc.uuid}",
+        }
+        candidates = self.orm.List(list=[candidate])
+        candidate_results = self.orm.Dict(dict={
+            f"{source_result.uuid}::{fingerprint}": source_result.uuid,
+        })
+
+        reused = run_with_policy("allow_reuse", candidates, candidate_results)
+        self.assert_ok(reused)
+        reuse_report = reused.outputs.selection_report.get_dict()
+        self.assertEqual(reuse_report["reuse_decision"], "reuse")
+        self.assertEqual(reuse_report["reason_code"], "R01")
+        self.assertEqual(reuse_report["model_launches"], 0)
+        self.assertEqual(reuse_report["attempt_count"], 0)
+        self.assertEqual(reuse_report["cached_from"], source_calc.uuid)
+        self.assertEqual(reuse_report["mpnn_cache_source"], source_calc.uuid)
+        self.assertEqual([n for n in reused.called if isinstance(n, self.orm.CalcJobNode)], [])
+        self.assertEqual(count_mpnn_launches(reused.pk), 0)
+        self.assertIsNone(reused.base.caching.get_cache_source())
+        self.assertEqual((self.root / "decision-source.count").read_text(), "1")
+
+        sampled = run_with_policy("new_sample", candidates, candidate_results)
         self.assert_ok(sampled)
         sample_report = sampled.outputs.selection_report.get_dict()
         self.assertEqual(sample_report["reuse_decision"], "new_sample")
@@ -477,7 +470,18 @@ if {invalid_manifest!r}:
         )
         self.assertIsNone(sampled.base.caching.get_cache_source())
         self.assertIsNone(sample_children[0].base.caching.get_cache_source())
-        self.assertEqual((self.root / "decision-source.count").read_text(), "3")
+        self.assertEqual((self.root / "decision-source.count").read_text(), "2")
+
+        records = find_decisions_by_request(request_id)
+        self.assertEqual(len(records), 3, self.diagnostics(sampled))
+        self.assertEqual(
+            {record["reuse_policy"] for record in records},
+            {"allow_reuse", "force_rerun", "new_sample"},
+        )
+        self.assertEqual(
+            {record["process_uuid"] for record in records},
+            {reused.uuid, forced.uuid, sampled.uuid},
+        )
 
     def test_retry_limit_returns_exit_code(self):
         node = self.workflow(self.code("always-fail", failures=100))
