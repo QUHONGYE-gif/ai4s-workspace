@@ -11,7 +11,7 @@
 - [PyMOL](../tools/pymol_web/README.md)支持真实结构上传、显示切换和命令会话。[独立蛋白质设计程序](protein_pipeline.md)保留 RFdiffusion → ProteinMPNN → 可选 MMseqs2 → Boltz-2 的配置及执行入口。Docker + Coder 用于成员个人开发与预览。
 - PR #11 精简了重复声明／决策文档、内核补丁副本、旧三策略验收入口和仅比对文案／副本的断言。业务源码、运行配置和既有实验 JSON 保持不变；历史源码链接保留在相应运行记录中。
 
-- 个人分支接入工作区策略面板，支持手动与 Agent 提案确认、版本历史和撤回。真实实验采用保存的默认复用方式。阈值、预算和保留策略当前用于固定示例验证，见 [工作区策略](engine_service.md#工作区策略)。
+- 个人分支接入工作区策略面板，支持手动与 Agent 提案确认、版本历史和撤回。真实实验采用保存的默认复用方式。阈值、预算和保留策略当前用于固定示例验证，见 [工作区策略](engine_service.md#工作区策略) 和 [R008 网页策略验收](../experiments/R008-workspace-policy/record.md)。
 
 ## 限制
 

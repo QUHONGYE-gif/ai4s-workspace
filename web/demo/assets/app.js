@@ -3361,7 +3361,7 @@ ${esc(policyDraft.description)}</textarea
       /* HTML */ `<section class="policy-editor" id="policy-editor" aria-label="工作区默认策略"></section>
         <details class="reuse-policies"><summary>模拟对比</summary>
         <div id="reuse-explorer"></div>
-        <p class="small muted policy-intro">用同一组任务，比较不同策略的预计用时。</p>
+        <div class="section-label"><span>用同一组任务比较预计用时</span><button class="btn" data-nav="newpolicy">新增模拟策略</button></div>
         <div class="policy-grid">
           ${cards
             .map((c) => {
