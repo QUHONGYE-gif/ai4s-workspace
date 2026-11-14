@@ -1,5 +1,7 @@
 # C模块：编排、重算与恢复
 
+当前受控复用通过统一 AiiDA 内核执行，候选与记录约定见[复用决策](docs/reuse_decision.md)；模型身份、跨成员归档传递和真实验证见[引擎服务](docs/engine_service.md)与[R007](experiments/R007-member-reuse/record.md)。
+
 当前提供推理 CalcJob → 清单门禁 → 筛选 calcfunction 的两阶段 WorkChain，可调用轻量 mock 或 [A 的真实 ProteinMPNN 任务](docs/aiida_tasks.md)。WorkChain 使用 AiiDA 原生 `submit`、outline 等待和持久化上下文；推理与筛选参数分开输入，上游结果通过原生 `Dict` 端口连接。真实任务和仅重筛选的历史运行见 [R005 记录](experiments/R005-aiida-proteinmpnn/record.md)，整体进展见 [当前状态](docs/status.md)。
 
 ## 流程与公共端口

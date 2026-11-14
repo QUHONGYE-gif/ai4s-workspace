@@ -1,3 +1,4 @@
+@import url("./declaration.css");
 /* Embedded Agent controls, forms, chat, and port-aware canvas. */
 * {
   box-sizing: border-box;
@@ -986,6 +987,48 @@ summary {
   flex-wrap: wrap;
   gap: 8px;
 }
+.ai-toolbar-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.workspace-more {
+  position: relative;
+}
+.workspace-more > summary {
+  min-height: 40px;
+  padding: 10px;
+  color: var(--muted);
+}
+.workspace-more > div {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 10;
+  display: grid;
+  gap: 8px;
+  min-width: 200px;
+  padding: 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+.node-definition-context {
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--gray-25);
+  font-size: var(--text-sm);
+}
+.node-definition-context p {
+  margin: 6px 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: 1.7;
+}
 .ai-api-status {
   color: var(--muted);
   font-size: var(--text-xs);
@@ -1252,3 +1295,5 @@ summary {
 .chat-examples { margin: 8px 16px; font-size: var(--text-xs); }
 .chat-examples summary { color: var(--muted); cursor: pointer; }
 .chat-examples button { width: 100%; margin-top: 8px; padding: 8px 12px; text-align: left; white-space: normal; font-size: inherit; }
+.danger-text { color: var(--danger, #b42318); }
+.workflow-empty { padding: 32px; text-align: center; }

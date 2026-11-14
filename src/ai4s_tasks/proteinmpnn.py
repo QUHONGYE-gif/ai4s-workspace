@@ -48,7 +48,7 @@ def validate_params(value, _context):
 class ProteinMPNNCalculation(CalcJob):
     """Design sequences for one PDB structure with the shared ProteinMPNN."""
 
-    CACHE_VERSION = 3
+    CACHE_VERSION = 4
 
     @classmethod
     def define(cls, spec):

@@ -1,7 +1,8 @@
 import { api, post, operationId, escapeHTML as esc, download } from './api.js';
 import { renderMessage } from './message.js';
 import { createGraph } from './graph.js';
-export async function mountAssistant(host, { onApply, onExperiment }) {
+import { mountTaskRegistry } from './task-registry.js';
+export async function mountAssistant(host, { onApply, onExperiment, view = 'editor' }) {
     const root = host.attachShadow({ mode: 'open' });
     const response = await fetch(new URL('./workspace.html', import.meta.url));
     if (!response.ok) {
@@ -18,10 +19,14 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
     root.prepend(stylesheet);
     await stylesLoaded;
     const $ = id => root.getElementById(id);
+    if (view === 'registry') return mountTaskRegistry($('declaration-registration'));
+    $('declaration-registration').hidden = true;
+    $('legacy-workspace').hidden = false;
     const graph = createGraph(root, { onMove: (node_id, position) => saveGraphOperations([{ type: 'move_node', node_id, ...position }]), onError: showError });
     const { drawNodes, drawWires, destroy } = graph;
     const lifecycle = new AbortController();
-    let state, models = {}, files = [], selected = null, tab = 'params', busy = false, dirty = false;
+    let state, models = {}, taskCatalog = {tasks: []}, files = [], selected = null, tab = 'params', busy = false, dirty = false;
+    let workflowList = [], workflowTrash = [];
     let preview = null, currentRequest = null, toastTimer, settings;
     const endpoint = suffix => `/api/workflows/${state.draft.id}/${suffix}`;
     const current = () => state?.draft.nodes.find(n => n.id === selected);
@@ -48,13 +53,16 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
         $(target).hidden = false;
     }
     function refreshDisabled() {
-        root.querySelectorAll('button:not([data-confirm-control]):not([data-view-control])').forEach(b => b.disabled = busy);
+        $('legacy-workspace').querySelectorAll('button:not([data-confirm-control]):not([data-view-control])').forEach(b => b.disabled = busy);
         $('undo-button').disabled = busy || !state?.can_undo;
         for (const id of ['register-button', 'delete-button', 'import-button'])
             $(id).disabled = busy || !current();
         $('apply-preview').disabled = busy || !preview || !!preview.errors.length || !preview.accepted.length;
         $('download-request').disabled = busy || !currentRequest || !!currentRequest.stale;
         $('chat-input').disabled = busy;
+        $('open-workflow').disabled = busy || !workflowList.length;
+        $('delete-workflow').disabled = busy || !workflowList.length;
+        $('restore-workflow').disabled = busy || !workflowTrash.length;
         $('apply-workflow').disabled = busy || !state?.draft.nodes.length;
         $('create-experiment').disabled = busy || !onExperiment;
         $('save-state').textContent = busy ? '正在处理…' : dirty ? '有未保存的表单修改' : `服务端已保存 · r${state?.draft.revision ?? 0}`;
@@ -148,15 +156,17 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
         render();
     }
     function render() {
+        $('workflow-empty').hidden = true;
+        $('workflow-content').hidden = false;
         $('workflow-heading').textContent = state.draft.name;
         $('revision').textContent = `r${state.draft.revision}`;
         const registered = state.draft.nodes.filter(n => state.checks[n.id].status === '已登记').length;
-        $('flow-caption').textContent = `${state.draft.nodes.length} 个步骤 · ${state.draft.edges.length} 条输入绑定 · ${state.draft.visual?.relations?.length || 0} 条设计关系 · 已登记 ${registered}`;
+        $('flow-caption').textContent = `${state.draft.nodes.length} 个步骤 · ${state.draft.edges.length} 条输入绑定 · ${state.draft.visual?.relations?.length || 0} 条设计关系 · 已确认配置 ${registered}`;
         drawNodes(state, models, selected, selectNode);
         const n = current();
         $('detail-title').textContent = n ? `${models[n.model_id].name} · ${n.label}` : '选择一个步骤';
         $('detail-subtitle').textContent = n ? `${n.id} · ${models[n.model_id].role}` : '从「＋ 步骤」开始';
-        $('detail-status').textContent = n ? state.checks[n.id].status : '待配置';
+        $('detail-status').textContent = n ? (state.checks[n.id].status === '已登记' ? '配置已确认' : state.checks[n.id].status === '待登记' ? '待确认配置' : state.checks[n.id].status) : '待配置';
         $('detail-status').className = `pill ${n && state.checks[n.id].status === '已登记' ? 'good' : 'warn'}`;
         $('agent-context').textContent = n ? `${models[n.model_id].name} · ${n.label}` : '整条工作流';
         root.querySelectorAll('[data-tab]').forEach(b => {
@@ -180,12 +190,19 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
             return;
         }
         const model = models[n.model_id], check = state.checks[n.id];
+        const registered = taskCatalog.tasks.find(task => task.task_id === n.model_id);
+        const relation = `<div class="node-definition-context"><strong>节点实例 · ${esc(n.id)}</strong><p>当前使用 ${esc(model.definition_version)} 演示配置，尚未绑定正式任务声明；这里只修改本节点。</p>${registered ? `<span class="field-hint">${esc(registered.name)} 已有仓库声明，本节点尚未引用。</span>` : '<span class="field-hint">该工具尚无正式任务声明或网页执行适配。</span>'}</div>`;
+        const showRelation = () => {
+            root.insertAdjacentHTML('afterbegin', relation);
+        };
         if (tab === 'json') {
             root.innerHTML = `<p class="field-hint">当前服务端草稿；此处只读。登记快照另行保存。</p><pre class="json-code">${esc(JSON.stringify(n, null, 2))}</pre>`;
+            showRelation();
             return;
         }
         if (tab === 'source') {
             root.innerHTML = `<p class="field-hint">${esc(model.scenario)}</p><p class="field-hint">定义 ${esc(model.definition_version)} · 代码身份 ${esc(model.code_identity)}</p><a href="${esc(model.source_url)}" target="_blank" rel="noopener noreferrer">查看官方参数入口 ↗</a><div class="source-detail">${esc(model.documentation)}</div><details><summary>本节点参数的登记依据</summary><pre class="json-code">${esc(JSON.stringify(n.provenance, null, 2))}</pre></details>`;
+            showRelation();
             return;
         }
         root.innerHTML = `<form id="node-form" data-revision="${state.draft.revision}"><label class="field"><span class="field-label">节点名称</span><input name="node_label" maxlength="80" required value="${esc(n.label)}"></label><div class="fields spaced">${model.fields.map(f => {
@@ -196,8 +213,9 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
     ${n.model_id === 'proteinmpnn' ? `<div class="fields spaced"><label class="field"><span class="field-label">设计链策略</span><select name="chain_mode">${choices([['', '请确认策略'], ['all', '设计全部链'], ['selected', '选择部分链']], n.design_chain_policy?.mode || '')}</select></label><label class="field"><span class="field-label">部分链标识（空格分隔）</span><input name="chains" value="${esc(n.design_chain_policy?.chains?.join(' ') || '')}" placeholder="按实际文件填写"></label></div>` : ''}
     ${Object.entries(model.inputs).map(([port, format]) => inputBlock(n, port, format)).join('')}
     <div class="upload-row"><label class="source-file-label">上传输入文件<input type="file" id="input-upload" accept=".pdb,.fa,.fasta,.faa,.a3m"></label></div><p class="field-hint" id="upload-info">文件保存后还需选择并保存输入绑定。仅检查格式、坐标／链和记录，不代表科学验证通过。</p>
-    ${issuesHTML('登记前需要补充', check.missing)}${issuesHTML('执行准备（配置可登记不等于可执行）', check.preparation_issues, 'info')}
+    ${issuesHTML('配置确认前需补充', check.missing)}${issuesHTML('执行准备（确认配置不等于可执行）', check.preparation_issues, 'info')}
     <p id="node-error" class="inline-error" role="alert" hidden></p><div class="inline-actions spaced"><button type="submit" class="button primary">保存草稿</button><button type="button" class="button" id="node-import">导入此模型资料</button></div></form>`;
+        showRelation();
         root.querySelectorAll('[data-input-port]').forEach(block => {
             updateInputExtras(block, n.inputs[block.dataset.inputPort]);
             block.querySelector('.input-choice').addEventListener('change', () => updateInputExtras(block));
@@ -315,7 +333,7 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
         }
         const result = await post(endpoint('changes'), { expected_revision: Number(form.dataset.revision), operation_id: operationId(), operations });
         acceptState(result.state);
-        toast('草稿已保存，请检查后确认登记');
+        toast('草稿已保存，请检查后确认节点配置');
     }
     async function uploadInput(e) {
         const file = e.target.files[0];
@@ -367,7 +385,7 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
             // The save result determines the status; model text was generated before
             // persistence and may describe a proposal rather than the finished action.
             const saved = !!m.summary?.length, proposed = !!m.proposal;
-            const text = saved ? '这批修改已保存到草稿，尚未确认登记。' : proposed ? '请确认下方修改提案；尚未保存。' : m.text;
+            const text = saved ? '这批修改已保存到草稿，尚未确认节点配置。' : proposed ? '请确认下方修改提案；尚未保存。' : m.text;
             return `<article class="chat-message ${m.role === 'user' ? 'user' : 'assistant'}"><div class="who">${m.role === 'user' ? '你' : '接入助手'}</div>
         <div class="message-body">${m.role === 'user' ? esc(text) : renderMessage(text, parameterNames)}</div>
         ${saved ? `<div class="chat-summary message-body">${renderMessage(m.summary.map(line => '- ' + line).join('\n'), parameterNames)}</div>` : ''}
@@ -465,14 +483,14 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
     }
     async function registerNodes(ids) {
         if (dirty) {
-            throw new Error('请先保存表单修改，再确认登记');
+            throw new Error('请先保存表单修改，再确认节点配置');
         }
-        if (!await confirmAction('确认登记以下节点的当前配置？\n' + ids.map(id => state.draft.nodes.find(n => n.id === id).label).join('、') + '\n登记不会执行科学任务。')) {
+        if (!await confirmAction('确认以下节点的当前配置？\n' + ids.map(id => state.draft.nodes.find(n => n.id === id).label).join('、') + '\n确认配置不会执行科学任务，也不发布任务声明。')) {
             return null;
         }
         const result = await post(endpoint('registrations'), { expected_revision: state.draft.revision, operation_id: operationId(), node_ids: ids });
         acceptState(result.state);
-        toast('已确认登记当前配置');
+        toast('已确认当前节点配置');
         return result.registration;
     }
     function renderRequest() {
@@ -510,6 +528,22 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
             $('key-state').textContent = settings.has_key ? '已配置（不回显）' : '未配置';
             $('settings-result').textContent = '设置已保存。可点击「测试已保存配置」验证真实连接。';
         }, 'settings-error');
+    }
+    function clearWorkflow() {
+        state = null;
+        selected = null;
+        currentRequest = null;
+        dirty = false;
+        localStorage.removeItem('ai4s-demo-workflow-id');
+        $('workflow-content').hidden = true;
+        $('workflow-empty').hidden = false;
+    }
+    async function refreshWorkflowList() {
+        const [active, deleted] = await Promise.all([api('/api/workflows'), api('/api/workflows?deleted=true')]);
+        workflowList = active.workflows;
+        workflowTrash = deleted.workflows;
+        $('workflow-list').innerHTML = choices(workflowList.map(w => [w.id, `${w.name} · r${w.revision}`]), state?.draft.id) || '<option value="">暂无工作流</option>';
+        $('workflow-trash').innerHTML = choices(workflowTrash.map(w => [w.id, `${w.name} · r${w.revision}`])) || '<option value="">回收站为空</option>';
     }
     async function openWorkflow(id) {
         const [next, available] = await Promise.all([api(`/api/workflows/${id}`), api('/api/files')]);
@@ -632,16 +666,6 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
                 $('connect-dialog').close();
             }, 'connect-error');
         });
-        for (const [id, layout] of [['layout-tree', 'layered'], ['layout-circle', 'circle']])
-            $(id).addEventListener('click', async () => {
-                try {
-                    await saveGraphOperations([{ type: 'set_layout', layout }]);
-                    graph.fit();
-                }
-                catch (error) {
-                    showError(error);
-                }
-            });
         function showGraphDocument() {
             $('graph-json').textContent = JSON.stringify(graph.document(), null, 2);
             $('graph-relations').innerHTML = (state.draft.visual?.relations || []).map(r => `<div class="graph-relation-row"><span>${esc(r.source)}.${esc(r.source_port)} → ${esc(r.target)} · ${esc(r.label)}</span><button class="button compact" data-remove-relation="${esc(r.id)}">删除关系</button></div>`).join('');
@@ -752,7 +776,7 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
             const ids = scopeIds();
             const reg = [...state.registrations].reverse().find(r => r.current && r.node_ids.length === ids.length && ids.every(id => r.node_ids.includes(id)));
             if (!reg) {
-                throw new Error('该范围尚未确认登记，或相关配置已变化。请先确认登记。');
+                throw new Error('该范围尚未确认配置，或相关配置已变化。请先确认节点配置。');
             }
             const result = await post(endpoint('requests'), { registration_id: reg.id });
             currentRequest = result.request;
@@ -764,17 +788,36 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
                 download(currentRequest.id + '.json', currentRequest);
             }
         });
-        $('workflow-button').addEventListener('click', () => run(async () => {
-            const list = await api('/api/workflows');
-            $('workflow-list').innerHTML = choices(list.workflows.map(w => [w.id, `${w.name} · r${w.revision}`]), state.draft.id);
-            $('workflow-dialog').showModal();
-        }));
+        for (const id of ['workflow-button', 'manage-empty-workflows']) {
+            $(id).addEventListener('click', () => run(async () => {
+                await refreshWorkflowList();
+                $('workflow-dialog').showModal();
+            }));
+        }
         $('open-workflow').addEventListener('click', () => run(async () => {
-            if (await discardOK()) {
+            if ($('workflow-list').value && await discardOK()) {
                 await openWorkflow($('workflow-list').value);
                 $('workflow-dialog').close();
             }
-        }));
+        }, 'workflow-list-error'));
+        $('delete-workflow').addEventListener('click', () => run(async () => {
+            const workflow = workflowList.find(item => item.id === $('workflow-list').value);
+            if (!workflow) return;
+            const isCurrent = workflow.id === state?.draft.id;
+            if (!await confirmAction(`删除「${workflow.name}」r${workflow.revision}？\n工作流草稿和对话将移入回收站，可恢复。不影响上传文件和实验结果。${isCurrent && dirty ? '\n当前未保存的表单修改会被放弃。' : ''}`)) return;
+            await post(`/api/workflows/${workflow.id}/delete`, {expected_revision: workflow.revision, operation_id: operationId()});
+            if (isCurrent) clearWorkflow();
+            await refreshWorkflowList();
+            toast('工作流已移入回收站');
+        }, 'workflow-list-error'));
+        $('restore-workflow').addEventListener('click', () => run(async () => {
+            const workflow = workflowTrash.find(item => item.id === $('workflow-trash').value);
+            if (!workflow) return;
+            await post(`/api/workflows/${workflow.id}/restore`, {expected_revision: workflow.revision, operation_id: operationId()});
+            await refreshWorkflowList();
+            $('workflow-list').value = workflow.id;
+            toast('已恢复，请选择打开工作流');
+        }, 'workflow-list-error'));
         $('new-workflow-form').addEventListener('submit', e => {
             e.preventDefault();
             run(async () => {
@@ -795,7 +838,8 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
         }, { signal: lifecycle.signal });
     }
     async function initialize() {
-        const catalog = await api('/api/models');
+        const [catalog, declarations] = await Promise.all([api('/api/models'), api('/api/task-catalog')]);
+        taskCatalog = declarations;
         models = Object.fromEntries(catalog.models.map(m => [m.id, m]));
         const modelOptions = Object.values(models).map(m => [m.id, `${m.name} · ${m.role}`]);
         $('add-model').innerHTML = choices(modelOptions, 'proteinmpnn');
@@ -809,8 +853,8 @@ export async function mountAssistant(host, { onApply, onExperiment }) {
             await openWorkflow(id);
         }
         else {
-            const created = await post('/api/workflows', {});
-            await openWorkflow(created.draft.id);
+            clearWorkflow();
+            refreshDisabled();
         }
     }
     try {

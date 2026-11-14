@@ -11,8 +11,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
+from ai4s_declarations import DeclarationRegistry
+from .declarations import DeclarationService, DeclarationCreate, DeclarationPreview, DeclarationConfirm, DeclarationChat
+from .declaration_agent import DeclarationAgent
 from .agent import AgentGateway
 from .catalog import CATALOG, knowledge
+from .task_catalog import task_catalog
 from .files import upload
 from .experiment_agent import ExperimentChat, respond
 from .handoff import registrations
@@ -30,6 +34,9 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
     service = WorkflowService(store)
     settings = ProviderSettings(store)
     gateway = gateway_factory(settings, service)
+    registry = DeclarationRegistry(Path(__file__).resolve().parents[2] / "configs/task_declarations")
+    declarations = DeclarationService(store, registry)
+    declaration_agent = DeclarationAgent(gateway, declarations)
 
     @asynccontextmanager
     async def lifespan(app):
@@ -45,6 +52,7 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
 
     app = FastAPI(title="AI4S Workflow Demo", version="0.1.0", lifespan=lifespan)
     app.state.service, app.state.gateway = service, gateway
+    app.state.declarations, app.state.registry = declarations, registry
 
     @app.middleware("http")
     async def same_origin(request: Request, call_next):
@@ -92,6 +100,59 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
                 "relation_kinds": {"feedback": "设计反馈，不绑定输入", "reference": "产物参考，不绑定输入"},
                 "layouts": ["layered", "circle"], "models": CATALOG}
 
+    @app.get("/api/task-declarations")
+    def declaration_list():
+        return {"declarations": registry.list()}
+
+    @app.get("/api/task-catalog")
+    def registration_catalog():
+        return task_catalog(registry)
+
+    @app.get("/api/task-declarations/{task_id}/{version}")
+    def declaration_definition(task_id: str, version: str):
+        try: return registry.get(task_id, version)
+        except KeyError: raise Problem(404, "invalid_declaration") from None
+
+    @app.get("/api/declaration-drafts")
+    def declaration_drafts(deleted: bool = False):
+        return {"drafts": declarations.list(deleted=deleted)}
+
+    @app.post("/api/declaration-drafts", status_code=201)
+    def declaration_create(request: DeclarationCreate):
+        return declarations.create(request)
+
+    @app.post("/api/declaration-drafts/{draft_id}/delete")
+    def delete_declaration(draft_id: str, request: RevisionRequest):
+        return store.set_deleted("declaration_drafts", draft_id, request.expected_revision, True)
+
+    @app.post("/api/declaration-drafts/{draft_id}/restore")
+    def restore_declaration(draft_id: str, request: RevisionRequest):
+        return store.set_deleted("declaration_drafts", draft_id, request.expected_revision, False)
+
+    @app.get("/api/declaration-drafts/{draft_id}")
+    def declaration_draft(draft_id: str):
+        return declarations.get(draft_id)
+
+    @app.post("/api/declaration-drafts/{draft_id}/preview")
+    def declaration_preview(draft_id: str, request: DeclarationPreview):
+        return declarations.preview(draft_id, request)
+
+    @app.post("/api/declaration-drafts/{draft_id}/confirm")
+    def declaration_confirm(draft_id: str, request: DeclarationConfirm):
+        return declarations.confirm(draft_id, request)
+
+    @app.post("/api/declaration-drafts/{draft_id}/cancel")
+    def declaration_cancel(draft_id: str, request: DeclarationConfirm):
+        return declarations.confirm(draft_id, request, cancel=True)
+
+    @app.post("/api/declaration-drafts/{draft_id}/export")
+    def declaration_export(draft_id: str, request: RevisionRequest):
+        return declarations.export(draft_id, request.expected_revision)
+
+    @app.post("/api/declaration-drafts/{draft_id}/messages")
+    async def declaration_message(draft_id: str, request: DeclarationChat):
+        return await declaration_agent.chat(draft_id, request)
+
     @app.get("/api/settings/model")
     def get_settings():
         return settings.public()
@@ -105,12 +166,20 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
         return await gateway.test_connection()
 
     @app.get("/api/workflows")
-    def list_workflows():
-        return {"workflows": store.list_workflows()}
+    def list_workflows(deleted: bool = False):
+        return {"workflows": store.list_workflows(deleted=deleted)}
 
     @app.post("/api/workflows", status_code=201)
     def create_workflow(request: CreateWorkflow):
         return service.create(request)
+
+    @app.post("/api/workflows/{workflow_id}/delete")
+    def delete_workflow(workflow_id: str, request: RevisionRequest):
+        return store.set_deleted("workflows", workflow_id, request.expected_revision, True)
+
+    @app.post("/api/workflows/{workflow_id}/restore")
+    def restore_workflow(workflow_id: str, request: RevisionRequest):
+        return store.set_deleted("workflows", workflow_id, request.expected_revision, False)
 
     @app.get("/api/workflows/{workflow_id}")
     def get_workflow(workflow_id: str):
@@ -162,6 +231,6 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
 
     @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
     def index():
-        return RedirectResponse("../#/workflows/new?mode=ai", status_code=307)
+        return RedirectResponse("../workbench.html#/workflows/editor", status_code=307)
 
     return app

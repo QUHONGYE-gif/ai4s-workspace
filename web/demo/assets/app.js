@@ -33,7 +33,7 @@
   const customPolicies = [];
   let workflowDraft,
     policyDraft = { name: '', reuse: 'cost', storage: 'lru', description: '' };
-  let aiHost = null, aiController = null, aiMount = null;
+  const assistantViews = {};
   let reuseCanvas = null;
   let workflowFormError = '',
     policyFormError = '',
@@ -573,46 +573,49 @@ ${esc(step[key] || '')}</textarea
     if ($('#registration-check')) $('#registration-check').hidden = true;
     if ($('#workflow-form-error')) $('#workflow-form-error').hidden = true;
   };
-  const showAIRegistration = function showAIRegistration() {
-    nav('newworkflow', '', {mode: 'ai'});
-  };
   const mountAIRegistration = async function mountAIRegistration(target) {
-    if (!aiHost) {
-      aiHost = document.createElement('div');
-      target.replaceChildren(aiHost);
-      aiMount = Promise.all([
+    const view = target.dataset.assistantView || 'editor';
+    let mounted = assistantViews[view];
+    if (!mounted) {
+      mounted = assistantViews[view] = { host: document.createElement('div') };
+      mounted.ready = Promise.all([
         import(new URL('./agent/assets/app.js', document.baseURI).href),
         import(new URL('./assets/agent-registration.js', document.baseURI).href),
       ]).then(async ([{mountAssistant}, {registrationFromAgent}]) => {
-        aiController = await mountAssistant(aiHost, {async onExperiment(workflowId) {
-          const workflows = await refreshRegisteredWorkflows();
-          const workflow = workflows.filter((w) => w.registrationSource.workflowId === workflowId).at(-1);
-          if (!workflow) throw Error('请先登记当前可运行子图，再创建实验');
-          nav('workflow', workflow.id);
-        }, onApply({draft, models}) {
-          workflowDraft = registrationFromAgent(draft, models, workflowDraft);
-          registrationOpen = 0;
-          registrationCheck = 'AI 步骤与参数已回填。请核对项目路径、环境、输入输出文件及调用指令；参数变化后的旧指令不会自动沿用。';
-          workflowFormError = '';
-          saveProduct();
-          nav('newworkflow');
-          notify('AI 配置已应用到接入草稿，请补齐部署信息。');
-        }});
+        mounted.controller = await mountAssistant(mounted.host, {
+          view,
+          async onExperiment(workflowId) {
+            const workflows = await refreshRegisteredWorkflows();
+            const workflow = workflows.filter((w) => w.registrationSource.workflowId === workflowId).at(-1);
+            if (!workflow) throw Error('请先登记当前可运行子图，再创建实验');
+            nav('workflow', workflow.id);
+          },
+          onApply({draft, models}) {
+            workflowDraft = registrationFromAgent(draft, models, workflowDraft);
+            registrationOpen = 0;
+            registrationCheck = '节点配置已回填到旧接入表单。路径、环境与指令仍需核对；此操作不发布任务声明。';
+            workflowFormError = '';
+            saveProduct();
+            nav('newworkflow');
+            notify('已回填到脚本接入草稿。');
+          },
+        });
       });
-    } else target.replaceChildren(aiHost);
+    }
+    target.replaceChildren(mounted.host);
     try {
-      await aiMount;
-      if (target.isConnected) aiController.redraw();
+      await mounted.ready;
+      if (target.isConnected) mounted.controller.redraw();
     } catch (error) {
-      console.error('AI assistance unavailable', error);
-      if (aiHost?.isConnected) {
+      console.error('Task workspace unavailable', error);
+      if (mounted.host.isConnected) {
         target.replaceChildren();
         const message = document.createElement('p');
         message.setAttribute('role', 'alert');
-        message.textContent = 'AI 辅助暂时不可用，请稍后重试。你仍可切换到手动填写。';
+        message.textContent = '任务工作区暂时不可用，请稍后重试。';
         const retry = document.createElement('button');
         retry.className = 'btn'; retry.textContent = '重试';
-        retry.onclick = () => { aiController?.destroy(); aiHost = null; aiMount = null; render(); };
+        retry.onclick = () => { mounted.controller?.destroy(); delete assistantViews[view]; render(); };
         target.append(message, retry);
       }
     }
@@ -1804,8 +1807,8 @@ ${esc(step[key] || '')}</textarea
     return (
       heading(
         '工作流',
-        '选用已接入流程创建实验，或登记自己的模型与脚本。',
-        routeButton('＋ 接入自定义流程', 'newworkflow'),
+        '编排任务节点形成流程，再为具体实验设置输入与参数。',
+        routeButton('＋ 工作流编辑器', 'workfloweditor'),
       ) +
       /* HTML */ `<div class="section-label">
           <span>已接入的流程</span><span class="small muted">流程配置与每次实验分开保存</span>
@@ -1866,20 +1869,23 @@ ${esc(step[key] || '')}</textarea
         )}`
     );
   };
+  const taskWorkspacePage = function(view) {
+    const registry = view === 'registry';
+    return heading(
+      registry ? '任务注册中心' : '工作流编辑器',
+      registry ? '管理科学计算任务的接口定义、版本与编辑草稿。' : '连接节点并配置本次流程的输入与参数，节点修改不改变任务声明。',
+      registry ? '' : routeButton('返回工作流', 'workflows'),
+    ) + `<section id="workflow-ai" class="registration-ai" data-assistant-view="${view}" aria-label="${registry ? '任务注册中心' : '工作流编辑器'}"><p role="status">正在读取任务工作区…</p></section>`;
+  };
   const newWorkflowPage = function newWorkflowPage() {
     ensureRegistrationDraft();
     const d = workflowDraft,
       profiles = d.registrations;
-    const ai = page.query.get('mode') === 'ai';
     const intro = heading(
-      '接入自定义流程',
-      '手动整理接入信息，或通过 AI 对话生成步骤与参数。',
-      /* HTML */ `<button class="btn" data-nav="workflows">返回列表</button>`,
-    ) + /* HTML */ `<div class="registration-mode-switch" role="group" aria-label="接入方式">
-      <button type="button" class="btn ${ai ? '' : 'active'}" data-registration-mode="manual" aria-pressed="${!ai}">手动填写</button>
-      <button type="button" class="btn ${ai ? 'active' : ''}" data-registration-mode="ai" aria-pressed="${ai}">AI 辅助生成</button>
-    </div>`;
-    if (ai) return intro + /* HTML */ `<section id="workflow-ai" class="registration-ai" aria-label="AI 辅助生成"><p role="status">正在读取 AI 辅助配置…</p></section>`;
+      '脚本接入草稿',
+      '兼容已有路径与脚本接入记录；不发布任务声明，也不提交科学计算。',
+      routeButton('工作流编辑器', 'workfloweditor'),
+    );
     return (
       intro +
       /* HTML */ `<form id="create-workflow" novalidate>
@@ -3431,7 +3437,9 @@ ${esc(policyDraft.description)}</textarea
       catalog: 'catalog',
       policy: 'policy',
       newpolicy: 'policy/new',
-      newworkflow: 'workflows/new',
+      newworkflow: 'workflows/import',
+      workfloweditor: 'workflows/editor',
+      taskregistry: 'tasks',
     };
     const qs = new URLSearchParams(query).toString();
     return '#/' + (paths[name] || 'workflows') + (qs ? '?' + qs : '');
@@ -3457,7 +3465,10 @@ ${esc(policyDraft.description)}</textarea
       page.name = 'tools';
       page.id = seg[1] || '';
     } else if (seg[0] === 'policy') page.name = seg[1] === 'new' ? 'newpolicy' : 'policy';
-    else if (seg[0] === 'workflows' && seg[1] === 'new') page.name = 'newworkflow';
+    else if (seg[0] === 'tasks') page.name = 'taskregistry';
+    else if (seg[0] === 'workflows' && seg[1] === 'editor') page.name = 'workfloweditor';
+    else if (seg[0] === 'workflows' && seg[1] === 'import') page.name = 'newworkflow';
+    else if (seg[0] === 'workflows' && seg[1] === 'new') page.name = page.query.get('mode') === 'ai' ? 'taskregistry' : 'workfloweditor';
     if (page.name + ':' + page.id !== previousContext) selectedPlanStep = '';
     route = page.name;
     activeTool = page.name === 'tools' && Object.hasOwn(toolInfo, page.id) ? page.id : null;
@@ -3825,10 +3836,6 @@ ${esc(policyDraft.description)}</textarea
     }
   };
   const bindRegistration = function bindRegistration() {
-    document.querySelectorAll('[data-registration-mode]').forEach(button => {
-      button.onclick = () => button.dataset.registrationMode === 'ai'
-        ? showAIRegistration() : nav('newworkflow');
-    });
     if (!$('#create-workflow')) return;
     ensureRegistrationDraft();
     document.querySelectorAll('[data-project-field]').forEach(
@@ -4194,7 +4201,7 @@ ${esc(policyDraft.description)}</textarea
     bindProductActions();
   };
   const render = function () {
-    aiController?.pause();
+    Object.values(assistantViews).forEach(view => view.controller?.pause());
     reuseCanvas?.destroy();
     reuseCanvas = null;
     let html;
@@ -4204,6 +4211,8 @@ ${esc(policyDraft.description)}</textarea
           workflows: workflowsPage,
           workflow: () => (workflowById(page.id) ? workflowPage() : missingPage('流程不存在')),
           newworkflow: newWorkflowPage,
+          taskregistry: () => taskWorkspacePage('registry'),
+          workfloweditor: () => taskWorkspacePage('editor'),
           catalog: catalogPage,
           runs: runsPage,
           experiment: () => experimentPage(experimentById(page.id)),
@@ -4233,6 +4242,7 @@ ${esc(policyDraft.description)}</textarea
       {
         workflow: 'workflows',
         newworkflow: 'workflows',
+        workfloweditor: 'workflows',
         experiment: 'runs',
         artifact: 'catalog',
         newpolicy: 'policy',
@@ -4247,7 +4257,9 @@ ${esc(policyDraft.description)}</textarea
       {
         workflows: '工作流',
         workflow: '创建实验',
-        newworkflow: '接入自定义流程',
+        newworkflow: '脚本接入草稿',
+        workfloweditor: '工作流 / 编辑器',
+        taskregistry: '任务注册中心',
         runs: '实验记录',
         experiment: '实验详情',
         catalog: '数据目录',

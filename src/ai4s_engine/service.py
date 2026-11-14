@@ -33,7 +33,7 @@ class RequestError(ValueError):
 
 
 class EngineService:
-    def __init__(self, directory, declarations, model_root='/opt/ai4s/proteinmpnn'):
+    def __init__(self, directory, declarations, model_root='/opt/ai4s/proteinmpnn', *, member=None, peers=()):
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
         self.uploads = self.directory / 'uploads'
@@ -41,6 +41,8 @@ class EngineService:
         self.registry = DeclarationRegistry(declarations)
         self.model_root = model_root
         self.profile = get_manager().get_profile().name
+        self.member = member or self.profile
+        self.peers = list(peers)
         self.db = sqlite3.connect(self.directory / 'requests.sqlite')
         self.db.execute('CREATE TABLE IF NOT EXISTS requests (id TEXT PRIMARY KEY, member TEXT, client_ref TEXT, payload TEXT, status TEXT, UNIQUE(member, client_ref))')
         self.db.commit()
@@ -50,7 +52,8 @@ class EngineService:
         from aiida.engine.daemon.client import get_daemon_client
         running = get_daemon_client().is_daemon_running
         return {'status': 'ok' if running else 'unavailable', 'profile': self.profile,
-                'aiida_version': aiida.__version__, 'daemon_running': running}
+                'aiida_version': aiida.__version__, 'daemon_running': running,
+                'member': self.member, 'peers': [peer['member'] for peer in self.peers]}
 
     def upload(self, filename, content):
         if not isinstance(filename, str) or not filename.lower().endswith('.pdb'):
@@ -94,7 +97,7 @@ class EngineService:
             identity, reason = None, f'{type(error).__name__}: {error}'
         digest = identity_digest(identity) if identity else None
         device = os.environ.get('AI4S_ENGINE_DEVICE', 'cuda')
-        label = 'engine-proteinmpnn-' + device + '-' + (digest[:20] if digest else str(uuid4()))
+        label = 'engine-v2-proteinmpnn-' + device + '-' + (digest[:20] if digest else str(uuid4()))
         matches = orm.QueryBuilder().append(orm.InstalledCode, filters={'label': label}).all()
         if matches:
             code = matches[0][0]
@@ -105,7 +108,8 @@ class EngineService:
                                      filepath_executable='/usr/local/bin/proteinmpnn',
                                      default_calc_job_plugin='ai4s.proteinmpnn')
             if device == 'cpu':
-                code.prepend_text = 'export CUDA_VISIBLE_DEVICES=""'
+                code.prepend_text = ('export CUDA_VISIBLE_DEVICES=""\n'
+                                     'export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1')
             if identity:
                 code.model_identity = identity
             else:
@@ -158,8 +162,6 @@ class EngineService:
             policy = payload.get('reuse_policy')
             validate_reuse_policy(policy)
             original_seed = inference['seed']
-            if policy == 'new_sample':
-                inference['seed'] = default_seed_factory(original_seed)
             if workflow == 'mpnn_filter':
                 issues = validate_values(params.get('filter', {}), 'filter')
                 if issues:
@@ -170,9 +172,16 @@ class EngineService:
                 raise RequestError('invalid_declaration', 'declaration does not support deployed model release')
             if not self.health()['daemon_running']:
                 raise RequestError('engine_unavailable', 'isolated AiiDA daemon is not running')
+            from .sharing import search_request, collect_candidates
+            query = search_request(code, pdb, inference, params.get('filter') if workflow == 'mpnn_filter' else None)
+            candidate_list, peer_errors = collect_candidates(self, query, policy) if not unresolved else ([], [])
+            status['sharing'] = {'peer_errors': peer_errors, 'candidates': candidate_list}
+            if policy == 'new_sample':
+                inference['seed'] = default_seed_factory(original_seed)
             context = dict(request_id=request_id, reuse_policy=policy, original_seed=original_seed,
                            effective_seed=inference['seed'], requester=requester, profile=self.profile,
                            num_sequences=inference['num_sequences'])
+            context['shared_candidates'] = candidate_list
             if workflow == 'single':
                 builder = CalculationFactory('ai4s.proteinmpnn').get_builder()
                 builder.code, builder.pdb_file, builder.params = code, pdb, orm.Dict(inference)
@@ -184,7 +193,8 @@ class EngineService:
                 builder.code, builder.pdb_file = code, pdb
                 builder.mpnn_params, builder.filter_params = orm.Dict(inference), orm.Dict(params['filter'])
                 builder.request_id, builder.reuse_policy = orm.Str(request_id), orm.Str(policy)
-                candidate_list, result_map = self._workflow_candidates(code, pdb, inference, unresolved)
+                result_map = {item['uuid'] + '::' + item['fingerprint']: item['uuid']
+                              for item in candidate_list if item['qualified'] and policy == 'allow_reuse'}
                 builder.reuse_candidates, builder.candidate_results = orm.List(list=candidate_list), orm.Dict(result_map)
             builder.metadata.label = request_id
             node = submit(builder)
@@ -202,30 +212,6 @@ class EngineService:
             status.update(state='failed', finished_at=now(), error={'code': 'engine_unavailable', 'message': f'{type(error).__name__}: {error}; check native process label before retrying'})
         self._save(request_id, status)
         return self.status(request_id)
-
-    def _workflow_candidates(self, code, pdb, inference, unresolved):
-        from ai4s_query.candidates import build_candidate
-        if unresolved:
-            return [], {}
-        with pdb.open(mode='rb') as handle:
-            pdb_digest = hashlib.sha256(handle.read()).hexdigest()
-        candidates, mapping = [], {}
-        rows = orm.QueryBuilder().append(orm.CalcJobNode, filters={'process_type': 'aiida.calculations:ai4s.proteinmpnn'}).all()
-        for (source,) in rows:
-            if not source.base.caching.is_valid_cache or source.inputs.code.uuid != code.uuid:
-                continue
-            if source.inputs.params.get_dict() != inference:
-                continue
-            with source.inputs.pdb_file.open(mode='rb') as handle:
-                if hashlib.sha256(handle.read()).hexdigest() != pdb_digest:
-                    continue
-            candidate = build_candidate(source, self.profile, {'num_sequences': inference['num_sequences']})
-            # C consumes the validated manifest rather than the primary FASTA UUID.
-            candidate['uuid'] = source.outputs.result.uuid
-            candidate['member'] = source.base.extras.get('ai4s_requester', {}).get('display_name', candidate['member'])
-            candidates.append(candidate)
-            mapping[candidate['uuid'] + '::' + candidate['fingerprint']] = candidate['uuid']
-        return candidates, mapping
 
     @staticmethod
     def _process(node):
@@ -262,6 +248,7 @@ class EngineService:
             status['effective']['fingerprint'] = calc.base.caching.get_hash()
             status['effective']['identity_digest'] = calc.base.extras.get('ai4s_identity_digest', status['effective']['identity_digest'])
         if node.is_terminated:
+            status['process'] = self._process(node)
             status['state'] = 'finished' if node.is_finished_ok else 'failed'
             status['finished_at'] = node.mtime.astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
             if not node.is_finished_ok:
@@ -276,5 +263,13 @@ class EngineService:
                 status['outputs'] = outputs
         elif node.process_state and node.process_state.value == 'running':
             status['state'] = 'running'
+        # Observe termination before reading terminal outputs. A process may
+        # finish during this HTTP request; early reads can miss its report.
+        children = [node] if isinstance(node, orm.CalcJobNode) else [
+            child for child in node.called_descendants if isinstance(child, orm.CalcJobNode)]
+        status['execution'] = {'calcjobs': [dict(self._process(child), cache_source=child.base.caching.get_cache_source())
+                                          for child in children]}
+        if 'selection_report' in node.outputs:
+            status['execution']['selection_report'] = node.outputs.selection_report.get_dict()
         self._save(request_id, status)
         return status

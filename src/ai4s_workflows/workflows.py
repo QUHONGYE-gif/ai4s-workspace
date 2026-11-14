@@ -3,8 +3,15 @@
 import hashlib
 import math
 
-from aiida.common.exceptions import NotExistent
-from aiida.engine import ToContext, WorkChain, while_
+from aiida.engine import (
+    ReuseConfiguration,
+    ReuseDecisionError,
+    ReuseMaterialization,
+    ToContext,
+    WorkChain,
+    get_reuse_decision_records,
+    while_,
+)
 from aiida.orm import (
     AbstractCode,
     CalcJobNode,
@@ -17,9 +24,10 @@ from aiida.orm import (
 )
 from aiida.plugins import CalculationFactory
 
-from .decision import DecisionError, load_decision_function, make_decision_record, save_decision_record
-from .filtering import filter_sequences, record_failure_report
 from ai4s_tasks.proteinmpnn_outputs import complete_parameters
+
+from .decision import load_decision_function
+from .filtering import filter_sequences, record_failure_report
 
 # v1.0/v1.1 来自 mock；8907e667-... 为共用 ProteinMPNN 的真实版本（A 侧 ai4s.proteinmpnn）。
 SUPPORTED_VERSIONS = ["v1.0", "v1.1", "8907e667-py312-torch260cu124"]
@@ -30,6 +38,18 @@ MAX_RETRY = MAX_ATTEMPTS - 1
 DEFAULT_MPNN_CALCULATION = "ai4s.proteinmpnn"
 ATTEMPT_LABEL_PREFIX = "ai4s-mpnn"
 WORKCHAIN_PROCESS_TYPE = "aiida.workflows:ai4s.protein-mpnn-filter"
+REUSE_DECISION_PORT_NAMES = (
+    "request_id",
+    "reuse_policy",
+    "reuse_candidates",
+    "candidate_results",
+    "decision_function",
+)
+REUSE_POLICY_ACTIONS = {
+    "allow_reuse": {"reuse", "rerun"},
+    "force_rerun": {"rerun"},
+    "new_sample": {"new_sample"},
+}
 
 
 def process_state_value(process):
@@ -98,7 +118,7 @@ def upstream_problem(node, code, pdb_file, params):
     plugin = code.default_calc_job_plugin or DEFAULT_MPNN_CALCULATION
     if source.process_type != f"aiida.calculations:{plugin}":
         return "upstream calculation plugin differs from requested plugin"
-    if source.inputs.code.uuid != code.uuid:
+    if source.inputs.code.base.caching.compute_hash() != code.base.caching.compute_hash():
         return "upstream Code differs from requested Code"
     def pdb_hash(data):
         with data.open(mode="rb") as handle:
@@ -198,88 +218,231 @@ class ProteinMPNNFilterWorkChain(WorkChain):
             cls.run_filter,
         )
 
+    @classmethod
+    def _present_reuse_ports(cls, inputs):
+        """Return the reuse-related input ports present on a request."""
+        return [name for name in REUSE_DECISION_PORT_NAMES if name in inputs]
+
+    @classmethod
+    def _reuse_request_problem(cls, inputs, *, allow_kernel_rewrite=False):
+        """Validate the reusable request shape before consulting the kernel.
+
+        The kernel adds ``existing_mpnn_result`` while rewriting a legitimate
+        ``reuse`` request. Only that already-rewritten request may contain both
+        the reuse ports and the injected result.
+        """
+        present = cls._present_reuse_ports(inputs)
+        if not present:
+            return None
+        if "existing_mpnn_result" in inputs and not allow_kernel_rewrite:
+            return "reuse decision ports cannot be combined with existing_mpnn_result"
+        missing = [name for name in ("request_id", "reuse_policy") if name not in inputs]
+        if missing:
+            return "request_id and reuse_policy must be supplied together"
+        if "mpnn_params" not in inputs:
+            return "mpnn_params is required for a reuse decision"
+
+        try:
+            reuse_policy = inputs.reuse_policy.value
+        except AttributeError:
+            return "reuse_policy must be an AiiDA Str"
+        if reuse_policy not in REUSE_POLICY_ACTIONS:
+            allowed = ", ".join(sorted(REUSE_POLICY_ACTIONS))
+            return f"reuse_policy must be one of: {allowed}"
+
+        try:
+            params = inputs.mpnn_params.get_dict()
+        except AttributeError:
+            return "mpnn_params must be an AiiDA Dict"
+        if not isinstance(params, dict) or "seed" not in params:
+            return "mpnn_params.seed is required for a reuse decision"
+        return None
+
+    def get_reuse_configuration(self):
+        """Return the kernel reuse configuration for this WorkChain request."""
+        if not self._present_reuse_ports(self.inputs):
+            return None
+        if self._reuse_request_problem(self.inputs):
+            return None
+        if "existing_mpnn_result" in self.inputs:
+            return None
+
+        try:
+            params = self.inputs.mpnn_params.get_dict()
+            candidates = (
+                self.inputs.reuse_candidates.get_list()
+                if "reuse_candidates" in self.inputs
+                else []
+            )
+            decision_function = (
+                load_decision_function(self.inputs.decision_function.value)
+                if "decision_function" in self.inputs
+                else None
+            )
+            return ReuseConfiguration(
+                request_id=self.inputs.request_id.value,
+                reuse_policy=self.inputs.reuse_policy.value,
+                original_seed=params["seed"],
+                input_rewriter=self._rewrite_reuse_inputs,
+                candidates=candidates,
+                decision_function=decision_function,
+                materialization=ReuseMaterialization.CONSUME_CANDIDATE,
+            )
+        except Exception:
+            return None
+
+    def _rewrite_reuse_inputs(self, inputs, decision):
+        """Apply the kernel decision to the concrete WorkChain inputs."""
+        rewritten = dict(inputs)
+        rewritten.pop("existing_mpnn_result", None)
+        action = decision.action.value
+
+        try:
+            if action == "reuse":
+                candidate_results = inputs.get("candidate_results")
+                if not isinstance(candidate_results, Dict):
+                    raise ReuseDecisionError(
+                        "candidate_results is required to materialize a reused result"
+                    )
+                selected_uuid = decision.selected_candidate_uuid
+                matches = [
+                    candidate
+                    for candidate in decision.candidate_compare_list
+                    if candidate.get("uuid") == selected_uuid
+                ]
+                if len(matches) != 1:
+                    raise ReuseDecisionError(
+                        "candidate_compare_list must uniquely identify the selected UUID"
+                    )
+                fingerprint = matches[0].get("fingerprint")
+                if not isinstance(fingerprint, str) or not fingerprint:
+                    raise ReuseDecisionError(
+                        "selected candidate must provide a non-empty fingerprint"
+                    )
+                lookup_key = f"{selected_uuid}::{fingerprint}"
+                result_uuid = candidate_results.get_dict().get(lookup_key)
+                if result_uuid != selected_uuid:
+                    raise ReuseDecisionError(
+                        "candidate_results must map the selected candidate to its result UUID"
+                    )
+                result = load_node(result_uuid)
+                if not isinstance(result, Dict):
+                    raise ReuseDecisionError(
+                        "selected candidate result must be an AiiDA Dict"
+                    )
+                rewritten["existing_mpnn_result"] = result
+            elif action == "new_sample":
+                params_data = inputs.get("mpnn_params")
+                if not isinstance(params_data, Dict):
+                    raise ReuseDecisionError("mpnn_params must be an AiiDA Dict")
+                params = dict(params_data.get_dict())
+                params["seed"] = decision.effective_seed
+                rewritten["mpnn_params"] = Dict(dict=params).store()
+            elif action != "rerun":
+                raise ReuseDecisionError(f"unsupported reuse action: {action}")
+        except ReuseDecisionError:
+            raise
+        except Exception as error:
+            raise ReuseDecisionError(f"failed to rewrite reuse inputs: {error}") from error
+
+        return rewritten
+
     def initialize_ctx(self):
         self.ctx.attempts = []
         self.ctx.model_launches = 0
         self.ctx.mpnn_success = False
         self.ctx.skip_submit = False
         self.ctx.cached_from = None
+        self.ctx.mpnn_cache_source = None
         self.ctx.decision_record = None
         self.ctx.request_id = None
         self.ctx.reuse_policy = None
         self.ctx.effective_seed = self.inputs.mpnn_params.get_dict().get("seed")
         self.ctx.effective_mpnn_params = self.inputs.mpnn_params
 
-        decision_port_names = (
-            "request_id",
-            "reuse_policy",
-            "reuse_candidates",
-            "candidate_results",
-            "decision_function",
-        )
-        has_request_id = "request_id" in self.inputs
-        has_reuse_policy = "reuse_policy" in self.inputs
-        has_decision_port = any(name in self.inputs for name in decision_port_names)
-        if not has_request_id and not has_reuse_policy:
-            if has_decision_port:
-                return self.invalid_reuse_request("决策扩展端口必须与 request_id、reuse_policy 一同提供")
+        if not self._present_reuse_ports(self.inputs):
             return
-        if not has_request_id or not has_reuse_policy:
-            return self.invalid_reuse_request("request_id 与 reuse_policy 必须同时提供")
-        if "existing_mpnn_result" in self.inputs:
-            return self.invalid_reuse_request("不能同时使用 existing_mpnn_result 和新的复用决策链路")
-
         try:
-            request_id = self.inputs.request_id.value
-            reuse_policy = self.inputs.reuse_policy.value
-            candidates = (
-                self.inputs.reuse_candidates.get_list()
-                if "reuse_candidates" in self.inputs
-                else []
+            records = get_reuse_decision_records(self.node)
+        except Exception as error:
+            return self.invalid_reuse_request(
+                f"cannot read kernel reuse decision record: {error}"
             )
-            candidate_results = {}
-            if "candidate_results" in self.inputs:
-                candidate_results = self.inputs.candidate_results.get_dict()
-                if not all(
-                    isinstance(key, str) and isinstance(value, str)
-                    for key, value in candidate_results.items()
-                ):
-                    raise DecisionError("candidate_results must map string keys to result UUID strings")
+        request_problem = self._reuse_request_problem(
+            self.inputs, allow_kernel_rewrite=bool(records)
+        )
+        if request_problem:
+            return self.invalid_reuse_request(request_problem)
+        if len(records) != 1:
+            return self.invalid_reuse_request(
+                f"kernel reuse decision records must contain exactly one entry; got {len(records)}"
+            )
 
-            original_params = self.inputs.mpnn_params.get_dict()
-            if "seed" not in original_params:
-                raise DecisionError("mpnn_params.seed is required for a reuse decision")
-            original_seed = original_params["seed"]
-            decision_function = (
-                load_decision_function(self.inputs.decision_function.value)
-                if "decision_function" in self.inputs
-                else None
+        record = records[0]
+        request_id = self.inputs.request_id.value
+        reuse_policy = self.inputs.reuse_policy.value
+        if record.get("request_id") != request_id:
+            return self.invalid_reuse_request(
+                "kernel decision request_id does not match the request input"
             )
-            record = make_decision_record(
-                request_id=request_id,
-                process_uuid=self.uuid,
-                reuse_policy=reuse_policy,
-                candidates=candidates,
-                original_seed=original_seed,
-                decision_function=decision_function,
+        if record.get("reuse_policy") != reuse_policy:
+            return self.invalid_reuse_request(
+                "kernel decision reuse_policy does not match the request input"
             )
-            save_decision_record(self.node, record)
-        except DecisionError as error:
-            return self.invalid_reuse_request(str(error))
+        if record.get("process_uuid") != self.node.uuid:
+            return self.invalid_reuse_request(
+                "kernel decision process_uuid does not match this WorkChain"
+            )
 
-        final_decision = record["final_decision"]
-        effective_params = dict(original_params)
-        if final_decision["action"] == "new_sample":
-            effective_params["seed"] = final_decision["effective_seed"]
-            self.ctx.effective_mpnn_params = Dict(dict=effective_params).store()
+        final_decision = record.get("final_decision")
+        if not isinstance(final_decision, dict):
+            return self.invalid_reuse_request("kernel final_decision must be a mapping")
+        action = final_decision.get("action")
+        if action not in REUSE_POLICY_ACTIONS[reuse_policy]:
+            return self.invalid_reuse_request(
+                f"kernel action {action!r} is not allowed by policy {reuse_policy!r}"
+            )
+
+        effective_seed = final_decision.get("effective_seed")
+        if type(effective_seed) is not int or not 1 <= effective_seed < 2**32:
+            return self.invalid_reuse_request(
+                "kernel effective_seed must be an integer between 1 and 2**32 - 1"
+            )
+        params = self.inputs.mpnn_params.get_dict()
+        if params.get("seed") != effective_seed:
+            return self.invalid_reuse_request(
+                "kernel effective_seed was not applied to mpnn_params"
+            )
+
+        if action == "reuse":
+            selected_uuid = final_decision.get("selected_candidate_uuid")
+            if not isinstance(selected_uuid, str) or not selected_uuid:
+                return self.invalid_reuse_request(
+                    "kernel reuse decision must select a candidate result"
+                )
+            if "existing_mpnn_result" not in self.inputs:
+                return self.invalid_reuse_request(
+                    "kernel selected reuse but no candidate result was injected"
+                )
+            result = self.inputs.existing_mpnn_result
+            if not isinstance(result, Dict) or result.uuid != selected_uuid:
+                return self.invalid_reuse_request(
+                    "injected reuse result does not match the selected candidate UUID"
+                )
+        elif "existing_mpnn_result" in self.inputs:
+            return self.invalid_reuse_request(
+                "rerun and new_sample requests must not retain an existing result"
+            )
 
         self.ctx.request_id = request_id
         self.ctx.reuse_policy = reuse_policy
         self.ctx.decision_record = record
-        self.ctx.effective_seed = final_decision["effective_seed"]
+        self.ctx.effective_seed = effective_seed
+        self.ctx.effective_mpnn_params = self.inputs.mpnn_params
         self.report(
-            f"复用决策完成：action={final_decision['action']}，"
-            f"reason={record['reason']['reason_code']}，effective_seed={self.ctx.effective_seed}"
+            f"kernel reuse decision completed: action={action}, "
+            f"reason={record.get('reason', {}).get('reason_code')}, "
+            f"effective_seed={effective_seed}"
         )
 
     def invalid_reuse_request(self, reason):
@@ -287,57 +450,38 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         return self.exit_codes.INVALID_REUSE_REQUEST.format(reason=reason)
 
     def maybe_skip_inference(self):
-        if "existing_mpnn_result" in self.inputs:
-            self.ctx.mpnn_result = self.inputs.existing_mpnn_result
-            self.ctx.skip_submit = True
-            return
+        # Keep the legacy filter-only path separate from kernel-controlled reuse.
         if self.ctx.decision_record is None:
+            if "existing_mpnn_result" in self.inputs:
+                self.ctx.mpnn_result = self.inputs.existing_mpnn_result
+                self.ctx.skip_submit = True
             return
 
         final_decision = self.ctx.decision_record["final_decision"]
         if final_decision["action"] != "reuse":
             return
 
-        selected_uuid = final_decision["selected_candidate_uuid"]
-        selected_candidates = [
-            candidate
-            for candidate in self.ctx.decision_record["candidate_compare_list"]
-            if candidate["uuid"] == selected_uuid
-        ]
-        candidate_results = (
-            self.inputs.candidate_results.get_dict()
-            if "candidate_results" in self.inputs
-            else {}
-        )
-        result_uuids = {
-            candidate_results[f"{candidate['uuid']}::{candidate['fingerprint']}"]
-            for candidate in selected_candidates
-            if f"{candidate['uuid']}::{candidate['fingerprint']}" in candidate_results
-        }
-        if len(result_uuids) != 1:
+        selected_uuid = final_decision.get("selected_candidate_uuid")
+        if "existing_mpnn_result" not in self.inputs:
             return self.reuse_result_unavailable(
-                "candidate_results 未用 '<结果UUID>::<fingerprint>' 唯一定位所选候选"
+                "kernel selected reuse but no candidate result was injected"
             )
-        result_uuid = next(iter(result_uuids))
-        if result_uuid != selected_uuid:
-            return self.reuse_result_unavailable("candidate_results 的值与所选结果节点 UUID 不一致")
-        try:
-            result = load_node(result_uuid)
-        except (NotExistent, ValueError, TypeError) as error:
-            return self.reuse_result_unavailable(f"无法加载候选结果节点：{error}")
-        if not isinstance(result, Dict):
-            return self.reuse_result_unavailable("所选候选节点不是 AiiDA Dict 结果清单")
-        if result.uuid != selected_uuid:
-            return self.reuse_result_unavailable("加载结果节点的 UUID 与所选候选不一致")
-
+        result = self.inputs.existing_mpnn_result
+        if not isinstance(result, Dict) or result.uuid != selected_uuid:
+            return self.reuse_result_unavailable(
+                "injected reuse result does not match the selected candidate UUID"
+            )
         source_process = getattr(result, "creator", None)
         if source_process is None:
-            return self.reuse_result_unavailable("所选候选结果没有可记录的来源过程")
+            return self.reuse_result_unavailable(
+                "injected reuse result has no recorded source process"
+            )
+
         self.ctx.mpnn_result = result
         self.ctx.cached_from = source_process.uuid
         self.ctx.mpnn_cache_source = source_process.uuid
         self.ctx.skip_submit = True
-        self.report(f"复用合格候选结果 {result.uuid}，不启动 MPNN")
+        self.report(f"复用内核选中的合格候选结果 {result.uuid}，不启动 MPNN")
 
     def reuse_result_unavailable(self, reason):
         self.output_failure_report("reuse_result_unavailable", reason)
@@ -368,9 +512,7 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         builder.pdb_file = self.inputs.pdb_file
         builder.params = self.ctx.effective_mpnn_params
         if self.ctx.decision_record is not None:
-            action = self.ctx.decision_record["final_decision"]["action"]
-            if action in ("rerun", "new_sample"):
-                builder.metadata.disable_cache = True
+            builder.metadata.disable_cache = True
         builder.metadata.label = label
         self.report(f"提交MPNN推理，第 {attempt_number} 次尝试，label={label}")
         try:

@@ -33,16 +33,18 @@ class KernelTests(unittest.TestCase):
                             model_name='v_48_020', weights_family='vanilla', weights_sha256='a' * 64)
         cls.pdb = orm.SinglefileData(file=io.BytesIO(b'ATOM synthetic kernel input\n'), filename='input.pdb').store()
 
-    def calculation(self, identity=None, seed=41, unresolved=None):
+    def calculation(self, identity=None, seed=41, unresolved=None, computer=None, prepend_text=None):
         from aiida.engine.utils import instantiate_process
         from aiida.manage import get_manager
         from aiida.plugins import CalculationFactory
-        code = self.orm.InstalledCode(computer=self.computer, filepath_executable='/usr/bin/true',
+        code = self.orm.InstalledCode(computer=computer or self.computer, filepath_executable='/usr/bin/true',
                                       default_calc_job_plugin='ai4s.proteinmpnn')
         if identity:
             code.model_identity = identity
         if unresolved:
             code.base.attributes.set('ai4s_identity_unresolved', unresolved)
+        if prepend_text:
+            code.prepend_text = prepend_text
         code.store()
         params = self.orm.Dict(dict(chains='A', num_sequences=4, sampling_temperature=0.1,
                                     seed=seed, model_name='v_48_020', batch_size=1, save_probabilities=True))
@@ -72,6 +74,34 @@ class KernelTests(unittest.TestCase):
         node.seal()
         self.assertFalse(node.base.caching.is_valid_cache)
         self.assertEqual(node.base.attributes.get('ai4s_identity_unresolved'), 'missing weights manifest')
+
+    def test_member_computers_share_only_verified_model_hashes(self):
+        other = self.orm.Computer(label='other-member', hostname='localhost',
+                                  transport_type='core.local', scheduler_type='core.direct').store()
+        first = self.calculation(self.identity)
+        second = self.calculation(self.identity, computer=other)
+        changed_environment = self.calculation(self.identity, computer=other, prepend_text='export DIFFERENT=1')
+        self.assertEqual(first.base.caching.get_hash(), second.base.caching.get_hash())
+        self.assertNotEqual(first.base.caching.get_hash(), changed_environment.base.caching.get_hash())
+        unknown_first = self.calculation()
+        unknown_second = self.calculation(computer=other)
+        self.assertNotEqual(unknown_first.base.caching.get_hash(), unknown_second.base.caching.get_hash())
+
+    def test_single_decision_requires_an_indexed_native_source(self):
+        from uuid import uuid4
+        from ai4s_engine.decisions import select_cache
+        node = self.calculation(self.identity, seed=777)
+        request_id = 'req-' + str(uuid4())
+        node.base.extras.set('ai4s_context', {
+            'request_id': request_id, 'reuse_policy': 'allow_reuse', 'original_seed': 777,
+            'effective_seed': 777, 'num_sequences': 4, 'profile': 'kernel-tests',
+            'shared_candidates': [{'uuid': str(uuid4()), 'fingerprint': 'a' * 64,
+                                   'member': 'another-member', 'location': 'profile://other/result',
+                                   'size_bytes': 10, 'elapsed_s': 1, 'qualified': True, 'reason': None}]})
+        self.assertIsNone(select_cache(node, []))
+        record = node.base.extras.get('ai4s_decision_records')[0]
+        self.assertEqual(record['final_decision']['action'], 'rerun')
+        self.assertEqual(record['reason']['reason_code'], 'R02')
 
     def parse_identity_mismatch(self, changes):
         from aiida.common.links import LinkType

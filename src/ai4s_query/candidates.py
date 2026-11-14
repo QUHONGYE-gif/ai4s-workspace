@@ -323,6 +323,23 @@ def build_candidate(proc, profile: str, request: dict | None = None) -> dict:
     info = query._process_info(proc) or {}
     cached = bool(info.get("is_created_from_cache"))
     bundle = _bundle(proc)
+    # Formal ProteinMPNN outputs also occur in retrieved/. Count the manifest's
+    # design samples and published files once, excluding the native sequence.
+    manifest_node = getattr(proc.outputs, 'result', None)
+    manifest = manifest_node.get_dict() if hasattr(manifest_node, 'get_dict') else {}
+    if manifest.get('schema_version') == 'ai4s-artifacts-1':
+        sequences = [entry for entry in manifest.get('artifacts', [])
+                     if entry.get('port') == 'artifacts.sequences']
+        samples = sequences[0].get('samples', []) if len(sequences) == 1 else []
+        formal = [link.node for link in proc.base.links.get_outgoing().all()
+                  if link.link_label.startswith('artifacts__')]
+        bundle['seq_count'] = len(samples)
+        bundle['size_bytes'] = sum(len(node.get_content(mode='rb')) for node in formal)
+        bundle['file_count'] = len(formal)
+        scores = [sample['score'] for sample in samples if isinstance(sample.get('score'), (int, float))]
+        bundle['best_score'] = min(scores) if scores else None
+        bundle['primary'] = {'node_uuid': manifest_node.uuid, 'path': ''}
+        bundle['unretrieved'] = not bool(formal)
     ok, reason, reason_text = qualify(proc, bundle, request)
 
     primary = bundle["primary"] or {}
