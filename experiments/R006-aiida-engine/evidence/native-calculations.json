@@ -1,0 +1,106 @@
+{
+  "calculations": [
+    {
+      "uuid": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+      "pk": 4,
+      "seed": 41,
+      "cached_from": null,
+      "workdir": "/home/coder/runs/engine-20261112/work/1d/4d/55eb-4ee0-4b50-ae65-1a60506911dc",
+      "identity": {
+        "model_id": "proteinmpnn",
+        "release": "8907e667-py312-torch260cu124",
+        "source_commit": "8907e6671bfbfc92303b5f79c4b5e6ce47cdef57",
+        "model_name": "v_48_020",
+        "weights_family": "vanilla",
+        "weights_sha256": "c9cb4a671d79604111231f8dbfc7c590e06f1197453b7a6854ac6661a642f5bd"
+      },
+      "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+      "exit_status": 0
+    },
+    {
+      "uuid": "cf79499b-91c3-42f5-8828-e865ddcc98c7",
+      "pk": 13,
+      "seed": 41,
+      "cached_from": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+      "workdir": "/home/coder/runs/engine-20261112/work/1d/4d/55eb-4ee0-4b50-ae65-1a60506911dc",
+      "identity": {
+        "model_id": "proteinmpnn",
+        "release": "8907e667-py312-torch260cu124",
+        "source_commit": "8907e6671bfbfc92303b5f79c4b5e6ce47cdef57",
+        "model_name": "v_48_020",
+        "weights_family": "vanilla",
+        "weights_sha256": "c9cb4a671d79604111231f8dbfc7c590e06f1197453b7a6854ac6661a642f5bd"
+      },
+      "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+      "exit_status": 0
+    },
+    {
+      "uuid": "8e929d30-0374-4027-9310-6ec10ce13a77",
+      "pk": 22,
+      "seed": 41,
+      "cached_from": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+      "workdir": "/home/coder/runs/engine-20261112/work/1d/4d/55eb-4ee0-4b50-ae65-1a60506911dc",
+      "identity": {
+        "model_id": "proteinmpnn",
+        "release": "8907e667-py312-torch260cu124",
+        "source_commit": "8907e6671bfbfc92303b5f79c4b5e6ce47cdef57",
+        "model_name": "v_48_020",
+        "weights_family": "vanilla",
+        "weights_sha256": "c9cb4a671d79604111231f8dbfc7c590e06f1197453b7a6854ac6661a642f5bd"
+      },
+      "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+      "exit_status": 0
+    },
+    {
+      "uuid": "dd6e6d09-4e7b-4fd7-8ef8-eef656de73a4",
+      "pk": 31,
+      "seed": 41,
+      "cached_from": null,
+      "workdir": "/home/coder/runs/engine-20261112/work/dd/6e/6d09-4e7b-4fd7-8ef8-eef656de73a4",
+      "identity": {
+        "model_id": "proteinmpnn",
+        "release": "8907e667-py312-torch260cu124",
+        "source_commit": "8907e6671bfbfc92303b5f79c4b5e6ce47cdef57",
+        "model_name": "v_48_020",
+        "weights_family": "vanilla",
+        "weights_sha256": "c9cb4a671d79604111231f8dbfc7c590e06f1197453b7a6854ac6661a642f5bd"
+      },
+      "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+      "exit_status": 0
+    },
+    {
+      "uuid": "a0ac1508-3508-496e-a716-d15c0158c05c",
+      "pk": 40,
+      "seed": 2055269585,
+      "cached_from": null,
+      "workdir": "/home/coder/runs/engine-20261112/work/a0/ac/1508-3508-496e-a716-d15c0158c05c",
+      "identity": {
+        "model_id": "proteinmpnn",
+        "release": "8907e667-py312-torch260cu124",
+        "source_commit": "8907e6671bfbfc92303b5f79c4b5e6ce47cdef57",
+        "model_name": "v_48_020",
+        "weights_family": "vanilla",
+        "weights_sha256": "c9cb4a671d79604111231f8dbfc7c590e06f1197453b7a6854ac6661a642f5bd"
+      },
+      "fingerprint": "955965229924741e730cd3314f7cc4a438a4b1fef2930ea22c3d23935133c304",
+      "exit_status": 0
+    },
+    {
+      "uuid": "9ec5afbe-b171-4ed9-9368-33e5f501b33e",
+      "pk": 50,
+      "seed": 41,
+      "cached_from": null,
+      "workdir": "/home/coder/runs/engine-20261112/work/9e/c5/afbe-b171-4ed9-9368-33e5f501b33e",
+      "identity": {
+        "model_id": "proteinmpnn",
+        "release": "8907e667-py312-torch260cu124",
+        "source_commit": "8907e6671bfbfc92303b5f79c4b5e6ce47cdef57",
+        "model_name": "v_48_030",
+        "weights_family": "vanilla",
+        "weights_sha256": "c34b7bfb38418ea30989fda3314f4781ac4e3920f9825731cf555f1fed44ac66"
+      },
+      "fingerprint": "4967782af504887802f3334187712ab5df73a88fe19d0b2c7b85c2e2a32a7b95",
+      "exit_status": 0
+    }
+  ]
+}

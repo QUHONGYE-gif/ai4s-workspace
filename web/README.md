@@ -18,6 +18,8 @@ python scripts/serve_workbench.py --host 127.0.0.1 --port 3000 \
 
 安装 `uv sync --frozen` 后，继续通过原 [PyMOL 联合启动入口](../tools/pymol_web/README.md) 运行；通过“工作流 → 工作流编辑器”配置节点；侧栏“任务注册中心”独立管理声明，见 [声明说明](../docs/task_declaration_run.md)。`./agent/` 兼容旧链接并跳转到工作流编辑器。普通服务入口保留，仅运行原工作台。模型 API、数据目录和验证边界见 [最小说明](../docs/agent_demo_run.md)。
 
+已登记流程可直接交接到创建实验页；实验助手复用接入页模型配置，创建后确认概述再检查候选。操作与模拟限制见 [登记交接说明](../docs/agent_demo_run.md#登记交接与实验配置)。
+
 ## 状态目录与启动切换
 
 上述普通启动示例显式使用与 PyMOL 联合启动相同的状态目录，因此以后可在两种方式之间切换并继续读取同一份模拟快照。
@@ -83,3 +85,9 @@ node tests/test_api_client.cjs
 界面改动按需验证真实预览中的资源、路由、刷新、交互与 WebSocket。Node.js 仅用于上述逻辑检查。
 
 返回 [仓库入口](../README.md) · [成员协作](../docs/collaboration.md)。
+
+## 真实实验入口
+
+`web/demo/engine.html` 使用已发布声明生成参数表单，并通过标准库工作台后端调用独立引擎。接口、启动与范围统一见 [引擎说明](../docs/engine_service.md)；最新跨成员证据见 [R007](../experiments/R007-member-reuse/record.md)，历史单成员证据见 [R006](../experiments/R006-aiida-engine/record.md)。原模拟实验流程继续保留。
+
+任务注册中心与工作流编辑器使用独立入口，声明草稿的提案、确认、导出及恢复见[登记说明](../docs/task_declarations.md)。

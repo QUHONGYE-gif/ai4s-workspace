@@ -6,6 +6,11 @@
   python -m ai4s_query.cli trace <UUID或PK> [--depth 12] [--text 出.txt]
   python -m ai4s_query.cli tree  <UUID或PK> [--depth 5]
   python -m ai4s_query.cli cat   <UUID或PK> <仓库路径> [--out 导出文件]
+  python -m ai4s_query.cli candidates [--fingerprint 摘要] [--node UUID] [--profiles a,b]
+  python -m ai4s_query.cli decision <request_id 或 过程 UUID> [--dir 决策记录目录]
+  python -m ai4s_query.cli decision-write <记录.json> [--process UUID] [--targets both]
+  python -m ai4s_query.cli preflight [--profiles a,b] [--limit 20] [--only-problems]
+  python -m ai4s_query.cli serve [--host --port --profile]
 """
 from __future__ import annotations
 
@@ -45,7 +50,54 @@ def main(argv=None):
     p_wb.add_argument("--out", required=True, help="导出的 JSON 路径")
     p_wb.add_argument("--base", help="已有的研序导出文件，先读入再把新记录追加进去")
 
+    p_cand = sub.add_parser("candidates", help="跨成员候选查找（输出约定④ 的候选列表）")
+    p_cand.add_argument("--fingerprint", help="计算指纹（extras 的 _aiida_hash）")
+    p_cand.add_argument("--node", help="以该结果节点为参照，按它的指纹找候选")
+    p_cand.add_argument("--profiles", help="限定 profile，逗号分隔；缺省为全部")
+    p_cand.add_argument("--num-sequences", dest="num_sequences", type=int,
+                        help="请求要求的序列条数（完整性判定）")
+    p_cand.add_argument("--score-threshold", dest="score_threshold", type=float,
+                        help="质量门限：最优分数不得高于该值")
+    p_cand.add_argument("--qualified-only", action="store_true",
+                        help="只列合格候选（默认也列不合格的，带原因）")
+    p_cand.add_argument("--json", dest="json_path", help="导出 JSON 到此路径")
+
+    p_dec = sub.add_parser("decision", help="读取约定⑤ 的决策记录")
+    p_dec.add_argument("identifier", help="request_id、过程 UUID 或结果节点 UUID")
+    p_dec.add_argument("--dir", dest="decisions_dir", help="旁路决策记录目录")
+    p_dec.add_argument("--json", dest="json_path", help="导出 JSON 到此路径")
+
+    p_decw = sub.add_parser("decision-write", help="校验并写入一条约定⑤ 决策记录（站 ⑧ 用）")
+    p_decw.add_argument("record", help="决策记录 JSON 文件路径；写 - 从标准输入读")
+    p_decw.add_argument("--process", help="过程节点 UUID/前缀/PK，写入它的 attributes")
+    p_decw.add_argument("--dir", dest="decisions_dir", help="旁路决策记录目录")
+    p_decw.add_argument("--targets", help="写入位置：attributes / file / both（默认读环境变量）")
+    p_decw.add_argument("--force", action="store_true", help="校验不通过也写入")
+    p_decw.add_argument("--template", action="store_true", help="只打印空白骨架，不写入")
+
+    p_pre = sub.add_parser("preflight", help="接入体检：检查现有节点能否被读成候选")
+    p_pre.add_argument("--profiles", help="限定 profile，逗号分隔；缺省为全部")
+    p_pre.add_argument("--limit", type=int, default=20, help="每个 profile 检查最近 N 个过程（默认 20）")
+    p_pre.add_argument("--only-problems", dest="only_problems", action="store_true",
+                       help="只列 ready 以外的")
+    p_pre.add_argument("--json", dest="json_path", help="导出 JSON 到此路径")
+
+    p_srv = sub.add_parser("serve", help="启动只读查询服务（供网页实时读取）")
+    p_srv.add_argument("--host", default="127.0.0.1")
+    p_srv.add_argument("--port", type=int, default=8848)
+    p_srv.add_argument("--profile", help="AiiDA profile 名")
+    p_srv.add_argument("--decisions-dir", dest="decisions_dir")
+
     args = parser.parse_args(argv)
+
+    # 只出模板时不碰 AiiDA，方便没配 profile 的机器直接拿骨架
+    if args.cmd == "decision-write" and args.template:
+        import json
+
+        from . import decision as dec_mod
+
+        print(json.dumps(dec_mod.template(), ensure_ascii=False, indent=2))
+        return 0
 
     # CLI 是独立进程，必须先加载默认 profile（Coder 上为 ai4s）
     from aiida import load_profile
@@ -104,6 +156,105 @@ def main(argv=None):
         print(f"[研序记录已写入 {args.out}："
               f"{len(state['experiments'])} 条实验 / {len(state['catalog'])} 个产物]",
               file=sys.stderr)
+        return 0
+
+    if args.cmd == "candidates":
+        import json
+
+        from . import candidates as cand_mod
+
+        request = {}
+        if args.num_sequences:
+            request["num_sequences"] = args.num_sequences
+        if args.score_threshold is not None:
+            request["score_threshold"] = args.score_threshold
+        profiles = [p for p in (args.profiles or "").split(",") if p] or None
+
+        if args.node:
+            result = cand_mod.by_node(args.node, request)
+        else:
+            result = cand_mod.find(fingerprint=args.fingerprint, profiles=profiles,
+                                   request=request,
+                                   include_unqualified=not args.qualified_only)
+        print(cand_mod.text_view(result))
+        if args.json_path:
+            with open(args.json_path, "w", encoding="utf-8") as fh:
+                fh.write(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+            print(f"[候选 JSON 已写入 {args.json_path}]", file=sys.stderr)
+        return 0
+
+    if args.cmd == "decision":
+        import json
+
+        from . import decision as dec_mod
+
+        result = dec_mod.load(args.identifier, directory=args.decisions_dir)
+        print(f"查询 {args.identifier}：{result['count']} 条决策记录")
+        for rec in result["records"]:
+            fd, rs = rec["final_decision"], rec["reason"]
+            print("")
+            print(f"  请求 {rec['request_id']}")
+            print(f"  过程 {rec['process_uuid']}")
+            print(f"  选择 {rec['reuse_policy']}  →  动作 {fd['action']}"
+                  f"（候选 {len(rec['candidate_compare_list'])} 条）")
+            print(f"  理由 {rs['reason_code']} {rs['reason_text']}")
+            print(f"  时间 {rec['timestamp']}    校验 {'通过' if rec['_ok'] else rec['_problems']}")
+        if result["missing"]:
+            print(result["missing"])
+        if args.json_path:
+            with open(args.json_path, "w", encoding="utf-8") as fh:
+                fh.write(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+            print(f"[决策记录 JSON 已写入 {args.json_path}]", file=sys.stderr)
+        return 0
+
+    if args.cmd == "decision-write":
+        import json
+
+        from . import decision as dec_mod
+
+        if args.record == "-":
+            payload = json.load(sys.stdin)
+        else:
+            with open(args.record, encoding="utf-8") as fh:
+                payload = json.load(fh)
+        items = payload if isinstance(payload, list) else [payload]
+        targets = [t.strip() for t in (args.targets or "").split(",") if t.strip()] or None
+
+        rc = 0
+        for item in items:
+            res = dec_mod.save(item, process=args.process, directory=args.decisions_dir,
+                               targets=targets, force=args.force)
+            flag = "写入" if res["ok"] else "拒绝"
+            print(f"[{flag}] {res['request_id']}")
+            for w in res["written"]:
+                print(f"    → {w}")
+            if res["skipped"]:
+                print(f"    ! {res['skipped']}")
+            for p in res["problems"]:
+                print(f"    ✘ {p}")
+                rc = 2
+        return rc
+
+    if args.cmd == "preflight":
+        import json
+
+        from . import candidates as cand_mod
+
+        profiles = [p for p in (args.profiles or "").split(",") if p] or None
+        result = cand_mod.preflight(profiles, limit=args.limit,
+                                    only_problems=args.only_problems)
+        print(cand_mod.preflight_text(result))
+        if args.json_path:
+            with open(args.json_path, "w", encoding="utf-8") as fh:
+                fh.write(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+            print(f"[体检 JSON 已写入 {args.json_path}]", file=sys.stderr)
+        blocked = result["summary"].get("blocked", 0)
+        return 2 if blocked else 0
+
+    if args.cmd == "serve":
+        from . import server
+
+        server.serve(args.host, args.port, args.profile, args.decisions_dir)
         return 0
 
     if args.cmd == "cat":

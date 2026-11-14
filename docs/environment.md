@@ -14,6 +14,10 @@
 | 管理员 Python 脚本 | provider 下载依赖 `requests` 及其 `urllib3` 依赖；[专用环境准备](operations.md#管理员脚本依赖) |
 | Coder 底座 | Compose、Docker 及 Terraform provider；版本以配置和模板锁文件为准 |
 
+## 独立真实引擎
+
+真实引擎使用专用 AiiDA 环境与独立配置根，不替换共用环境或成员 profile。固定 fork、依赖复用、启动变量与端口统一见 [引擎服务](engine_service.md#独立安装与启动)，当前跨成员运行位置与验证见 [R007](../experiments/R007-member-reuse/record.md)，历史环境保留在各自运行记录中。
+
 ## 配置约定
 
 - 部署变量从 [.env.server.example](../.env.server.example) 了解字段，在目标环境填写；已有 `.env` 不用示例覆盖，真实凭据不提交。

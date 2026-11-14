@@ -12,6 +12,7 @@
         <button class="button" id="apply-workflow" disabled>回填旧接入表单</button>
       </div></details>
       <button class="button primary" id="export-button">导出工作流草稿</button>
+      <button class="button primary" id="create-experiment" disabled>用已登记流程创建实验</button>
     </div>
   </div>
   <p id="sidebar-api" class="sr-only" role="status">
@@ -100,13 +101,49 @@
           需转换
         </span>
         <span>
-          点线：反馈／参考设计关系
+          点线：反馈／参考
         </span>
         <span>
           演示端口 · 不等同于正式任务声明
         </span>
       </div>
     </section>
+    <aside class="panel agent-panel" aria-label="Agent 接入助手">
+      <div class="panel-heading agent-heading">
+        <h2>
+          <span class="agent-mark">
+            ✧
+          </span>
+          接入助手
+        </h2>
+        <button class="button soft compact" id="import-button">
+          导入资料
+        </button>
+      </div>
+      <div class="agent-context">
+        <strong id="agent-context" aria-label="当前操作对象">
+          尚未选择
+        </strong>
+      </div>
+      <details class="chat-examples" id="chat-examples">
+        <summary>试试这样问</summary>
+        <div id="chat-example-list"></div>
+      </details>
+      <div class="conversation" id="conversation" role="log" aria-label="接入对话">
+      </div>
+      <div id="agent-pending" class="pending-status" role="status" hidden>
+        正在等待 DeepSeek 返回，请稍候…
+      </div>
+      <form class="composer" id="chat-form">
+        <textarea id="chat-input" aria-label="向助手提出要求" rows="2" placeholder="输入问题或修改要求…"></textarea>
+        <div class="composer-bottom">
+          <span class="composer-note" title="Shift + Enter 换行">Enter 发送</span>
+          <button class="send-button" type="submit" aria-label="发送消息">
+            ↑
+          </button>
+        </div>
+      </form>
+    </aside>
     <section class="panel detail-panel" aria-label="所选步骤配置">
       <div class="panel-heading detail-heading">
         <h2>
@@ -155,46 +192,6 @@
         </div>
       </div>
     </section>
-    <aside class="panel agent-panel" aria-label="工作流助手">
-      <div class="panel-heading agent-heading">
-        <h2>
-          <span class="agent-mark">
-            ✧
-          </span>
-          工作流助手
-        </h2>
-        <button class="button soft compact" id="import-button">
-          导入资料
-        </button>
-      </div>
-      <div class="agent-context">
-        <span>
-          当前操作对象
-        </span>
-        <strong id="agent-context">
-          尚未选择
-        </strong>
-      </div>
-      <div class="conversation" id="conversation" role="log" aria-label="接入对话">
-      </div>
-      <div id="agent-pending" class="pending-status" role="status" hidden>
-        正在等待 DeepSeek 返回，请稍候…
-      </div>
-      <form class="composer" id="chat-form">
-        <textarea id="chat-input" aria-label="向助手提出要求" rows="2" placeholder="把当前节点温度改为 0.2，序列数改为 16"></textarea>
-        <div class="composer-bottom">
-          <span class="composer-note">
-            Enter 发送 · Shift + Enter 换行
-          </span>
-          <button class="send-button" type="submit" aria-label="发送消息">
-            ↑
-          </button>
-        </div>
-      </form>
-      <div class="agent-footnote">
-        真实 API 配置助手 · 科学执行尚未接通
-      </div>
-    </aside>
   </div>
 </section>
 <dialog class="modal" id="settings-dialog" aria-labelledby="settings-title">

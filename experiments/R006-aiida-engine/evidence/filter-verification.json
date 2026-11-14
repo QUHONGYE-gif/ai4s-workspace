@@ -1,0 +1,52 @@
+{
+  "expected_ids": [
+    "s004",
+    "s001"
+  ],
+  "selected": {
+    "entries": [
+      {
+        "sample_id": "s004",
+        "sequence": "TVCCPSEEAKKKYEECLKSGTPKEECAKATGCIIIPGSTCPPDYPY",
+        "temperature": 0.1,
+        "score": 0.7742,
+        "global_score": 0.7742,
+        "seq_recovery": 0.5435
+      },
+      {
+        "sample_id": "s001",
+        "sequence": "TICCPSEEARKKYEECLKSGTPPEECAKATGCIIIPGTECPEDYPY",
+        "temperature": 0.1,
+        "score": 0.7778,
+        "global_score": 0.7778,
+        "seq_recovery": 0.5435
+      }
+    ]
+  },
+  "report": {
+    "attempts": [],
+    "attempt_count": 0,
+    "max_attempts": 2,
+    "retry_attempt": 0,
+    "model_launches": 0,
+    "calcjob_submissions": 0,
+    "request_id": "req-5b5f3c54-0866-4441-a8f4-68abad2d2543",
+    "reuse_policy": "allow_reuse",
+    "reuse_decision": "reuse",
+    "reason_code": "R01",
+    "selected_candidate_uuid": "2150a22e-32d6-44dd-9e5f-421d32bf54d3",
+    "effective_seed": 41,
+    "cached_from": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+    "status": "completed",
+    "mpnn_cache_source": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+    "upstream_result_uuid": "2150a22e-32d6-44dd-9e5f-421d32bf54d3",
+    "filter_params": {
+      "score_threshold": 10.0,
+      "top_k": 2
+    },
+    "selected_count": 2
+  },
+  "pdb_uuid": "638efce3-ee3a-4dca-8006-3f6418a457dd",
+  "code_prepend": "export CUDA_VISIBLE_DEVICES=\"\"",
+  "actual_finish": "2026-11-12T14:23:37.483974+00:00"
+}

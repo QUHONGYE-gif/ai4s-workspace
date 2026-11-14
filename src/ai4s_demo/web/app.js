@@ -2,7 +2,7 @@ import { api, post, operationId, escapeHTML as esc, download } from './api.js';
 import { renderMessage } from './message.js';
 import { createGraph } from './graph.js';
 import { mountTaskRegistry } from './task-registry.js';
-export async function mountAssistant(host, { onApply, view = 'editor' }) {
+export async function mountAssistant(host, { onApply, onExperiment, view = 'editor' }) {
     const root = host.attachShadow({ mode: 'open' });
     const response = await fetch(new URL('./workspace.html', import.meta.url));
     if (!response.ok) {
@@ -64,6 +64,7 @@ export async function mountAssistant(host, { onApply, view = 'editor' }) {
         $('delete-workflow').disabled = busy || !workflowList.length;
         $('restore-workflow').disabled = busy || !workflowTrash.length;
         $('apply-workflow').disabled = busy || !state?.draft.nodes.length;
+        $('create-experiment').disabled = busy || !onExperiment;
         $('save-state').textContent = busy ? '正在处理…' : dirty ? '有未保存的表单修改' : `服务端已保存 · r${state?.draft.revision ?? 0}`;
         host.setAttribute('aria-busy', String(busy));
     }
@@ -358,7 +359,26 @@ export async function mountAssistant(host, { onApply, view = 'editor' }) {
             toast('输入文件已上传');
         });
     }
+    function chatExamples() {
+        switch (current()?.model_id) {
+            case 'rfdiffusion':
+                return ['当前节点还缺哪些配置？', '把当前节点的骨架长度改为 90。', '解释扩散步数的作用。'];
+            case 'proteinmpnn':
+                return ['采样温度有什么作用？', '把当前节点的序列数改为 16。', '当前节点还缺哪些配置？'];
+            case 'boltz':
+                return ['当前节点还缺哪些配置？', '解释 MSA 模式的区别。', '解释当前节点的推理参数。'];
+            default:
+                return ['介绍支持的模型。', '添加一个 RFdiffusion 节点。', '添加一个 ProteinMPNN 节点。'];
+        }
+    }
     function renderConversation() {
+        $('chat-examples').open = state.messages.length === 0;
+        $('chat-example-list').innerHTML = chatExamples().map(text => `<button type="button" class="button compact" data-chat-example="${esc(text)}">${esc(text)}</button>`).join('');
+        $('chat-example-list').querySelectorAll('[data-chat-example]').forEach(button => button.addEventListener('click', () => {
+            $('chat-input').value = button.dataset.chatExample;
+            $('chat-examples').open = false;
+            $('chat-input').focus();
+        }));
         const root = $('conversation');
         const parameterNames = Object.values(models).flatMap(model => model.fields.map(field => field.key));
         root.innerHTML = state.messages.length ? state.messages.map(m => {
@@ -369,10 +389,10 @@ export async function mountAssistant(host, { onApply, view = 'editor' }) {
             return `<article class="chat-message ${m.role === 'user' ? 'user' : 'assistant'}"><div class="who">${m.role === 'user' ? '你' : '接入助手'}</div>
         <div class="message-body">${m.role === 'user' ? esc(text) : renderMessage(text, parameterNames)}</div>
         ${saved ? `<div class="chat-summary message-body">${renderMessage(m.summary.map(line => '- ' + line).join('\n'), parameterNames)}</div>` : ''}
-        ${saved || proposed ? `<details><summary>查看模型的保存前说明</summary><div class="message-body spaced">${renderMessage(m.text, parameterNames)}</div></details>` : ''}
+        ${saved || proposed || m.usage ? `<details><summary>回复详情</summary>${saved || proposed ? `<div class="message-body spaced">${renderMessage(m.text, parameterNames)}</div>` : ''}${m.usage ? `<div class="chat-meta">${esc(m.usage.model)} · ${m.usage.elapsed_seconds}s · ${m.tools?.length || 0} 次工具调用</div>` : ''}</details>` : ''}
         ${proposed ? `<div class="chat-actions"><button class="button soft compact" data-apply-message="${esc(m.id)}">查看并确认修改</button></div>` : ''}
-        ${m.usage ? `<div class="chat-meta">${esc(m.usage.model)} · ${m.usage.elapsed_seconds}s · ${m.tools?.length || 0} 次工具调用</div>` : ''}</article>`;
-        }).join('') : '<div class="chat-greeting">我会根据模型说明协助配置。<br>你可以先导入资料，或直接提出修改。<br><br>试着问：<br>“温度 0.2 是什么意思？”<br>“把当前节点的序列数改为 16”<br><br>所有配置由服务端检查并保存；普通问答不修改参数。</div>';
+        </article>`;
+        }).join('') : '';
         root.querySelectorAll('[data-apply-message]').forEach(b => b.addEventListener('click', () => run(async () => {
             const m = state.messages.find(m => m.id === b.dataset.applyMessage);
             if (!await confirmAction('确认应用以下提案？\n' + JSON.stringify(m.proposal.operations, null, 2))) {
@@ -690,6 +710,10 @@ export async function mountAssistant(host, { onApply, view = 'editor' }) {
             showGraphDocument();
             graph.fit();
         }, 'graph-operations-error'));
+        $('create-experiment').addEventListener('click', () => run(async () => {
+            if (dirty) throw new Error('请先保存当前参数表单并重新登记。');
+            await onExperiment(state.draft.id);
+        }));
         $('apply-workflow').addEventListener('click', () => run(async () => {
             if (dirty) {
                 throw new Error('请先保存当前参数表单，再应用到接入草稿。');

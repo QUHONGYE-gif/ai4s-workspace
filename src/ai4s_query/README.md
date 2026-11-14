@@ -18,6 +18,19 @@ python -m ai4s_query.cli cat <UUID> scores/input.npz --out scores.npz
 
 报告包含状态与失败诊断、参数值、节点哈希、逐文件 SHA-256 和读取入口。二进制文件可导出，不能按文本预览；缓存来源由 AiiDA 原生缓存属性查询，直接使用旧 Data 则沿输入链接追溯。
 
+## 候选与实时查询
+
+```bash
+python -m ai4s_query.cli candidates --node <UUID> --profiles member-a,member-b
+python -m ai4s_query.cli preflight --profiles member-a
+python -m ai4s_query.cli decision <request_id或过程UUID>
+python -m ai4s_query.cli serve --profile member-a --port 8848
+```
+
+独立服务提供 `/api/node/<UUID>`、`/api/trace/<UUID>`、`/api/candidates` 和 `/api/decision`。直接多 profile 查找只覆盖当前进程配置中可访问的数据库；实际跨容器查询与原生归档传递由[引擎服务](../../docs/engine_service.md#跨成员共享)连接。候选保留不合格原因；正式 ProteinMPNN 的 UUID 指结果清单，文件沿原生输出链接读取。
+
+新决策与 C／内核共用 `extras.ai4s_decision_records`，可按请求或过程查询；旧单数键与旁路文件仅作历史兼容。`decision-write` 的节点写入同样通过 C 模块校验，不另设宽松的科学记录格式。
+
 ## 工作台快照
 
 ```bash

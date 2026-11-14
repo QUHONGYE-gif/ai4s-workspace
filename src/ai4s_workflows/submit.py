@@ -28,6 +28,7 @@ def submit_workchain(code_label: str, threshold: float, top_k: int, version="v1.
     builder.pdb_file = pdb
     builder.mpnn_params = mpnn_params
     builder.filter_params = filter_params
+    builder.metadata.label = f"ai4s-mock-workflow:{code.uuid}"
 
     wc = submit(builder)
     print(f"4.1两阶段WorkChain提交成功 pk={wc.pk}")
