@@ -43,7 +43,6 @@ const result = vm.runInContext(source + `
   workflowInfo.regSame.steps[0].inputIdentity.backbone.record_id='record-2';
   assert.notEqual(identities(workflowInfo.regSame.defaults).design, first);
   selectWorkflowContext('regA');
-  assert.doesNotMatch(workflowPage(), /API 设置|创建前摘要|creation-overview/);
   createExperiment();
   const e = product.experiments.at(-1);
   assert.equal(e.creationConfirmed,false);

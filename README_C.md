@@ -1,59 +1,35 @@
-# C模块：编排、重算与恢复
+# C 模块：编排、复用与恢复
 
-当前受控复用通过统一 AiiDA 内核执行，候选与记录约定见[复用决策](docs/reuse_decision.md)；模型身份、跨成员归档传递和真实验证见[引擎服务](docs/engine_service.md)与[R007](experiments/R007-member-reuse/record.md)。
+`ProteinMPNNFilterWorkChain` 将推理 CalcJob、产物门禁和筛选 calcfunction 串成两阶段工作流，通过 AiiDA 原生等待与持久化上下文运行。真实推理使用 [A 模块](docs/aiida_tasks.md)，模型身份、固定内核、跨成员传递与 HTTP 入口统一见 [引擎服务](docs/engine_service.md)。当前进展见 [状态](docs/status.md)。
 
-当前提供推理 CalcJob → 清单门禁 → 筛选 calcfunction 的两阶段 WorkChain，可调用轻量 mock 或 [A 的真实 ProteinMPNN 任务](docs/aiida_tasks.md)。WorkChain 使用 AiiDA 原生 `submit`、outline 等待和持久化上下文；推理与筛选参数分开输入，上游结果通过原生 `Dict` 端口连接。真实任务和仅重筛选的历史运行见 [R005 记录](experiments/R005-aiida-proteinmpnn/record.md)，整体进展见 [当前状态](docs/status.md)。
+## 公共端口与提交
 
-## 流程与公共端口
+| 端口 | 方向／类型 | 用途 |
+| --- | --- | --- |
+| `code` | 输入 `AbstractCode` | 真实推理 `ai4s.proteinmpnn`，mock 为 `ai4s.light-mpnn` |
+| `pdb_file` | 输入 `SinglefileData` | 结构输入，按内容校验 |
+| `mpnn_params` | 输入 `Dict` | 推理参数 |
+| `filter_params` | 输入 `Dict` | `score_threshold`、`top_k`，不传入推理任务 |
+| `existing_mpnn_result` | 可选输入 `Dict` | 旧结果入口，用于只重筛选；与决策端口互斥 |
+| `request_id`、`reuse_policy` | 可选输入 `Str` | 成对提供，分别为 `req-<UUID>` 及三种复用策略 |
+| `reuse_candidates` | 可选输入 `List` | 约定④完整候选，包含不合格项 |
+| `candidate_results` | 可选输入 `Dict` | `<结果UUID>::<完整fingerprint>` 到同一结果 UUID 的映射 |
+| `decision_function` | 可选输入 `Str` | daemon 可导入的可信 `module:function` |
+| `selected_sequences` | 输出 `Dict` | `entries`：选中样本和序列 |
+| `sample_table` | 输出 `Dict` | `rows`、筛选阈值和 `top_k` |
+| `selection_report` | 输出 `Dict` | 状态、决策、实际种子、尝试和缓存来源 |
 
-| 端口 | 方向 | 类型 | 用途 |
-| --- | --- | --- | --- |
-| `code` | 输入 | `AbstractCode` | 推理 Code；mock 声明 `ai4s.light-mpnn`，真实任务使用 `ai4s.proteinmpnn` |
-| `pdb_file` | 输入 | `SinglefileData` | 上游结构 Data，按内容哈希与旧结果复核 |
-| `mpnn_params` | 输入 | `Dict` | 只包含推理参数 |
-| `filter_params` | 输入 | `Dict` | 只包含 `score_threshold` 和 `top_k` |
-| `existing_mpnn_result` | 可选输入 | `Dict` | 旧复用入口；重筛选时直接沿用上游清单 Data |
-| `request_id` | 可选输入 | `Str` | 约定②的引擎请求编号；与 `reuse_policy` 成对提供 |
-| `reuse_policy` | 可选输入 | `Str` | `allow_reuse`／`force_rerun`／`new_sample` |
-| `reuse_candidates` | 可选输入 | `List` | 按约定④登记候选；不合格项也保留原因 |
-| `candidate_results` | 可选输入 | `Dict` | `<结果UUID>::<fingerprint>` 到结果节点 UUID 的映射 |
-| `decision_function` | 可选输入 | `Str` | 可信的自定义决策器，格式为 `module:function` |
-| `selected_sequences` | 输出 | `Dict` | 选中的样本及序列 |
-| `sample_table` | 输出 | `Dict` | 选中样本、阈值和 `top_k` |
-| `selection_report` | 输出 | `Dict` | 状态、复用决定、实际种子、尝试明细、启动计数和失败原因 |
-
-WorkChain 的 outline 为：初始化（含复用决策） → 旧结果复用或按策略复用 → 有限推理尝试与等待 → 清单门禁 → 筛选。筛选输出由 `calcfunction` 创建并保留独立 creator；同一上游结果可以创建多个新的筛选过程。
-
-## 环境准备
-
-在个人 Coder 工作区使用已安装的 AiiDA 环境：
-
-```bash
-cd /home/coder/ai4s-workspace
-source ~/.venvs/aiida/bin/activate
-python -m pip install --no-deps -e .
-chmod +x src/ai4s_workflows/bin/mock_mpnn.py
-verdi daemon restart
-```
-
-首次启动可用 `verdi daemon start 1`。插件新增或代码修改后，需要刷新 editable 安装并重启本人 daemon，确保 worker 加载新模块；已有终止任务保留，另行提交新任务验证。不要操作其他成员的 daemon。
-
-使用指向 `mock_mpnn.py` 的本人 `InstalledCode`，调用 `submit_workchain("mock-mpnn@localhost", threshold=1.08, top_k=2)`。mock 有 40% 的随机失败概率，仅用于观察重试，不能据此评价真实模型可靠性。mock Code 必须声明 `ai4s.light-mpnn`；真实 Code 未声明默认插件时回退到 `ai4s.proteinmpnn`。
-
-## 真实任务提交
-
-`submit_workchain()` 构造合成 PDB 和 mock 参数，只用于 mock。真实任务使用 builder：
+先按[独立环境说明](docs/engine_service.md#独立安装与启动)准备统一内核、本人 profile 与 daemon。以下示例需将 Code 标签和 PDB 路径替换为目标环境的真实配置；参数约束见[任务声明](docs/task_declarations.md#声明与参数)。
 
 ```python
 from aiida import load_profile, orm
 from aiida.engine import submit
-from ai4s_tasks.submit import DEFAULT_PDB
 from ai4s_workflows.workflows import ProteinMPNNFilterWorkChain
 
 load_profile()
 builder = ProteinMPNNFilterWorkChain.get_builder()
 builder.code = orm.load_code("proteinmpnn-8907e667@localhost")
-builder.pdb_file = orm.SinglefileData(file=DEFAULT_PDB)
+builder.pdb_file = orm.SinglefileData(file="/实际路径/1CRN.pdb")
 builder.mpnn_params = orm.Dict(dict={
     "chains": "A", "num_sequences": 4,
     "sampling_temperature": 0.1, "seed": 41,
@@ -64,111 +40,94 @@ node = submit(builder)
 print(node.uuid)
 ```
 
-提交成功不等于执行成功；用 `verdi process show <UUID>`、`verdi process report <UUID>` 和以下只读报告检查原生状态：
+`submit_workchain()` 使用合成 PDB 和 mock 参数，只作演示；mock 有 40% 随机失败概率，不代表真实模型可靠性。新增插件或修改代码后，刷新本人专用环境的 editable 安装并重启本人 daemon，已有终态节点保持不变。
 
-```bash
-python -m ai4s_workflows.recovery --workchain <PK>
-```
+## 复用策略与记录
 
-## 下游重算
+WorkChain 的 `get_reuse_configuration()` 向统一内核提供请求上下文及 `ReuseMaterialization.CONSUME_CANDIDATE`。内核产生唯一决定后，WorkChain 再核对策略、过程、种子、候选和注入结果；重算明确禁用缓存。
 
-成功 WorkChain 可用 `rerun_filter_only(node.pk, new_top_k=3, new_threshold=0.83)` 创建新的筛选过程。入口只复制并修改筛选参数，`code`、`pdb_file`、`mpnn_params` 和 `existing_mpnn_result` 继续引用原任务 Data：
+| 策略 | 默认动作与种子 | 理由码 |
+| --- | --- | --- |
+| `allow_reuse`，存在合格候选 | 按顺序选择第一条；原种子直接消费结果，不创建 CalcJob | R01 |
+| `allow_reuse`，无合格候选 | 原参数、原种子重算 | R02 |
+| `force_rerun` | 原参数、原种子重算，仍保留全部候选供审计 | R03 |
+| `new_sample` | 使用不同于原值的 `1..2**32-1` 整数种子重算 | R04 |
+| 可信自定义决策器 | 仅在用户策略允许的动作范围内选择 | R05 |
 
-```python
-from ai4s_workflows.rerun import rerun_filter_only
-
-rerun = rerun_filter_only(node.pk, new_top_k=3, new_threshold=0.83)
-print(rerun.uuid)
-```
-
-验收时同时核对：新 WorkChain 的 `upstream_result_uuid` 与原任务一致；`attempt_count=0`、`model_launches=0`；新 WorkChain 的直接子节点中没有 CalcJob；mock 包装命令的启动计数文件未增加。`count_mpnn_launches()` 只统计 CalcJob 节点，不能替代外部程序启动计数，缓存命中时尤其如此。
-
-## 复用策略与决策记录
-
-新的复用链路要求同时提供 `request_id` 和 `reuse_policy`，并与旧 `existing_mpnn_result` 互斥。`allow_reuse` 选择第一条合格候选，无合格候选时用原参数、原种子重算；`force_rerun` 直接原种子重算；`new_sample` 生成不同有效种子。复用和重算都保留原种子，只有新采样改变 `effective_seed`。
+决策端口要求有效的 `mpnn_params.seed`。`request_id`、`reuse_policy` 不完整，或与 `existing_mpnn_result` 混用时返回 208。调用方按约定④构造候选后，可在提交前设置：
 
 ```python
-from aiida import orm
-
-builder.request_id = "req-6f1c2a9e-3b7d-4c51-9a0e-1d2f3c4b5a6e"
-builder.reuse_policy = "allow_reuse"
+builder.request_id = orm.Str("req-6f1c2a9e-3b7d-4c51-9a0e-1d2f3c4b5a6e")
+builder.reuse_policy = orm.Str("allow_reuse")
 builder.reuse_candidates = orm.List(list=[candidate])
 builder.candidate_results = orm.Dict(dict={
     f"{candidate['uuid']}::{candidate['fingerprint']}": candidate["uuid"],
 })
-# 可选：builder.decision_function = orm.Str("my_decisions:choose")
 ```
 
-复用时 WorkChain 不创建 CalcJob，而是按 `candidate_results` 加载结果节点并通过相同的 schema／上游门禁；`selection_report.cached_from` 记录结果来源**过程** UUID，`selected_candidate_uuid` 记录结果节点 UUID。强制重跑和新采样会创建 CalcJob，并设置 `metadata.disable_cache=True`；新采样的 CalcJob 参数与报告使用同一个实际种子。
+候选 `uuid` 指结果 `Dict`，来源 CalcJob UUID 另行记录。`(uuid, fingerprint)` 唯一；候选保留成员、位置、大小、耗时与资格。不合格 `reason` 以 `missing_file`、`format_error`、`insufficient`、`below_threshold`、`not_finished` 或 `manual_reject` 开头，合格项为 `null`。选中结果须可加载、UUID 一致、有原生来源并通过下述门禁；映射缺失、歧义或不一致返回 209。
 
-每次决定写入 WorkChain extras `ai4s_decision_records`，可按请求或过程 UUID 查询。完整字段、理由码、自定义决策器和 `208`／`209` 失败码见 [复用决策与决策记录](docs/reuse_decision.md)。
+决策以 `ai4s-decision-1` 保存到节点 extras 的 `ai4s_decision_records`，字段为 `request_id`、`process_uuid`、`reuse_policy`、完整 `candidate_compare_list`、`final_decision`（action、selected_candidate_uuid、effective_seed）、`reason`（reason_code、reason_text）及 UTC `timestamp`。同一请求与过程重放替换原记录；同一请求的不同过程保留各自记录。只读取通过结构及策略校验的记录：
 
-## 门禁、重试与失败记录
+```python
+from ai4s_workflows.decision import find_decisions_by_request, find_decisions_by_process
 
-- 固定最多两次提交：一次首次尝试和一次重试（`MAX_ATTEMPTS=2`、`MAX_RETRY=1`）。
-- 只有 CalcJob 成功、清单 schema 为 `ai4s-artifacts-1`、版本在白名单、`validation.passed is True`、无 `errors`／`issues`／`known_issues`、没有已知缓存失效标记，并且序列样本、文件端口和样本映射完整时，才进入筛选。
-- 确定性门禁失败直接终止，不重新运行模型；CalcJob 失败或提交明确未产生外部作业时，最多再提交一次。
-- `selection_report.attempts` 逐次保存 `attempt`、稳定 `label`、`calcjob_pk`／`calcjob_uuid`、`process_state`、`exit_status`、`cache_source` 以及提交前后 `model_launches`。失败报告另含 `status` 和可读 `reason`。
-- 提交调用异常时，先按稳定 label 查询原生 CalcJob；查到外部作业或查询本身失败时返回 `SUBMISSION_STATE_UNCERTAIN`，不会盲目重复提交。人工核对通过后再决定恢复或重新提交。
-
-常见失败状态包括 `failed_max_attempts`、`invalid_schema`、`invalid_manifest`、`missing_output`、`unsupported_version`、`unqualified_upstream` 和 `submission_uncertain`。`model_launches` 是已创建 CalcJob 的累计数，不是缓存命中时的外部模型启动次数。
-
-故障样例：
-
-| 状态 | 触发方式 | 预期 |
-| --- | --- | --- |
-| `failed_max_attempts` | mock 包装命令前两次均以 101 退出 | WorkChain 退出码 202，报告两条失败尝试和两个不同 CalcJob UUID |
-| `invalid_manifest` | CalcJob 成功但清单 `validation.errors` 非空 | 不创建筛选输出，报告退出码 206 和原因 |
-| `invalid_schema` | `existing_mpnn_result` 的 schema 不符 | 退出码 204，`model_launches=0` |
-| `unqualified_upstream` | 上游 Data 的 Code／PDB／参数／文件映射与请求不一致 | 退出码 206，不进入筛选 |
-| `submission_uncertain` | 提交调用异常且按 label 查到外部作业或核对查询失败 | 退出码 207，保留外部匹配身份，不自动重复提交 |
-
-## daemon 停止与排队恢复
-
-AiiDA WorkChain 的上下文和子过程状态保存在数据库中，正常停止并重启 daemon 后不应重新提交同一 WorkChain。操作顺序：
-
-1. 先运行 `verdi daemon status`、`verdi process list -a`，记录 WorkChain 及子 CalcJob 的 PK、UUID、状态和退出码。
-2. daemon 停止时提交的任务应保持 `waiting`；daemon 恢复后由 AiiDA 队列继续，不依据“没有输出”推断失败。
-3. 正在执行的 direct 作业可能继续在操作系统层运行；daemon 恢复后先查原生状态和取回目录，再决定等待、`verdi process play <PK>` 或诊断失败。不要创建第二个相同作业。
-4. 提交命令没有返回 UUID 或出现连接错误时，先按 attempt label 查询，例如 `python -m ai4s_workflows.recovery --label '<label>'`。只有确认没有外部作业且本次失败可安全重试时，才允许再次提交。
-5. 将停止前后作业身份、状态和尝试日志写入运行记录；`selection_report.attempts` 与 `recovery.workflow_report()` 都可用于复核。
-
-`tests/test_aiida_workflows.py` 在 POSIX 临时 profile 中包含排队 WorkChain 和运行中 WorkChain 的 daemon 停启恢复检查；这些检查涉及 daemon，Windows 主机直接跳过。
-
-## 最小验证与原生验收
-
-快速逻辑检查不需要 daemon：
-
-```bash
-PYTHONPATH=src python -m pytest -q \
-  tests/test_reuse_decision.py \
-  tests/test_workflow_logic.py \
-  tests/test_ai4s_tasks.py
+records = find_decisions_by_request("req-6f1c2a9e-3b7d-4c51-9a0e-1d2f3c4b5a6e")
+# 或 find_decisions_by_process(node.uuid)
 ```
 
-POSIX 目标环境运行完整 CPU mock 集成检查：
+也可使用 B 模块 `python -m ai4s_query.cli decision <请求或过程UUID>`。候选和记录字段与[约定④](https://lcnzinmktf6r.feishu.cn/wiki/YH74w7cq6iZLdVkpVBBcMEtcnlc)、[约定⑤](https://lcnzinmktf6r.feishu.cn/wiki/WRgGwqdcKiqvFNkwqSscY7pMn8c)对齐。
+
+自定义函数接收 `request_id`、`process_uuid`、`reuse_policy`、`candidate_compare_list`、`original_seed`，返回四字段：
+
+```python
+def choose(context):
+    return {
+        "action": "rerun",
+        "selected_candidate_uuid": None,
+        "effective_seed": context["original_seed"],
+        "reason_text": "现有候选证据不足",
+    }
+```
+
+将经过审查的函数配置为 `builder.decision_function = orm.Str("my_decisions:choose")`。`allow_reuse` 仅允许 reuse／rerun，force_rerun 仅允许 rerun，new_sample 仅允许 new_sample；不能选择不合格项、复用换种子或重算换种子。
+
+## 门禁、重筛选与失败处理
+
+推理结果必须来自成功结束的相应 CalcJob，满足 Code 配置与模型身份、PDB 内容及补齐默认值后的推理参数一致性，并通过清单 schema、当前 Parser 校验、正式文件端口与样本映射检查。跨成员比较已核实的 Code 内容，不要求 Computer UUID 相同。具体文件和数值校验由 [A 模块](docs/aiida_tasks.md)维护。
+
+确定性门禁失败不重跑模型；CalcJob 失败或确认没有外部作业的提交失败，最多进行两次总尝试。稳定 label 为 `ai4s-mpnn:<WorkChain UUID>:<两位尝试号>`。提交异常先按 label 核对；存在外部作业或查询失败则返回 207，不重复提交。
+
+| 退出码 | 含义 |
+| --- | --- |
+| 201 | 不支持的产物版本 |
+| 202 | 已达到尝试上限 |
+| 203 | 缺少推理输出 |
+| 204 | 产物 schema 不符 |
+| 205 | 推理计算失败 |
+| 206 | 清单不合格或上游身份不符 |
+| 207 | 提交状态不明 |
+| 208 | 复用请求不完整、互斥或无效 |
+| 209 | 无法唯一定位或加载选中结果 |
+
+`selection_report.attempts` 保存尝试号、label、CalcJob PK／UUID、状态、退出码、缓存来源与创建计数；失败报告保留原因。成功复用时 `selected_candidate_uuid` 是结果 UUID，`cached_from` 是来源过程 UUID。`model_launches` 和 `count_mpnn_launches()` 统计 CalcJob 节点，不能代替实际模型执行次数。
+
+仅改变筛选时，调用 `rerun_filter_only(node.pk, new_top_k=3, new_threshold=0.83)`。新 WorkChain 引用原 Code、PDB、推理参数和结果 Data，筛选 calcfunction 有独立 creator。验收同时检查上游 UUID 一致、零新 CalcJob、零尝试以及外部程序计数未增加。
+
+## 恢复与验证
+
+用 `verdi process show <UUID>`、`verdi process report <UUID>` 和 `python -m ai4s_workflows.recovery --workchain <PK>` 检查完成状态；提交返回 UUID 不等于成功。
+
+停止本人 daemon 前记录过程身份和状态。daemon 停止期间排队的任务应保持等待，重启后由原队列继续；direct 作业可能仍在操作系统执行，应先检查原生状态与取回目录，再决定等待、`verdi process play <PK>` 或诊断。提交没有返回 UUID 时用 `python -m ai4s_workflows.recovery --label '<label>'` 核对，确认没有外部作业后再决定重提。
+
+在统一内核的专用 Python 3.12 环境运行：
 
 ```bash
-source ~/.venvs/aiida/bin/activate
+python -m pytest -q
+python tests/test_engine_kernel.py
 python tests/test_aiida_workflows.py
 ```
 
-测试使用独立临时 profile 和 daemon，覆盖成功两阶段、失败后重试、尝试上限、已知失效清单、异常子任务、仅重筛选、连续重算、稳定 label 核对、排队恢复和 daemon 停启恢复；不运行 GPU 模型。测试 wrapper 固定 mock 成功／失败次序，并保留每次真实包装命令的计数。
+后两项创建独立临时 profile；工作流检查使用 CPU mock，涵盖重试、门禁、仅重筛选、提交核对及 POSIX daemon 排队／停启恢复，不构成真实模型中断恢复验收。真实跨成员验证入口为 [verify_member_reuse.py](scripts/verify_member_reuse.py)，命令、实际环境、文件与原生节点核对见 [R007](experiments/R007-member-reuse/record.md)；历史 GPU 三策略与重筛选证据见 [R005](experiments/R005-aiida-proteinmpnn/record.md)。
 
-不依赖 C 辅助函数的原生验收示例：
-
-```python
-from aiida import load_profile, orm
-
-load_profile()
-workchain = orm.load_node(<WORKCHAIN_PK>)
-print(workchain.uuid, workchain.process_state, workchain.exit_status)
-print(workchain.outputs.selection_report.get_dict())
-for child in workchain.called:
-    print(child.pk, child.uuid, child.process_type, child.process_state, child.exit_status)
-for child in workchain.called:
-    if isinstance(child, orm.CalcJobNode):
-        print("calcjob input result:", child.inputs.params.uuid)
-```
-
-返回：[A 模块](docs/aiida_tasks.md) · [复用决策](docs/reuse_decision.md) · [运行记录](experiments/R005-aiida-proteinmpnn/record.md) · [当前状态](docs/status.md) · [仓库](README.md)。
+返回：[A 模块](docs/aiida_tasks.md) · [任务声明](docs/task_declarations.md) · [引擎](docs/engine_service.md) · [状态](docs/status.md) · [仓库](README.md)。

@@ -16,7 +16,7 @@
 
 ## 独立真实引擎
 
-任务 4.0 使用独立 AiiDA `2.9.4+ai4s.1` 环境与独立配置根，不替换共用 2.9.4 或成员 profile。依赖复用、固定 fork、启动变量与端口统一见 [引擎服务](engine_service.md#独立安装与启动)，实际运行位置只记录于 [R006](../experiments/R006-aiida-engine/record.md)。
+真实引擎使用专用 AiiDA 环境与独立配置根，不替换共用环境或成员 profile。固定 fork、依赖复用、启动变量与端口统一见 [引擎服务](engine_service.md#独立安装与启动)，当前跨成员运行位置与验证见 [R007](../experiments/R007-member-reuse/record.md)，历史环境保留在各自运行记录中。
 
 ## 配置约定
 

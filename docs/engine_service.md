@@ -20,7 +20,7 @@
 
 - 团队 fork：[QUHONGYE-gif/aiida-core](https://github.com/QUHONGYE-gif/aiida-core)，版本标签 `ai4s-2.9.4-2`，提交 `1998e2939123dcb17e845d8fe6716acf5ecba896`。
 - 上游基线：`v2.9.4`／`9ffe5ed8220e59b20d2d5f2d79ecb3410488cd06`。安装后 Python 版本标识为 `2.9.4+ai4s.2`。
-- [完整补丁](../patches/aiida-core-2.9.4-ai4s.patch)可在固定上游源码用 `git apply --unidiff-zero` 应用；没有修改团队原共用版本或个人 profile，也没有推送两个仓库的 `main`。
+- 内核改动只在上述 fork 维护；[固定上游到该提交的差异](https://github.com/QUHONGYE-gif/aiida-core/compare/9ffe5ed8220e59b20d2d5f2d79ecb3410488cd06...1998e2939123dcb17e845d8fe6716acf5ecba896)可直接审阅，不在本仓库重复保存补丁。团队原共用环境、个人 profile 和两个仓库的 `main` 保持不变。
 
 | 原生位置 | 改动与作用 |
 | --- | --- |
@@ -61,7 +61,7 @@ curl http://127.0.0.1:3003/api/engine/health
 ## 使用与查询
 
 1. `POST /api/engine/uploads`，JSON 为 `filename` 和 PDB 文本 `content`；响应包含 `upload_id`、SHA-256 和大小。上传不超过 1 MiB，不接收客户端任意文件路径。
-2. 按②提交请求。`declaration` 使用 `proteinmpnn`／`1`，`workflow` 使用 `single` 或 `mpnn_filter`；请求者保留账号和姓名。
+2. 按②提交请求。`declaration` 使用 `proteinmpnn`／`1`，`workflow` 使用 `single` 或 `mpnn_filter`；参数与端口见[任务声明](task_declarations.md)。请求者保留账号和姓名。
 3. 轮询请求状态；以 `finished` 或 `failed` 为终态。`client_ref` 在同一成员范围防重，相同编号携带不同正文会被拒绝，服务重启后仍保留记录。未知提交状态不会自动重跑。
 4. 查看决策、来源与正式文件。
 

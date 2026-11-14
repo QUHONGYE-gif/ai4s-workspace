@@ -90,4 +90,4 @@ node tests/test_api_client.cjs
 
 `web/demo/engine.html` 使用已发布声明生成参数表单，并通过标准库工作台后端调用独立引擎。接口、启动与范围统一见 [引擎说明](../docs/engine_service.md)；最新跨成员证据见 [R007](../experiments/R007-member-reuse/record.md)，历史单成员证据见 [R006](../experiments/R006-aiida-engine/record.md)。原模拟实验流程继续保留。
 
-任务注册中心与工作流编辑器使用独立入口，声明草稿的提案、确认、导出及恢复见[登记说明](../docs/task_declaration_run.md)。
+任务注册中心与工作流编辑器使用独立入口，声明草稿的提案、确认、导出及恢复见[登记说明](../docs/task_declarations.md)。

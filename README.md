@@ -7,7 +7,7 @@
 ## 开发入口
 
 - [工作台前后端](web/README.md)：文件职责、启动、API 与已有测试。
-- [任务注册中心](docs/task_declaration_run.md)：声明编辑、Agent 提案、确认与导出。
+- [任务声明与注册中心](docs/task_declarations.md)：声明规则、编辑确认、发布与导出。
 - [真实引擎服务](docs/engine_service.md)：模型身份指纹、② HTTP 提交、三种策略与真实验收记录。
 - [PyMOL](tools/pymol_web/README.md)：在已有工作区启动结构查看、网页命令和完整界面。
 - [蛋白质设计](docs/protein_pipeline.md)：配置、运行与输出约定。

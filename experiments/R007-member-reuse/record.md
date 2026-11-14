@@ -5,6 +5,7 @@
 ## 范围与运行身份
 
 - 日期：2026-11-14，Asia/Taipei。工作台基线 `dev-qhy@5aa6185`，在已有干净副本上开发，原本地工作区的未提交修改保留。
+- 本记录的执行源码固定于 `50ab0954f1a72da3942ee620efc9733d021143b0`；后续 PR 精简仅整理文档、测试和重复验收入口。证据 JSON 中的源码清单保留运行当时的路径与摘要，不随目录整理改写。
 - 纳入成员固定提交及职责见[引擎说明](../../docs/engine_service.md#契约与代码来源)。整合 ckz、csr、wyh 最新 GitHub 实现；不检查或引入 zjx 本轮实现。
 - 统一内核：`QUHONGYE-gif/aiida-core@1998e2939123dcb17e845d8fe6716acf5ecba896`，标签 `ai4s-2.9.4-2`，Python 标识 `2.9.4+ai4s.2`。保留团队原有标签、共用环境和个人 profile。
 - 执行位置：`lab-gpu` 的 `ai4s-personal-csr-dev` 和 `ai4s-personal-qhy-dev` 两个真实成员容器，分别使用 `ai4s-integration-csr`、`ai4s-integration-qhy`，各自的 SQLite、Repository 和 daemon 独立。没有把两个人的数据库挂在同一容器里模拟。
@@ -80,5 +81,13 @@ python scripts/verify_member_reuse.py \
 ## 当前限制
 
 本轮验证目标是两个真实成员容器的 ProteinMPNN 结果共享与消费。没有重新验收所有成员组合、GPU、完整 RFdiffusion → ProteinMPNN → Boltz、真实模型中断恢复或完整实验 Agent 页面闭环。登记 UI 已整合，未新增真实 LLM 调用或浏览器视觉验收；既有成员应用入口与数据保持原状。
+
+## PR 精简后的回归（2026-11-14）
+
+以 `50ab095` 为基线，合并重复声明／决策文档，改为引用固定内核源码，删除旧三策略验证脚本与无行为校验价值的断言。业务源码、运行配置、依赖及本记录的证据 JSON 逐文件保持不变。同一请求的三策略与记录查询仍由 `tests/test_aiida_workflows.py::WorkflowIntegrationTests::test_three_reuse_policies_launch_only_when_required_and_persist_records` 覆盖，真实跨成员入口保留。
+
+回归使用 `lab-gpu` 的 qhy 容器、既有专用 Python 3.12 环境，测试快照独立放在 `/home/coder/ai4s-pr11-cleanup-20261114`，未替换运行中的服务目录。命令为 `PYTHONPATH=src python -m pytest -q`，结果 **110 passed、21 skipped**；容器日志 `/home/coder/runs/integration-20261114/pr11-cleanup-pytest.log`（宿主 `/data1/qhy/runs/qhy/integration-20261114/pr11-cleanup-pytest.log`）。本地 `for test_file in tests/*.cjs; do node "$test_file" || exit 1; done` 的 6 个 JavaScript 测试文件、修改文档的相对链接与锚点检查、`git diff --check` 均通过。
+
+21 个跳过项是单独执行的原生／工作流检查；这些入口、业务实现及内核未变，沿用本记录已有的 6 项原生、15 项工作流及 15 项 fork 检查证据。本次未重新运行科学任务、真实 LLM 或浏览器验收，不改写前述七个过程的结果。
 
 返回：[引擎说明](../../docs/engine_service.md) · [状态](../../docs/status.md) · [仓库](../../README.md)。

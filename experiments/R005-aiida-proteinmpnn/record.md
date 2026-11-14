@@ -195,7 +195,7 @@ reason_code: R04
 
 ## 2026-11-13 同一 request_id 三策略真实 GPU 复验（fork 接入）
 
-在 Coder 独立 profile `ai4s-wyh-reuse` 上执行 `scripts/verify_same_request_reuse_policies.py`。Python 指向独立 fork `/home/coder/aiida-core-dev-wyh-clean2/src/aiida/__init__.py`，daemon 使用独立环境，未修改共享 `ai4s` profile。真实运行使用 release `8907e667-py312-torch260cu124` 的 `examples/1CRN.pdb`，链 A、原种子 41、阈值 0.82、`top_k=2`。
+在 Coder 独立 profile `ai4s-wyh-reuse` 上执行[当时的三策略验证脚本](https://github.com/QUHONGYE-gif/ai4s-workspace/blob/1f31ae61d9c7510647d5cc793130d0c59a1672e4/scripts/verify_same_request_reuse_policies.py)。Python 指向独立 fork `/home/coder/aiida-core-dev-wyh-clean2/src/aiida/__init__.py`，daemon 使用独立环境，未修改共享 `ai4s` profile。真实运行使用 release `8907e667-py312-torch260cu124` 的 `examples/1CRN.pdb`，链 A、原种子 41、阈值 0.82、`top_k=2`。
 
 同一请求编号为 `req-f433676d-d4b0-429b-8b44-cb8a21813678`，三个 WorkChain 和两个实际 CalcJob 均为 `Finished [0]`，CalcJob 的 `cache_source` 均为 `null`：
 

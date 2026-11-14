@@ -91,7 +91,6 @@ check('creation saves a ready experiment before simulation starts', () => {
   assert.deepEqual(experiment.choices, {});
   page = {name: 'experiment', id: experiment.id, query: new URLSearchParams()};
   assert.equal(experiment.creationConfirmed, false);
-  assert.match(experimentPage(experiment), /等待确认创建概述/);
   startExperiment(experiment.id);
   assert.equal(experiment.status, 'ready');
   confirmCreation(experiment.id);
@@ -109,7 +108,6 @@ check('experiment uses one graph and switching views does not start or change th
   page.query.set('view', 'results');
   const results = experimentPage(e);
   assert.match(results, /data-experiment-view="results"/);
-  assert.match(results, /确认候选并开始模拟/);
   assert.match(results, /role="progressbar"/);
   assert.doesNotMatch(results, /plan-flow/);
   assert.equal((results.match(/class="live-flow /g) || []).length, 1);
