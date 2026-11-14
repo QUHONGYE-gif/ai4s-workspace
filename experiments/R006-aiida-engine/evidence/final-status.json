@@ -1,0 +1,257 @@
+{
+  "first": {
+    "request_id": "req-3fd6689d-b92f-4c20-89cd-6b00480c8e84",
+    "state": "finished",
+    "submitted_at": "2026-11-12T14:20:33Z",
+    "updated_at": "2026-11-12T14:38:52Z",
+    "finished_at": "2026-11-12T14:21:03Z",
+    "decision": {
+      "action": "rerun",
+      "reason_code": "R02",
+      "reason_text": "策略为允许复用，但候选为空，降级使用原参数和原种子重算"
+    },
+    "process": {
+      "uuid": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+      "pk": 4,
+      "label": "req-3fd6689d-b92f-4c20-89cd-6b00480c8e84",
+      "process_state": "finished",
+      "exit_status": 0,
+      "exit_message": null
+    },
+    "cached_from": null,
+    "effective": {
+      "seed": 41,
+      "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+      "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+      "identity_unresolved": null
+    },
+    "outputs": {
+      "artifacts": {
+        "sequences": "1c6103b6-39f0-419f-a40f-1df7dede856f",
+        "scores": "cfec6bcf-c244-45a9-a0d8-3a3d56a78dc9",
+        "probabilities": "75de7d38-3f18-4124-8cc5-55d7e1d1ec70"
+      },
+      "result": "2150a22e-32d6-44dd-9e5f-421d32bf54d3"
+    },
+    "error": null
+  },
+  "repeat": {
+    "request_id": "req-89c5c8a2-cf83-42a0-a641-74ea5b65238f",
+    "state": "finished",
+    "submitted_at": "2026-11-12T14:21:46Z",
+    "updated_at": "2026-11-12T14:38:52Z",
+    "finished_at": "2026-11-12T14:21:51Z",
+    "decision": {
+      "action": "reuse",
+      "reason_code": "R01",
+      "reason_text": "策略为允许复用，存在合格候选，按候选顺序选中 84218bad-5375-42f9-a880-9d34096bff60 复用"
+    },
+    "process": {
+      "uuid": "cf79499b-91c3-42f5-8828-e865ddcc98c7",
+      "pk": 13,
+      "label": "req-3fd6689d-b92f-4c20-89cd-6b00480c8e84",
+      "process_state": "finished",
+      "exit_status": 0,
+      "exit_message": null
+    },
+    "cached_from": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+    "effective": {
+      "seed": 41,
+      "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+      "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+      "identity_unresolved": null
+    },
+    "outputs": {
+      "artifacts": {
+        "sequences": "13c49e28-1da1-4110-afad-4a338a1f3f2c",
+        "scores": "4b2725a7-fce2-4b6a-bf3a-abffa55f4d42",
+        "probabilities": "dd605274-77d5-4073-a35d-9a358906cf4e"
+      },
+      "result": "ebc9132b-ea0e-4186-9fd6-2a7a975e035e"
+    },
+    "error": null
+  },
+  "explicit_defaults": {
+    "request_id": "req-4bda7490-0e9e-4a8f-8fe3-305c2843aaa2",
+    "state": "finished",
+    "submitted_at": "2026-11-12T14:21:53Z",
+    "updated_at": "2026-11-12T14:38:52Z",
+    "finished_at": "2026-11-12T14:21:58Z",
+    "decision": {
+      "action": "reuse",
+      "reason_code": "R01",
+      "reason_text": "策略为允许复用，存在合格候选，按候选顺序选中 84218bad-5375-42f9-a880-9d34096bff60 复用"
+    },
+    "process": {
+      "uuid": "8e929d30-0374-4027-9310-6ec10ce13a77",
+      "pk": 22,
+      "label": "req-3fd6689d-b92f-4c20-89cd-6b00480c8e84",
+      "process_state": "finished",
+      "exit_status": 0,
+      "exit_message": null
+    },
+    "cached_from": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+    "effective": {
+      "seed": 41,
+      "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+      "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+      "identity_unresolved": null
+    },
+    "outputs": {
+      "artifacts": {
+        "sequences": "92147152-48f2-43da-a1ab-4321ca38bb76",
+        "scores": "2e8b0bc4-a75b-4e1f-8dc6-b63d6a0d9493",
+        "probabilities": "c4cc6f58-c964-45d3-b780-839b939367e5"
+      },
+      "result": "452df7d9-7529-4d6c-9295-323b5a24cab0"
+    },
+    "error": null
+  },
+  "force_rerun": {
+    "request_id": "req-c34ce701-f9c4-472c-a29d-f0a550322898",
+    "state": "finished",
+    "submitted_at": "2026-11-12T14:22:00Z",
+    "updated_at": "2026-11-12T14:38:52Z",
+    "finished_at": "2026-11-12T14:22:29Z",
+    "decision": {
+      "action": "rerun",
+      "reason_code": "R03",
+      "reason_text": "用户选择强制重算，忽略已有候选，使用原参数、原种子重新运行"
+    },
+    "process": {
+      "uuid": "dd6e6d09-4e7b-4fd7-8ef8-eef656de73a4",
+      "pk": 31,
+      "label": "req-c34ce701-f9c4-472c-a29d-f0a550322898",
+      "process_state": "finished",
+      "exit_status": 0,
+      "exit_message": null
+    },
+    "cached_from": null,
+    "effective": {
+      "seed": 41,
+      "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+      "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+      "identity_unresolved": null
+    },
+    "outputs": {
+      "artifacts": {
+        "sequences": "f3bcaa48-f2e4-42f4-b482-91e40b282c52",
+        "scores": "6ba9920d-2ff1-4f8c-9c65-69c963fa8b78",
+        "probabilities": "0bf7dcc4-0749-45d4-a889-6b17bb80dc50"
+      },
+      "result": "f2a2d491-578a-4ebc-9c3b-0cd7c7d86946"
+    },
+    "error": null
+  },
+  "new_sample": {
+    "request_id": "req-af4b7b46-4e59-4a36-bd6f-965482758651",
+    "state": "finished",
+    "submitted_at": "2026-11-12T14:22:30Z",
+    "updated_at": "2026-11-12T14:38:52Z",
+    "finished_at": "2026-11-12T14:22:59Z",
+    "decision": {
+      "action": "new_sample",
+      "reason_code": "R04",
+      "reason_text": "用户选择新采样，忽略已有候选，更换种子运行"
+    },
+    "process": {
+      "uuid": "a0ac1508-3508-496e-a716-d15c0158c05c",
+      "pk": 40,
+      "label": "req-af4b7b46-4e59-4a36-bd6f-965482758651",
+      "process_state": "finished",
+      "exit_status": 0,
+      "exit_message": null
+    },
+    "cached_from": null,
+    "effective": {
+      "seed": 2055269585,
+      "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+      "fingerprint": "955965229924741e730cd3314f7cc4a438a4b1fef2930ea22c3d23935133c304",
+      "identity_unresolved": null
+    },
+    "outputs": {
+      "artifacts": {
+        "sequences": "953049e6-bb40-4382-8f4d-ecc404772b65",
+        "scores": "89e862c0-becc-4545-ab8d-12b7c358f0b3",
+        "probabilities": "eb46fc88-bbcb-42ad-8e44-5c868ed94156"
+      },
+      "result": "c733ae05-795d-4bcb-9abc-2e6424edaefd"
+    },
+    "error": null
+  },
+  "weight_change": {
+    "request_id": "req-376f3845-df05-4aa5-8f62-22499975c8f0",
+    "state": "finished",
+    "submitted_at": "2026-11-12T14:22:59Z",
+    "updated_at": "2026-11-12T14:38:53Z",
+    "finished_at": "2026-11-12T14:23:26Z",
+    "decision": {
+      "action": "rerun",
+      "reason_code": "R02",
+      "reason_text": "策略为允许复用，但候选为空，降级使用原参数和原种子重算"
+    },
+    "process": {
+      "uuid": "9ec5afbe-b171-4ed9-9368-33e5f501b33e",
+      "pk": 50,
+      "label": "req-376f3845-df05-4aa5-8f62-22499975c8f0",
+      "process_state": "finished",
+      "exit_status": 0,
+      "exit_message": null
+    },
+    "cached_from": null,
+    "effective": {
+      "seed": 41,
+      "identity_digest": "35cf1ef74f9fbcdfc266f0c94a34987f91b7e93e0c247f2cf47c813e213fe801",
+      "fingerprint": "4967782af504887802f3334187712ab5df73a88fe19d0b2c7b85c2e2a32a7b95",
+      "identity_unresolved": null
+    },
+    "outputs": {
+      "artifacts": {
+        "sequences": "f9c12136-da74-49d5-bc66-596720227107",
+        "scores": "2d1c539a-c9c6-4438-8f23-cda23cd846a0",
+        "probabilities": "e42229e8-8c79-4c2e-a12c-aaebe5e1e012"
+      },
+      "result": "b7536b0e-3185-4890-b443-8028b2efba80"
+    },
+    "error": null
+  },
+  "two_stage": {
+    "request_id": "req-5b5f3c54-0866-4441-a8f4-68abad2d2543",
+    "state": "finished",
+    "submitted_at": "2026-11-12T14:23:28Z",
+    "updated_at": "2026-11-12T14:38:53Z",
+    "finished_at": "2026-11-12T14:23:37Z",
+    "decision": {
+      "action": "reuse",
+      "reason_code": "R01",
+      "reason_text": "策略为允许复用，存在合格候选，按候选顺序选中 2150a22e-32d6-44dd-9e5f-421d32bf54d3 复用"
+    },
+    "process": {
+      "uuid": "61fabfc6-59ad-4b52-a63b-d10f68e27115",
+      "pk": 64,
+      "label": "req-5b5f3c54-0866-4441-a8f4-68abad2d2543",
+      "process_state": "finished",
+      "exit_status": 0,
+      "exit_message": null
+    },
+    "cached_from": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+    "effective": {
+      "seed": 41,
+      "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+      "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+      "identity_unresolved": null
+    },
+    "outputs": {
+      "artifacts": {
+        "sequences": "1c6103b6-39f0-419f-a40f-1df7dede856f",
+        "scores": "cfec6bcf-c244-45a9-a0d8-3a3d56a78dc9",
+        "probabilities": "75de7d38-3f18-4124-8cc5-55d7e1d1ec70"
+      },
+      "result": "2150a22e-32d6-44dd-9e5f-421d32bf54d3",
+      "selected_sequences": "8050517f-2351-4da7-8c2c-9c3257d5a609",
+      "sample_table": "20b356eb-2657-40af-8651-2425b3d59f43",
+      "selection_report": "ab23abd0-e1da-4c3c-9de8-3ad7e570b257"
+    },
+    "error": null
+  }
+}

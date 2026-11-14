@@ -18,6 +18,7 @@ const context = vm.createContext({
   URLSearchParams,
   location: {hash: ''},
   console,
+  document: {activeElement:null, body:{style:{}}, querySelector(){return {hidden:true,focus(){},querySelectorAll(){return []}}}},
   assert,
   setTimeout,
   clearTimeout,
@@ -89,6 +90,12 @@ check('creation saves a ready experiment before simulation starts', () => {
   assert.equal(product.drafts.protein, undefined);
   assert.deepEqual(experiment.choices, {});
   page = {name: 'experiment', id: experiment.id, query: new URLSearchParams()};
+  assert.equal(experiment.creationConfirmed, false);
+  startExperiment(experiment.id);
+  assert.equal(experiment.status, 'ready');
+  confirmCreation(experiment.id);
+  assert.equal(experiment.creationConfirmed, true);
+  assert.equal(experiment.status, 'ready');
 });
 
 check('experiment uses one graph and switching views does not start or change the plan', () => {
@@ -101,7 +108,6 @@ check('experiment uses one graph and switching views does not start or change th
   page.query.set('view', 'results');
   const results = experimentPage(e);
   assert.match(results, /data-experiment-view="results"/);
-  assert.match(results, /确认候选并开始模拟/);
   assert.match(results, /role="progressbar"/);
   assert.doesNotMatch(results, /plan-flow/);
   assert.equal((results.match(/class="live-flow /g) || []).length, 1);

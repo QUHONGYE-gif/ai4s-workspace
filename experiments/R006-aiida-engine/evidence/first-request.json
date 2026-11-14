@@ -1,0 +1,59 @@
+{
+  "payload": {
+    "schema_version": "ai4s-request-1",
+    "client_ref": "acceptance-01b72e03-01ef-4ef5-95f4-462f3b238357",
+    "requester": {
+      "member_id": "qhy",
+      "display_name": "曲鸿烨"
+    },
+    "declaration": {
+      "task_id": "proteinmpnn",
+      "version": "1"
+    },
+    "workflow": "single",
+    "inputs": {
+      "pdb_file": {
+        "source": "upload",
+        "upload_id": "up-bdcce7fa-3d0f-4ca7-940f-0a668e809b57"
+      }
+    },
+    "params": {
+      "inference": {
+        "chains": "A",
+        "num_sequences": 4,
+        "sampling_temperature": 0.1,
+        "seed": 41
+      }
+    },
+    "reuse_policy": "allow_reuse"
+  },
+  "accepted": {
+    "request_id": "req-3fd6689d-b92f-4c20-89cd-6b00480c8e84",
+    "state": "running",
+    "submitted_at": "2026-11-12T14:20:33Z",
+    "updated_at": "2026-11-12T14:20:35Z",
+    "finished_at": null,
+    "decision": {
+      "action": "rerun",
+      "reason_code": "R02",
+      "reason_text": "策略为允许复用，但候选为空，降级使用原参数和原种子重算"
+    },
+    "process": {
+      "uuid": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+      "pk": 4,
+      "label": "req-3fd6689d-b92f-4c20-89cd-6b00480c8e84",
+      "process_state": "running",
+      "exit_status": null,
+      "exit_message": null
+    },
+    "cached_from": null,
+    "effective": {
+      "seed": 41,
+      "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+      "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+      "identity_unresolved": null
+    },
+    "outputs": null,
+    "error": null
+  }
+}

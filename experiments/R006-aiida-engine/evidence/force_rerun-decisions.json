@@ -1,0 +1,109 @@
+[
+  {
+    "request_id": "req-c34ce701-f9c4-472c-a29d-f0a550322898",
+    "process_uuid": "dd6e6d09-4e7b-4fd7-8ef8-eef656de73a4",
+    "reuse_policy": "force_rerun",
+    "candidate_compare_list": [
+      {
+        "uuid": "84218bad-5375-42f9-a880-9d34096bff60",
+        "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+        "member": "曲鸿烨",
+        "location": "profile://ai4s-engine/84218bad-5375-42f9-a880-9d34096bff60/outputs/seqs/input.fa",
+        "size_bytes": 71767,
+        "elapsed_s": 29.8,
+        "qualified": true,
+        "reason": null,
+        "note": "RemoteData 未 retrieve",
+        "process_uuid": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+        "process_pk": 4,
+        "process_label": "req-3fd6689d-b92f-4c20-89cd-6b00480c8e84",
+        "process_state": "finished",
+        "profile": "ai4s-engine",
+        "cached": false,
+        "cached_from": null,
+        "seq_count": 10,
+        "best_score": 0.7742,
+        "best_global_score": 0.7742,
+        "out_kinds": [
+          "RemoteData",
+          "FolderData",
+          "SinglefileData",
+          "SinglefileData",
+          "SinglefileData",
+          "Dict"
+        ],
+        "created": "2026-11-12 14:20:34.009890+00:00"
+      },
+      {
+        "uuid": "a9eeee84-88c9-4591-94e9-93619a8e3d0e",
+        "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+        "member": "曲鸿烨",
+        "location": "profile://ai4s-engine/a9eeee84-88c9-4591-94e9-93619a8e3d0e/outputs/seqs/input.fa",
+        "size_bytes": 71767,
+        "elapsed_s": 0,
+        "qualified": true,
+        "reason": null,
+        "note": "cached_from=1d4d55eb-4ee0-4b50-ae65-1a60506911dc; RemoteData 未 retrieve",
+        "process_uuid": "cf79499b-91c3-42f5-8828-e865ddcc98c7",
+        "process_pk": 13,
+        "process_label": "req-3fd6689d-b92f-4c20-89cd-6b00480c8e84",
+        "process_state": "finished",
+        "profile": "ai4s-engine",
+        "cached": true,
+        "cached_from": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+        "seq_count": 10,
+        "best_score": 0.7742,
+        "best_global_score": 0.7742,
+        "out_kinds": [
+          "RemoteData",
+          "FolderData",
+          "SinglefileData",
+          "SinglefileData",
+          "SinglefileData",
+          "Dict"
+        ],
+        "created": "2026-11-12 14:21:46.951285+00:00"
+      },
+      {
+        "uuid": "55f7f1aa-e40c-4566-b799-524a7cc16049",
+        "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+        "member": "曲鸿烨",
+        "location": "profile://ai4s-engine/55f7f1aa-e40c-4566-b799-524a7cc16049/outputs/seqs/input.fa",
+        "size_bytes": 71767,
+        "elapsed_s": 0,
+        "qualified": true,
+        "reason": null,
+        "note": "cached_from=1d4d55eb-4ee0-4b50-ae65-1a60506911dc; RemoteData 未 retrieve",
+        "process_uuid": "8e929d30-0374-4027-9310-6ec10ce13a77",
+        "process_pk": 22,
+        "process_label": "req-3fd6689d-b92f-4c20-89cd-6b00480c8e84",
+        "process_state": "finished",
+        "profile": "ai4s-engine",
+        "cached": true,
+        "cached_from": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+        "seq_count": 10,
+        "best_score": 0.7742,
+        "best_global_score": 0.7742,
+        "out_kinds": [
+          "RemoteData",
+          "FolderData",
+          "SinglefileData",
+          "SinglefileData",
+          "SinglefileData",
+          "Dict"
+        ],
+        "created": "2026-11-12 14:21:53.329221+00:00"
+      }
+    ],
+    "final_decision": {
+      "action": "rerun",
+      "selected_candidate_uuid": null,
+      "effective_seed": 41
+    },
+    "reason": {
+      "reason_code": "R03",
+      "reason_text": "用户选择强制重算，忽略已有候选，使用原参数、原种子重新运行"
+    },
+    "timestamp": "2026-11-12T14:22:02Z"
+  }
+]

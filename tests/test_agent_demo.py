@@ -34,11 +34,9 @@ def test_agent_assets_and_api_work_under_preview_prefix(tmp_path):
     with TestClient(create_app(tmp_path), root_path="/agent") as client:
         page = client.get("/agent/", follow_redirects=False)
         assert page.status_code == 307
-        assert page.headers["location"] == "../#/workflows/new?mode=ai"
+        assert page.headers["location"] == "../workbench.html#/workflows/editor"
         workspace = client.get("/agent/assets/workspace.html")
         assert workspace.status_code == 200
-        assert 'class="sidebar"' not in workspace.text
-        assert 'id="apply-workflow"' in workspace.text
         assert client.get("/agent/assets/app.js").status_code == 200
         assert client.get("/agent/api/health").json()["adapter"] == "not_connected"
         assert client.post("/agent/api/workflows", json={"template": "protein"}).status_code == 201

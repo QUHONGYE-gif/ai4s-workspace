@@ -1,0 +1,18 @@
+[
+  {
+    "request_id": "req-af4b7b46-4e59-4a36-bd6f-965482758651",
+    "process_uuid": "a0ac1508-3508-496e-a716-d15c0158c05c",
+    "reuse_policy": "new_sample",
+    "candidate_compare_list": [],
+    "final_decision": {
+      "action": "new_sample",
+      "selected_candidate_uuid": null,
+      "effective_seed": 2055269585
+    },
+    "reason": {
+      "reason_code": "R04",
+      "reason_text": "用户选择新采样，忽略已有候选，更换种子运行"
+    },
+    "timestamp": "2026-11-12T14:22:31Z"
+  }
+]

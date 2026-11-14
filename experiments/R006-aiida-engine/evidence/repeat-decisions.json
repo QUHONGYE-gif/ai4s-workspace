@@ -1,0 +1,49 @@
+[
+  {
+    "request_id": "req-89c5c8a2-cf83-42a0-a641-74ea5b65238f",
+    "process_uuid": "cf79499b-91c3-42f5-8828-e865ddcc98c7",
+    "reuse_policy": "allow_reuse",
+    "candidate_compare_list": [
+      {
+        "uuid": "84218bad-5375-42f9-a880-9d34096bff60",
+        "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+        "member": "曲鸿烨",
+        "location": "profile://ai4s-engine/84218bad-5375-42f9-a880-9d34096bff60/outputs/seqs/input.fa",
+        "size_bytes": 71767,
+        "elapsed_s": 29.8,
+        "qualified": true,
+        "reason": null,
+        "note": "RemoteData 未 retrieve",
+        "process_uuid": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+        "process_pk": 4,
+        "process_label": "req-3fd6689d-b92f-4c20-89cd-6b00480c8e84",
+        "process_state": "finished",
+        "profile": "ai4s-engine",
+        "cached": false,
+        "cached_from": null,
+        "seq_count": 10,
+        "best_score": 0.7742,
+        "best_global_score": 0.7742,
+        "out_kinds": [
+          "RemoteData",
+          "FolderData",
+          "SinglefileData",
+          "SinglefileData",
+          "SinglefileData",
+          "Dict"
+        ],
+        "created": "2026-11-12 14:20:34.009890+00:00"
+      }
+    ],
+    "final_decision": {
+      "action": "reuse",
+      "selected_candidate_uuid": "84218bad-5375-42f9-a880-9d34096bff60",
+      "effective_seed": 41
+    },
+    "reason": {
+      "reason_code": "R01",
+      "reason_text": "策略为允许复用，存在合格候选，按候选顺序选中 84218bad-5375-42f9-a880-9d34096bff60 复用"
+    },
+    "timestamp": "2026-11-12T14:21:47Z"
+  }
+]

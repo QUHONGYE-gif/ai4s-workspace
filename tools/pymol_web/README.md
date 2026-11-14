@@ -46,6 +46,8 @@ bash tools/pymol_web/start-workspace.sh
 
 Agent 内部端口为回环地址 3002，模型 API 和数据目录见 [Agent 说明](../../docs/agent_demo_run.md)。
 
+更新 Web／Agent 时，如已保留可用的 PyMOL RPC 和 noVNC 服务，可用 `AI4S_REUSE_PYMOL=1 bash tools/pymol_web/start-workspace.sh` 复用当前结构会话；启动前须先释放旧 Web／Agent／Nginx 端口。该模式检查 RPC 可用性，退出时仅清理新启动的服务，不管理已有 PyMOL 进程。默认启动方式不变。
+
 关闭 PyMOL 不停止工作台；重新打开工具需重启本人启动的联合服务。工作区停止后需重新启动服务，容器重建后需重新安装系统依赖；需保留的文件放在持久卷。
 
 接口依据：[PyMOL RPC](https://github.com/schrodinger/pymol-open-source/blob/master/modules/pymol/rpc.py) · [noVNC](https://github.com/novnc/noVNC/blob/master/docs/API.md) · [Nginx WebSocket](https://nginx.org/en/docs/http/websocket.html)。
