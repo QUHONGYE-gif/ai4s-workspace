@@ -3577,3 +3577,30 @@ a.brand {
 .agent-examples { margin: 8px 16px; font-size: var(--text-xs); }
 .agent-examples summary { color: var(--muted); cursor: pointer; }
 .agent-examples .btn { width: 100%; margin-top: 8px; padding: 8px 12px; text-align: left; white-space: normal; font-size: inherit; }
+
+/* Workspace strategy editor */
+.policy-columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px }
+.policy-editor :is(.policy-form, .policy-assistant, .policy-history, .policy-dialog) { padding: 22px }
+.policy-editor h2 { margin: 0; font-size: var(--text-lg) }
+.policy-form fieldset { margin: 16px 0 0; padding: 0; border: 0; min-width: 0 }
+.policy-editor label { display: grid; gap: 6px; font-weight: 600; font-size: var(--text-sm) }
+.policy-editor :is(select, input, textarea) {
+  display: block; width: 100%; min-width: 0; padding: 9px 11px; margin: 0;
+  border: 1px solid var(--gray-300); border-radius: 8px; font: inherit; background: white; color: inherit
+}
+.policy-assistant textarea { min-height: 64px; resize: vertical }
+.policy-limits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 16px 0 }
+.policy-form p { margin: 8px 0 }
+.policy-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 14px }
+.policy-history .policy-actions { margin: 0 0 12px; justify-content: space-between }
+.policy-editor button { min-height: 40px }
+.policy-chat { min-height: 105px; max-height: 260px; overflow-y: auto; overflow-wrap: anywhere }
+.policy-chat p { margin: 12px 0 }
+#policy-chat-form { display: grid; gap: 8px; justify-items: start }
+#policy-feedback { min-height: 1.25em }
+#policy-history details { padding: 8px 0; border-top: 1px solid var(--gray-200) }
+.policy-changes { padding-inline-start: 1.25rem }
+.policy-dialog { margin: auto; width: min(520px, calc(100% - 32px)) }
+.policy-dialog::backdrop { background: #20263b66 }
+@media (max-width: 780px) { .policy-columns { grid-template-columns: 1fr } }
+@media (max-width: 460px) { .policy-limits { grid-template-columns: 1fr } }

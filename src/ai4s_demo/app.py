@@ -23,6 +23,8 @@ from .handoff import registrations
 from .lock import acquire_lock, release_lock
 from .models import (ChangeRequest, ChatRequest, CreateWorkflow, GenerateRequest,
                      ImportRequest, RegisterRequest, RevisionRequest)
+from .policy import PolicyChat, PolicyConfirm, PolicyPreview, PolicyRevision, PolicyService
+from .policy_simulation import simulate
 from .service import WorkflowService
 from .settings import APISettings, ProviderSettings
 from .storage import Problem, Store
@@ -35,6 +37,7 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
     settings = ProviderSettings(store)
     gateway = gateway_factory(settings, service)
     registry = DeclarationRegistry(Path(__file__).resolve().parents[2] / "configs/task_declarations")
+    policies = PolicyService(store)
     declarations = DeclarationService(store, registry)
     declaration_agent = DeclarationAgent(gateway, declarations)
 
@@ -80,6 +83,31 @@ def create_app(data_dir=None, *, gateway_factory=AgentGateway):
     @app.get("/api/health")
     def health():
         return {"status": "ok", "agent": settings.public(), "adapter": "not_connected", "storage": "single_process_json"}
+
+    @app.get("/api/policy")
+    def policy():
+        return policies.read()
+
+    @app.get("/api/policy/simulation")
+    def policy_simulation():
+        state = policies.read()
+        return {"revision": state["revision"], **simulate(state["config"])}
+
+    @app.post("/api/policy/preview")
+    def policy_preview(request: PolicyPreview):
+        return {"proposal": policies.preview(request.expected_revision, request.config.model_dump(), "manual")}
+
+    @app.post("/api/policy/confirm")
+    def policy_confirm(request: PolicyConfirm):
+        return policies.confirm(request)
+
+    @app.post("/api/policy/undo-preview")
+    def policy_undo(request: PolicyRevision):
+        return {"proposal": policies.undo_preview(request.expected_revision)}
+
+    @app.post("/api/policy/messages")
+    async def policy_message(request: PolicyChat):
+        return await policies.chat(gateway, request)
 
     @app.get("/api/models")
     def models():

@@ -3357,9 +3357,11 @@ ${esc(policyDraft.description)}</textarea
       heading(
         '复用与存储',
         '决定哪些结果直接用、哪些重新算，以及保存哪些数据。',
-        /* HTML */ `<button class="btn primary" data-nav="newpolicy">＋ 新增策略</button>`,
       ) +
-      /* HTML */ `<div id="reuse-explorer"></div><details class="reuse-policies"><summary>策略配置与对比</summary><p class="small muted policy-intro">用同一组任务，比较不同策略的预计用时。</p>
+      /* HTML */ `<section class="policy-editor" id="policy-editor" aria-label="工作区默认策略"></section>
+        <details class="reuse-policies"><summary>模拟对比</summary>
+        <div id="reuse-explorer"></div>
+        <p class="small muted policy-intro">用同一组任务，比较不同策略的预计用时。</p>
         <div class="policy-grid">
           ${cards
             .map((c) => {
@@ -4275,7 +4277,18 @@ ${esc(policyDraft.description)}</textarea
     $('#run-count').textContent = product.experiments.filter((e) => !e.fixture).length;
     bind();
     window.Motion?.afterRender($('#main'), route + '/' + (page.id || ''));
-    if (route === 'policy') reuseCanvas = window.ReuseCanvas.mount($('#reuse-explorer'));
+    if (route === 'policy') {
+      const comparison = $('.reuse-policies');
+      comparison.addEventListener('toggle', () => {
+        if (comparison.open && comparison.isConnected && !reuseCanvas) {
+          reuseCanvas = window.ReuseCanvas.mount($('#reuse-explorer'));
+        }
+      });
+      const editor = $('#policy-editor');
+      import('./policy.js')
+        .then(({mountPolicy}) => { if (editor.isConnected) mountPolicy(editor); })
+        .catch(() => { editor.textContent = '策略面板未能加载，请刷新。'; });
+    }
     bindPymolControls();
     bindCreation();
     bindRegistration();

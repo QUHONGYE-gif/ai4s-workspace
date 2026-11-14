@@ -20,6 +20,7 @@ from ai4s_declarations.registry import DeclarationRegistry, validate_values
 from ai4s_tasks.proteinmpnn_outputs import complete_parameters, parameter_problem
 from ai4s_workflows.decision import default_seed_factory, find_decisions_by_request, validate_reuse_policy
 from .identity import identity_digest, resolve_identity
+from .policy import read_policy
 
 
 def now():
@@ -33,13 +34,14 @@ class RequestError(ValueError):
 
 
 class EngineService:
-    def __init__(self, directory, declarations, model_root='/opt/ai4s/proteinmpnn', *, member=None, peers=()):
+    def __init__(self, directory, declarations, model_root='/opt/ai4s/proteinmpnn', *, member=None, peers=(), policy_data=None):
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
         self.uploads = self.directory / 'uploads'
         self.uploads.mkdir(exist_ok=True)
         self.registry = DeclarationRegistry(declarations)
         self.model_root = model_root
+        self.policy_data = policy_data
         self.profile = get_manager().get_profile().name
         self.member = member or self.profile
         self.peers = list(peers)
@@ -159,8 +161,17 @@ class EngineService:
             problem = parameter_problem(inference)
             if issues or problem:
                 raise RequestError('invalid_params', problem or str(issues))
-            policy = payload.get('reuse_policy')
+            if 'reuse_policy' in payload:
+                policy = payload['reuse_policy']
+                policy_source = {'source': 'request', 'reuse_policy': policy}
+            elif self.policy_data is not None:
+                saved = read_policy(self.policy_data)
+                policy = saved['config']['reuse_policy']
+                policy_source = {'source': 'workspace', 'revision': saved['revision'], 'reuse_policy': policy}
+            else:
+                raise RequestError('invalid_params', 'reuse_policy is required unless workspace policy is configured')
             validate_reuse_policy(policy)
+            status['policy'] = policy_source
             original_seed = inference['seed']
             if workflow == 'mpnn_filter':
                 issues = validate_values(params.get('filter', {}), 'filter')

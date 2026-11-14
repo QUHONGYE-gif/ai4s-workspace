@@ -111,8 +111,8 @@ def build_workflow(name, snapshot, source, file_loader=None):
 def registrations(service):
     result = []
     with service.store.lock:
-        for path in sorted((service.store.root / "workflows").glob("*.json")):
-            envelope = service._read(path.stem)
+        for item in service.store.list_workflows():
+            envelope = service._read(item["id"])
             for registration in envelope["registrations"]:
                 if service.registration_current(envelope, registration):
                     result.append(build_workflow(envelope["draft"]["name"], registration["snapshot"],

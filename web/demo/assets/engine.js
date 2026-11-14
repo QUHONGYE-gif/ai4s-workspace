@@ -25,10 +25,12 @@
     timer,
     clientRef,
     pendingPayload,
-    pending = false;
+    pending = false,
+    workspacePolicy;
   const saved = JSON.parse(
     localStorage.getItem("ai4s-engine-requests") || "[]",
   );
+  const policyNames = { allow_reuse: "允许复用", force_rerun: "强制重算", new_sample: "新采样" };
   const states = {
     accepted: "已接收",
     submitted: "等待运行",
@@ -111,6 +113,7 @@
       const facts = [
         ["状态", states[status.state]],
         ["请求", status.request_id],
+        ["本次复用方式", status.policy ? `${policyNames[status.policy.reuse_policy]} · ${status.policy.source === "workspace" ? "工作区版本 " + status.policy.revision : "单次选择"}` : "—"],
         ["执行方式", actions[status.decision?.action] || "等待决定"],
         ["理由", status.decision?.reason_text || "—"],
         ["实际种子", status.effective?.seed ?? "—"],
@@ -165,29 +168,31 @@
     $("error").textContent = "";
     clientRef ||= crypto.randomUUID();
     try {
-      const file = $("pdb").files[0];
-      if (!file || file.size > 1024 * 1024)
-        throw Error("请选择不超过 1 MiB 的 PDB 文件");
-      const upload = await api("uploads", {
-        filename: file.name,
-        content: await file.text(),
-      });
-      const workflow = $("workflow").value;
-      const payload = {
-        schema_version: "ai4s-request-1",
-        client_ref: clientRef,
-        requester: { member_id: "qhy", display_name: "曲鸿烨" },
-        declaration: {
-          task_id: declaration.task_id,
-          version: declaration.version,
-        },
-        workflow,
-        inputs: { pdb_file: { source: "upload", upload_id: upload.upload_id } },
-        params: { inference: values("inference") },
-        reuse_policy: $("policy").value,
-      };
-      if (workflow === "mpnn_filter") payload.params.filter = values("filter");
-      pendingPayload ||= payload;
+      if (!pendingPayload) {
+        const file = $("pdb").files[0];
+        if (!file || file.size > 1024 * 1024)
+          throw Error("请选择不超过 1 MiB 的 PDB 文件");
+        const upload = await api("uploads", {
+          filename: file.name,
+          content: await file.text(),
+        });
+        const workflow = $("workflow").value;
+        const payload = {
+          schema_version: "ai4s-request-1",
+          client_ref: clientRef,
+          requester: workspacePolicy.actor,
+          declaration: {
+            task_id: declaration.task_id,
+            version: declaration.version,
+          },
+          workflow,
+          inputs: { pdb_file: { source: "upload", upload_id: upload.upload_id } },
+          params: { inference: values("inference") },
+        };
+        if ($("policy").value) payload.reuse_policy = $("policy").value;
+        if (workflow === "mpnn_filter") payload.params.filter = values("filter");
+        pendingPayload = payload;
+      }
       const status = await api("requests", pendingPayload);
       clientRef = null;
       pendingPayload = null;
@@ -210,8 +215,19 @@
     if (location.hash.startsWith("#req-")) show(location.hash.slice(1));
   });
   history();
-  Promise.all([api("health"), api("declarations/proteinmpnn/1")])
-    .then(([health, decl]) => {
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) readWorkspacePolicy().then(policy => { workspacePolicy = policy; }).catch(error => {
+      $("error").textContent = error.message;
+    });
+  });
+  async function readWorkspacePolicy() {
+    const saved = await api("policy");
+    $("policy").options[0].textContent = `采用工作区默认设置（当前 ${policyNames[saved.config.reuse_policy]}）`;
+    return saved;
+  }
+  Promise.all([api("health"), api("declarations/proteinmpnn/1"), readWorkspacePolicy()])
+    .then(([, decl, policy]) => {
+      workspacePolicy = policy;
       declaration = decl;
       renderFields("inference");
       renderFields("filter");

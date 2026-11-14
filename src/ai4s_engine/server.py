@@ -11,6 +11,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 from aiida import load_profile, orm
 from ai4s_workflows.decision import find_decisions_by_request, find_decisions_by_process
 from .service import EngineService, RequestError
+from .policy import read_policy, workspace_actor
 
 ROOT = Path(__file__).resolve().parents[2]
 MAX_BODY = 2 * 1024 * 1024
@@ -50,6 +51,10 @@ class Handler(BaseHTTPRequestHandler):
             if path == '/api/engine/health':
                 health = service.health()
                 return self.reply(200 if health['daemon_running'] else 503, health)
+            if path == '/api/engine/policy':
+                policy = read_policy(service.policy_data)
+                return self.reply(200, {'config': policy['config'], 'revision': policy['revision'],
+                                        'actor': workspace_actor()})
             if path == '/api/engine/declarations':
                 return self.reply(200, service.registry.list())
             if path.startswith('/api/engine/declarations/'):
@@ -129,6 +134,8 @@ def main():
     parser.add_argument('--profile', default='ai4s-engine')
     parser.add_argument('--data-dir', type=Path, required=True)
     parser.add_argument('--model-root', default='/opt/ai4s/proteinmpnn')
+    parser.add_argument('--policy-data', type=Path, default=os.environ.get('AI4S_DEMO_DATA', ROOT / '.local/agent-demo'),
+                        help='Read committed workspace policy from the same data directory as the Agent')
     parser.add_argument('--member', help='Producer display name for this member service')
     parser.add_argument('--peers', type=Path, help='Private JSON list: member, url, token')
     args = parser.parse_args()
@@ -147,7 +154,7 @@ def main():
     server = HTTPServer((args.host, args.port), Handler)
     server.peer_token = token
     server.service = EngineService(args.data_dir, ROOT / 'configs/task_declarations', args.model_root,
-                                   member=args.member, peers=peers)
+                                   member=args.member, peers=peers, policy_data=args.policy_data)
     print(f'AI4S engine on {args.host}:{args.port}, profile={args.profile}', flush=True)
     server.serve_forever()
 
