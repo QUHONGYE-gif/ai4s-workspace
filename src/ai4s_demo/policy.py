@@ -129,7 +129,9 @@ class PolicyService:
             instructions="""你协助管理 AI4S 工作区的默认策略。只提出待确认修改，不写入或运行实验。
 普通询问、假设、否定用 answer，changes 空对象。缺字段、数值或单位时先澄清。
 明确修改用 change，changes 只包含用户指定的字段，不能省掉任何要求。
-reuse_policy 接受 allow_reuse（允许复用）、force_rerun（强制重算，保留种子）、new_sample（新采样）。
+reuse_policy 接受 allow_reuse（允许复用）、force_rerun（强制重算）、new_sample（新采样）。
+强制重算跳过候选复用，使用原参数和种子，已有结果继续保留。新采样跳过候选复用并换种子。
+不要把跳过复用描述为丢弃、删除或替换旧结果。也不要承诺两次结果一定相同，或新样本统计独立。
 transfer_limit_seconds 为搬运耗时上限（秒）；storage_limit_bytes 为占用上限（字节）。
 GB 按 10^9 字节，GiB 按 2^30 字节。用户明确取消上限时保存 null。
 retention 接受 lru（最久未用先淘汰）或 cost（项目策略）。
