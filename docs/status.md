@@ -17,7 +17,7 @@
 
 - 工作台和实验 Agent 保留模拟流程，真实实验经显式入口转发到独立引擎。跨容器共享已验证 csr 与 qhy；其他成员组合、实验 Agent 页面闭环及真实成员鉴权尚未完成。
 - 真实运行证据仅覆盖 ProteinMPNN 与简单筛选，未覆盖完整 RFdiffusion → ProteinMPNN → Boltz 链路，不构成性能或科研效果结论。A、C 的接口限制见各模块说明。
-- R006／R007 使用真实 CPU ProteinMPNN；历史 GPU 证据见 [R005](../experiments/R005-aiida-proteinmpnn/record.md)。本轮未新增 GPU 推理、真实模型中断恢复、真实 LLM 或浏览器验收。
+- R006／R007 使用真实 CPU ProteinMPNN；历史 GPU 证据见 [R005](../experiments/R005-aiida-proteinmpnn/record.md)。任务 5.0 的 CPU 策略、真实 Agent 与浏览器验收见 R008。真实模型中断恢复尚待验证。
 - Agent 是单用户配置原型，新工作区需配置模型 API；自动 CI/CD 和正式产品部署尚未接入。
 
 ## 下一步
