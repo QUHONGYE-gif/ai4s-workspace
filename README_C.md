@@ -52,7 +52,7 @@ WorkChain 的 `get_reuse_configuration()` 向统一内核提供请求上下文�
 | `allow_reuse`，无合格候选 | 原参数、原种子重算 | R02 |
 | `force_rerun` | 原参数、原种子重算，仍保留全部候选供审计 | R03 |
 | `new_sample` | 使用不同于原值的 `1..2**32-1` 整数种子重算 | R04 |
-| 可信自定义决策器 | 仅在用户策略允许的动作范围内选择 | R05 |
+| 可信自定义或成本决策器 | 仅在用户策略允许的动作范围内选择 | R05 |
 
 决策端口要求有效的 `mpnn_params.seed`。`request_id`、`reuse_policy` 不完整，或与 `existing_mpnn_result` 混用时返回 208。调用方按约定④构造候选后，可在提交前设置：
 
@@ -92,6 +92,8 @@ def choose(context):
 
 将经过审查的函数配置为 `builder.decision_function = orm.Str("my_decisions:choose")`。`allow_reuse` 仅允许 reuse／rerun，force_rerun 仅允许 rerun，new_sample 仅允许 new_sample；不能选择不合格项、复用换种子或重算换种子。
 
+成本决策在 `allow_reuse` 下通过同一扩展点启用，默认关闭；公式、实测／估算／缺失口径、配置文件和四条路径见[成本决策说明](docs/cost_decision.md)。启用后自定义决策记录使用 R05，`force_rerun`／`new_sample` 仍保留 R03／R04。
+
 ## 门禁、重筛选与失败处理
 
 推理结果必须来自成功结束的相应 CalcJob，满足 Code 配置与模型身份、PDB 内容及补齐默认值后的推理参数一致性，并通过清单 schema、当前 Parser 校验、正式文件端口与样本映射检查。跨成员比较已核实的 Code 内容，不要求 Computer UUID 相同。具体文件和数值校验由 [A 模块](docs/aiida_tasks.md)维护。
@@ -128,6 +130,6 @@ python tests/test_engine_kernel.py
 python tests/test_aiida_workflows.py
 ```
 
-后两项创建独立临时 profile；工作流检查使用 CPU mock，涵盖重试、门禁、仅重筛选、提交核对及 POSIX daemon 排队／停启恢复，不构成真实模型中断恢复验收。真实跨成员验证入口为 [verify_member_reuse.py](scripts/verify_member_reuse.py)，命令、实际环境、文件与原生节点核对见 [R007](experiments/R007-member-reuse/record.md)；历史 GPU 三策略与重筛选证据见 [R005](experiments/R005-aiida-proteinmpnn/record.md)。
+后两项创建独立临时 profile；工作流检查使用 CPU mock，涵盖重试、门禁、仅重筛选、提交核对及 POSIX daemon 排队／停启恢复，不构成真实模型中断恢复验收。真实跨成员验证入口为 [verify_member_reuse.py](scripts/verify_member_reuse.py)，命令、实际环境、文件与原生节点核对见 [R007](experiments/R007-member-reuse/record.md)；单 Profile 成本决策真实验收入口为 [verify_cost_decision_real.py](scripts/verify_cost_decision_real.py)，六项检查与原生过程见 [R008](experiments/R008-cost-decision/record.md)；历史 GPU 三策略与重筛选证据见 [R005](experiments/R005-aiida-proteinmpnn/record.md)。
 
 返回：[A 模块](docs/aiida_tasks.md) · [任务声明](docs/task_declarations.md) · [引擎](docs/engine_service.md) · [状态](docs/status.md) · [仓库](README.md)。

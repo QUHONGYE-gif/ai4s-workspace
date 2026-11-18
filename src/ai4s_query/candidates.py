@@ -341,6 +341,16 @@ def build_candidate(proc, profile: str, request: dict | None = None) -> dict:
         bundle['primary'] = {'node_uuid': manifest_node.uuid, 'path': ''}
         bundle['unretrieved'] = not bool(formal)
     ok, reason, reason_text = qualify(proc, bundle, request)
+    elapsed_s = _elapsed(proc, cached)
+    origin = proc.base.extras.get('ai4s_origin', {})
+    elapsed_source = 'missing'
+    if elapsed_s > 0:
+        elapsed_source = 'measured'
+        # A source machine's wall-clock time is context, not a current-machine
+        # measurement. Archives imported from a peer are therefore estimates.
+        if isinstance(origin, dict) and (
+                origin.get('peer') or origin.get('profile') not in (None, profile)):
+            elapsed_source = 'estimated'
 
     primary = bundle["primary"] or {}
     node_uuid = primary.get("node_uuid") or proc.uuid
@@ -361,7 +371,8 @@ def build_candidate(proc, profile: str, request: dict | None = None) -> dict:
         "member": members.get(profile, profile),
         "location": location,
         "size_bytes": bundle["size_bytes"],
-        "elapsed_s": _elapsed(proc, cached),
+        "elapsed_s": elapsed_s,
+        "elapsed_source": elapsed_source,
         "qualified": ok,
         "reason": reason_text,
         "note": "; ".join(note),

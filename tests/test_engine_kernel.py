@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 class KernelTests(unittest.TestCase):
@@ -102,6 +103,23 @@ class KernelTests(unittest.TestCase):
         record = node.base.extras.get('ai4s_decision_records')[0]
         self.assertEqual(record['final_decision']['action'], 'rerun')
         self.assertEqual(record['reason']['reason_code'], 'R02')
+
+    def test_single_decision_fails_if_required_cost_policy_is_missing(self):
+        from uuid import uuid4
+        from ai4s_engine.decisions import select_cache
+        from ai4s_workflows.decision import DecisionError
+
+        node = self.calculation(self.identity, seed=778)
+        request_id = 'req-' + str(uuid4())
+        node.base.extras.set('ai4s_context', {
+            'request_id': request_id, 'reuse_policy': 'allow_reuse', 'original_seed': 778,
+            'effective_seed': 778, 'num_sequences': 4, 'profile': 'kernel-tests',
+            'shared_candidates': [], 'cost_decision_required': True})
+
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop('AI4S_COST_POLICY_FILE', None)
+            with self.assertRaises(DecisionError):
+                select_cache(node, [])
 
     def parse_identity_mismatch(self, changes):
         from aiida.common.links import LinkType
