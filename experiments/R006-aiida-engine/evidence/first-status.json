@@ -1,0 +1,36 @@
+{
+  "request_id": "req-3fd6689d-b92f-4c20-89cd-6b00480c8e84",
+  "state": "finished",
+  "submitted_at": "2026-11-12T14:20:33Z",
+  "updated_at": "2026-11-12T14:21:04Z",
+  "finished_at": "2026-11-12T14:21:04Z",
+  "decision": {
+    "action": "rerun",
+    "reason_code": "R02",
+    "reason_text": "策略为允许复用，但候选为空，降级使用原参数和原种子重算"
+  },
+  "process": {
+    "uuid": "1d4d55eb-4ee0-4b50-ae65-1a60506911dc",
+    "pk": 4,
+    "label": "req-3fd6689d-b92f-4c20-89cd-6b00480c8e84",
+    "process_state": "finished",
+    "exit_status": 0,
+    "exit_message": null
+  },
+  "cached_from": null,
+  "effective": {
+    "seed": 41,
+    "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+    "fingerprint": "726fa740b89a13125cbeb8181abb03d822a659f32a8b86538feff6377ad1ac5f",
+    "identity_unresolved": null
+  },
+  "outputs": {
+    "artifacts": {
+      "sequences": "1c6103b6-39f0-419f-a40f-1df7dede856f",
+      "scores": "cfec6bcf-c244-45a9-a0d8-3a3d56a78dc9",
+      "probabilities": "75de7d38-3f18-4124-8cc5-55d7e1d1ec70"
+    },
+    "result": "2150a22e-32d6-44dd-9e5f-421d32bf54d3"
+  },
+  "error": null
+}

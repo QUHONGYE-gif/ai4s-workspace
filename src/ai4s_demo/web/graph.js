@@ -96,7 +96,7 @@ export function createGraph(root, { onMove, onError }) {
             return `<article class="graph-card role-${role}${n.id === selected ? ' selected' : ''}" data-card-id="${esc(n.id)}" style="left:${positions[n.id].x}px;top:${positions[n.id].y}px;height:${cardHeight(model)}px">
         <div class="graph-drag-handle" data-drag-id="${esc(n.id)}" title="拖动节点；选中后用方向键移动" aria-hidden="true">${String(index + 1).padStart(2, '0')} · ${esc(model.role)} <span>⠿</span></div>
         <button class="graph-select" data-node-id="${esc(n.id)}" aria-pressed="${n.id === selected}"><strong>${esc(model.name)}</strong><span>${esc(n.label)}</span></button>
-        <div class="graph-summary">${esc(summary(n))}<span>${esc(status)}</span></div>
+        <div class="graph-summary">${esc(summary(n))}<span>${esc(status === "已登记" ? "配置已确认" : status === "待登记" ? "待确认配置" : status)}</span></div>
         <div class="graph-port-head"><span>所需输入</span><span>输出／辅助产物</span></div>
         ${info.inputs.length ? ports(info.inputs, 'input') : '<span class="graph-unconditional">无条件生成</span>'}${ports(info.outputs, 'output')}
       </article>`;
@@ -295,6 +295,7 @@ export function createGraph(root, { onMove, onError }) {
             applyCamera();
         }
     });
+    listen($('zoom-reset'), 'click', () => zoom(1 / camera.zoom));
     listen($('zoom-in'), 'click', () => zoom(1.2));
     listen($('zoom-out'), 'click', () => zoom(1 / 1.2));
     listen($('fit-graph'), 'click', fit);

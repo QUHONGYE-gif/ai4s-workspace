@@ -124,6 +124,23 @@ function setup(fetch, storage = null) {
   assert.equal(savedRevision, 4);
   assert.equal(values.has('yanxu-demo-pending-' + 'a'.repeat(32)), false);
   console.log('PASS unsynced local backup survives conflict until explicit recovery');
+  // A keepalive write can be committed even if the closing tab loses its reply.
+  const acknowledged = {version: 1, value: 'already saved'};
+  values.set('yanxu-product-loop-v1', JSON.stringify(acknowledged));
+  values.set('yanxu-demo-pending-' + 'a'.repeat(32), JSON.stringify({revision: 4}));
+  let redundantWrites = 0;
+  const same = setup(async (url, options) => {
+    if (options.method) redundantWrites++;
+    return {ok:true,json:async()=>({revision:5,state:acknowledged})};
+  },storage);
+  const restored = await same.api.loadState();
+  assert.equal(restored.conflict, false);
+  assert.equal(restored.preferLocal, false);
+  same.api.scheduleSave(acknowledged);
+  await same.api.flush();
+  assert.equal(redundantWrites,0);
+  console.log('PASS acknowledged pagehide snapshots restore without a false conflict or redundant write');
+
 })().catch((error) => {
   console.error(error);
   process.exitCode = 1;

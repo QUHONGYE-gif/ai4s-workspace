@@ -1,0 +1,33 @@
+{
+  "schema_version": "ai4s-r008-cost-decision-acceptance-1",
+  "status": "running",
+  "started_at": "2026-11-18T07:22:22Z",
+  "profile": "ai4s-wyh-reuse",
+  "code": {
+    "label": "proteinmpnn-8907e667",
+    "uuid": "fa81bdf7-1832-4a7a-88ca-bd6ddb27037e",
+    "pk": 1,
+    "plugin": "ai4s.proteinmpnn"
+  },
+  "inputs": {
+    "pdb_path": "/opt/ai4s/proteinmpnn/releases/8907e667-py312-torch260cu124/examples/1CRN.pdb",
+    "pdb_sha256": "42199a30a0701864a2a5cc76cd7f35cc544cd0e65fbcf63e03c166543249b811",
+    "mpnn_params": {
+      "chains": "A",
+      "num_sequences": 4,
+      "sampling_temperature": 0.1,
+      "seed": 41,
+      "model_name": "v_48_020",
+      "batch_size": 1,
+      "save_probabilities": true
+    },
+    "filter_params": {
+      "score_threshold": 10.0,
+      "top_k": 2
+    }
+  },
+  "policy_file": "cost-policy.json",
+  "phases": {},
+  "checks": {},
+  "updated_at": "2026-11-18T07:22:22Z"
+}

@@ -1,0 +1,1590 @@
+{
+  "status": "passed",
+  "run_id": "08e413b6-76c4-42b7-8b21-e7b98f42439b",
+  "requests": {
+    "source": {
+      "schema_version": "ai4s-request-1",
+      "client_ref": "08e413b6-76c4-42b7-8b21-e7b98f42439b:source",
+      "requester": {
+        "member_id": "csr",
+        "display_name": "陈思睿"
+      },
+      "declaration": {
+        "task_id": "proteinmpnn",
+        "version": "1"
+      },
+      "workflow": "single",
+      "inputs": {
+        "pdb_file": {
+          "source": "upload",
+          "upload_id": "up-0d184802-5859-4468-8e65-2698da87a16c"
+        }
+      },
+      "params": {
+        "inference": {
+          "chains": "A",
+          "num_sequences": 4,
+          "sampling_temperature": 0.1,
+          "seed": 44,
+          "model_name": "v_48_020",
+          "batch_size": 1,
+          "save_probabilities": true
+        }
+      },
+      "reuse_policy": "force_rerun"
+    },
+    "cross_member_filter": {
+      "schema_version": "ai4s-request-1",
+      "client_ref": "08e413b6-76c4-42b7-8b21-e7b98f42439b:cross_member_filter",
+      "requester": {
+        "member_id": "qhy",
+        "display_name": "曲鸿烨"
+      },
+      "declaration": {
+        "task_id": "proteinmpnn",
+        "version": "1"
+      },
+      "workflow": "mpnn_filter",
+      "inputs": {
+        "pdb_file": {
+          "source": "upload",
+          "upload_id": "up-dfe27153-fd0e-4303-8afc-1daa86459355"
+        }
+      },
+      "params": {
+        "inference": {
+          "chains": "A",
+          "num_sequences": 4,
+          "sampling_temperature": 0.1,
+          "seed": 44,
+          "model_name": "v_48_020",
+          "batch_size": 1,
+          "save_probabilities": true
+        },
+        "filter": {
+          "score_threshold": 10.0,
+          "top_k": 2
+        }
+      },
+      "reuse_policy": "allow_reuse"
+    },
+    "cross_member_single": {
+      "schema_version": "ai4s-request-1",
+      "client_ref": "08e413b6-76c4-42b7-8b21-e7b98f42439b:cross_member_single",
+      "requester": {
+        "member_id": "qhy",
+        "display_name": "曲鸿烨"
+      },
+      "declaration": {
+        "task_id": "proteinmpnn",
+        "version": "1"
+      },
+      "workflow": "single",
+      "inputs": {
+        "pdb_file": {
+          "source": "upload",
+          "upload_id": "up-dfe27153-fd0e-4303-8afc-1daa86459355"
+        }
+      },
+      "params": {
+        "inference": {
+          "chains": "A",
+          "num_sequences": 4,
+          "sampling_temperature": 0.1,
+          "seed": 44,
+          "model_name": "v_48_020",
+          "batch_size": 1,
+          "save_probabilities": true
+        }
+      },
+      "reuse_policy": "allow_reuse"
+    },
+    "force": {
+      "schema_version": "ai4s-request-1",
+      "client_ref": "08e413b6-76c4-42b7-8b21-e7b98f42439b:force",
+      "requester": {
+        "member_id": "qhy",
+        "display_name": "曲鸿烨"
+      },
+      "declaration": {
+        "task_id": "proteinmpnn",
+        "version": "1"
+      },
+      "workflow": "mpnn_filter",
+      "inputs": {
+        "pdb_file": {
+          "source": "upload",
+          "upload_id": "up-dfe27153-fd0e-4303-8afc-1daa86459355"
+        }
+      },
+      "params": {
+        "inference": {
+          "chains": "A",
+          "num_sequences": 4,
+          "sampling_temperature": 0.1,
+          "seed": 44,
+          "model_name": "v_48_020",
+          "batch_size": 1,
+          "save_probabilities": true
+        },
+        "filter": {
+          "score_threshold": 10.0,
+          "top_k": 2
+        }
+      },
+      "reuse_policy": "force_rerun"
+    },
+    "new_sample": {
+      "schema_version": "ai4s-request-1",
+      "client_ref": "08e413b6-76c4-42b7-8b21-e7b98f42439b:new_sample",
+      "requester": {
+        "member_id": "qhy",
+        "display_name": "曲鸿烨"
+      },
+      "declaration": {
+        "task_id": "proteinmpnn",
+        "version": "1"
+      },
+      "workflow": "mpnn_filter",
+      "inputs": {
+        "pdb_file": {
+          "source": "upload",
+          "upload_id": "up-dfe27153-fd0e-4303-8afc-1daa86459355"
+        }
+      },
+      "params": {
+        "inference": {
+          "chains": "A",
+          "num_sequences": 4,
+          "sampling_temperature": 0.1,
+          "seed": 44,
+          "model_name": "v_48_020",
+          "batch_size": 1,
+          "save_probabilities": true
+        },
+        "filter": {
+          "score_threshold": 10.0,
+          "top_k": 2
+        }
+      },
+      "reuse_policy": "new_sample"
+    },
+    "below_threshold": {
+      "schema_version": "ai4s-request-1",
+      "client_ref": "08e413b6-76c4-42b7-8b21-e7b98f42439b:below_threshold",
+      "requester": {
+        "member_id": "qhy",
+        "display_name": "曲鸿烨"
+      },
+      "declaration": {
+        "task_id": "proteinmpnn",
+        "version": "1"
+      },
+      "workflow": "mpnn_filter",
+      "inputs": {
+        "pdb_file": {
+          "source": "upload",
+          "upload_id": "up-dfe27153-fd0e-4303-8afc-1daa86459355"
+        }
+      },
+      "params": {
+        "inference": {
+          "chains": "A",
+          "num_sequences": 4,
+          "sampling_temperature": 0.1,
+          "seed": 44,
+          "model_name": "v_48_020",
+          "batch_size": 1,
+          "save_probabilities": true
+        },
+        "filter": {
+          "score_threshold": -1.0,
+          "top_k": 2
+        }
+      },
+      "reuse_policy": "allow_reuse"
+    },
+    "changed_weights": {
+      "schema_version": "ai4s-request-1",
+      "client_ref": "08e413b6-76c4-42b7-8b21-e7b98f42439b:changed_weights",
+      "requester": {
+        "member_id": "qhy",
+        "display_name": "曲鸿烨"
+      },
+      "declaration": {
+        "task_id": "proteinmpnn",
+        "version": "1"
+      },
+      "workflow": "mpnn_filter",
+      "inputs": {
+        "pdb_file": {
+          "source": "upload",
+          "upload_id": "up-dfe27153-fd0e-4303-8afc-1daa86459355"
+        }
+      },
+      "params": {
+        "inference": {
+          "chains": "A",
+          "num_sequences": 4,
+          "sampling_temperature": 0.1,
+          "seed": 44,
+          "model_name": "v_48_030",
+          "batch_size": 1,
+          "save_probabilities": true
+        },
+        "filter": {
+          "score_threshold": 10.0,
+          "top_k": 2
+        }
+      },
+      "reuse_policy": "allow_reuse"
+    }
+  },
+  "runs": {
+    "source": {
+      "request_id": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+      "state": "finished",
+      "submitted_at": "2026-11-14T03:55:38Z",
+      "updated_at": "2026-11-14T03:58:46Z",
+      "finished_at": "2026-11-14T03:56:08Z",
+      "decision": {
+        "action": "rerun",
+        "reason_code": "R03",
+        "reason_text": "用户选择强制重算，忽略已有候选，使用原参数、原种子重新运行"
+      },
+      "process": {
+        "uuid": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+        "pk": 28,
+        "label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+        "process_state": "finished",
+        "exit_status": 0,
+        "exit_message": null
+      },
+      "cached_from": null,
+      "effective": {
+        "seed": 44,
+        "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+        "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+        "identity_unresolved": null
+      },
+      "outputs": {
+        "artifacts": {
+          "sequences": "44f2c52e-7d86-44aa-b281-a1868d25f322",
+          "scores": "9aedde29-715e-4258-a76d-d6d6396b7bb8",
+          "probabilities": "d850cd47-666e-4329-b817-fe0068c0394a"
+        },
+        "result": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f"
+      },
+      "error": null,
+      "sharing": {
+        "peer_errors": [],
+        "candidates": []
+      },
+      "execution": {
+        "calcjobs": [
+          {
+            "uuid": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+            "pk": 28,
+            "label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+            "process_state": "finished",
+            "exit_status": 0,
+            "exit_message": null,
+            "cache_source": null
+          }
+        ]
+      },
+      "records": [
+        {
+          "request_id": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+          "process_uuid": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+          "reuse_policy": "force_rerun",
+          "candidate_compare_list": [],
+          "final_decision": {
+            "action": "rerun",
+            "selected_candidate_uuid": null,
+            "effective_seed": 44
+          },
+          "reason": {
+            "reason_code": "R03",
+            "reason_text": "用户选择强制重算，忽略已有候选，使用原参数、原种子重新运行"
+          },
+          "timestamp": "2026-11-14T03:55:41Z"
+        }
+      ]
+    },
+    "cross_member_filter": {
+      "request_id": "req-9c0ef37f-e9b1-45e7-9489-55273b9e3003",
+      "state": "finished",
+      "submitted_at": "2026-11-14T03:56:10Z",
+      "updated_at": "2026-11-14T03:58:47Z",
+      "finished_at": "2026-11-14T03:56:20Z",
+      "decision": {
+        "action": "reuse",
+        "reason_code": "R01",
+        "reason_text": "allow_reuse selected the first qualified candidate 6edf6de8-ccd9-4206-99bc-cf24ccc5983f"
+      },
+      "process": {
+        "uuid": "3987e7bd-3c51-459e-8a85-3ac1f9604d0e",
+        "pk": 70,
+        "label": "req-9c0ef37f-e9b1-45e7-9489-55273b9e3003",
+        "process_state": "finished",
+        "exit_status": 0,
+        "exit_message": null
+      },
+      "cached_from": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+      "effective": {
+        "seed": 44,
+        "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+        "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+        "identity_unresolved": null
+      },
+      "outputs": {
+        "artifacts": {
+          "scores": "9aedde29-715e-4258-a76d-d6d6396b7bb8",
+          "sequences": "44f2c52e-7d86-44aa-b281-a1868d25f322",
+          "probabilities": "d850cd47-666e-4329-b817-fe0068c0394a"
+        },
+        "result": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+        "selected_sequences": "c994fc8c-0a18-42b4-9321-0def97f73cc3",
+        "sample_table": "bb87800a-486f-49b6-be80-10a725ee3ec2",
+        "selection_report": "a11c269e-20fe-4498-bf76-cbdc2cb404c4"
+      },
+      "error": null,
+      "sharing": {
+        "peer_errors": [],
+        "candidates": [
+          {
+            "uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+            "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+            "member": "陈思睿",
+            "location": "profile://ai4s-integration-csr/6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+            "size_bytes": 34287,
+            "elapsed_s": 27.7,
+            "qualified": true,
+            "reason": null,
+            "note": "",
+            "process_uuid": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+            "process_pk": 28,
+            "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+            "process_state": "finished",
+            "profile": "ai4s-integration-csr",
+            "cached": false,
+            "cached_from": null,
+            "seq_count": 4,
+            "best_score": 0.7556,
+            "best_global_score": 0.7556,
+            "out_kinds": [
+              "RemoteData",
+              "FolderData",
+              "SinglefileData",
+              "SinglefileData",
+              "SinglefileData",
+              "Dict"
+            ],
+            "created": "2026-11-14 03:55:40.867153+00:00",
+            "origin_profile": "ai4s-integration-csr"
+          }
+        ]
+      },
+      "execution": {
+        "calcjobs": [],
+        "selection_report": {
+          "attempts": [],
+          "attempt_count": 0,
+          "max_attempts": 2,
+          "retry_attempt": 0,
+          "model_launches": 0,
+          "calcjob_submissions": 0,
+          "request_id": "req-9c0ef37f-e9b1-45e7-9489-55273b9e3003",
+          "reuse_policy": "allow_reuse",
+          "reuse_decision": "reuse",
+          "reason_code": "R01",
+          "selected_candidate_uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+          "effective_seed": 44,
+          "cached_from": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+          "status": "completed",
+          "mpnn_cache_source": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+          "upstream_result_uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+          "filter_params": {
+            "score_threshold": 10.0,
+            "top_k": 2
+          },
+          "selected_count": 2
+        }
+      },
+      "records": [
+        {
+          "request_id": "req-9c0ef37f-e9b1-45e7-9489-55273b9e3003",
+          "process_uuid": "3987e7bd-3c51-459e-8a85-3ac1f9604d0e",
+          "reuse_policy": "allow_reuse",
+          "candidate_compare_list": [
+            {
+              "member": "陈思睿",
+              "location": "profile://ai4s-integration-csr/6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+              "size_bytes": 34287,
+              "elapsed_s": 27.7,
+              "reason": null,
+              "note": "",
+              "process_uuid": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+              "process_pk": 28,
+              "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+              "process_state": "finished",
+              "profile": "ai4s-integration-csr",
+              "cached": false,
+              "cached_from": null,
+              "seq_count": 4,
+              "best_score": 0.7556,
+              "best_global_score": 0.7556,
+              "out_kinds": [
+                "RemoteData",
+                "FolderData",
+                "SinglefileData",
+                "SinglefileData",
+                "SinglefileData",
+                "Dict"
+              ],
+              "created": "2026-11-14 03:55:40.867153+00:00",
+              "origin_profile": "ai4s-integration-csr",
+              "uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+              "qualified": true,
+              "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded"
+            }
+          ],
+          "final_decision": {
+            "action": "reuse",
+            "selected_candidate_uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+            "effective_seed": 44
+          },
+          "reason": {
+            "reason_code": "R01",
+            "reason_text": "allow_reuse selected the first qualified candidate 6edf6de8-ccd9-4206-99bc-cf24ccc5983f"
+          },
+          "timestamp": "2026-11-14T03:56:12Z"
+        }
+      ]
+    },
+    "cross_member_single": {
+      "request_id": "req-b1f279e3-ddab-4567-ac0f-d07ab39a5acb",
+      "state": "finished",
+      "submitted_at": "2026-11-14T03:58:47Z",
+      "updated_at": "2026-11-14T03:58:59Z",
+      "finished_at": "2026-11-14T03:58:57Z",
+      "decision": {
+        "action": "reuse",
+        "reason_code": "R01",
+        "reason_text": "策略为允许复用，存在合格候选，按候选顺序选中 6edf6de8-ccd9-4206-99bc-cf24ccc5983f 复用"
+      },
+      "process": {
+        "uuid": "f2d65bb3-6082-4232-b151-b857dfa27147",
+        "pk": 78,
+        "label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+        "process_state": "finished",
+        "exit_status": 0,
+        "exit_message": null
+      },
+      "cached_from": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+      "effective": {
+        "seed": 44,
+        "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+        "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+        "identity_unresolved": null
+      },
+      "outputs": {
+        "artifacts": {
+          "scores": "5cc7a724-9aed-4f83-bd57-64b18e36b5f6",
+          "sequences": "42849be5-cb1e-4434-b4a2-d8d3971ed884",
+          "probabilities": "0377942b-3857-48db-a0a8-66b581924399"
+        },
+        "result": "bf7bb302-ba1a-4b2d-95e1-4a9e562a699a"
+      },
+      "error": null,
+      "sharing": {
+        "peer_errors": [],
+        "candidates": [
+          {
+            "uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+            "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+            "member": "陈思睿",
+            "location": "profile://ai4s-integration-qhy/6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+            "size_bytes": 34287,
+            "elapsed_s": 31.9,
+            "qualified": true,
+            "reason": null,
+            "note": "",
+            "process_uuid": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+            "process_pk": 55,
+            "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+            "process_state": "finished",
+            "profile": "ai4s-integration-qhy",
+            "cached": false,
+            "cached_from": null,
+            "seq_count": 4,
+            "best_score": 0.7556,
+            "best_global_score": 0.7556,
+            "out_kinds": [
+              "Dict",
+              "SinglefileData",
+              "FolderData",
+              "SinglefileData",
+              "RemoteData",
+              "SinglefileData"
+            ],
+            "created": "2026-11-14 03:55:40.867153+00:00",
+            "origin_profile": "ai4s-integration-csr"
+          }
+        ]
+      },
+      "execution": {
+        "calcjobs": [
+          {
+            "uuid": "f2d65bb3-6082-4232-b151-b857dfa27147",
+            "pk": 78,
+            "label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+            "process_state": "finished",
+            "exit_status": 0,
+            "exit_message": null,
+            "cache_source": "39433984-ccad-42b5-8feb-0a9a69c2197e"
+          }
+        ]
+      },
+      "records": [
+        {
+          "request_id": "req-b1f279e3-ddab-4567-ac0f-d07ab39a5acb",
+          "process_uuid": "f2d65bb3-6082-4232-b151-b857dfa27147",
+          "reuse_policy": "allow_reuse",
+          "candidate_compare_list": [
+            {
+              "uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+              "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+              "member": "陈思睿",
+              "location": "profile://ai4s-integration-qhy/6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+              "size_bytes": 34287,
+              "elapsed_s": 31.9,
+              "qualified": true,
+              "reason": null,
+              "note": "",
+              "process_uuid": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+              "process_pk": 55,
+              "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+              "process_state": "finished",
+              "profile": "ai4s-integration-qhy",
+              "cached": false,
+              "cached_from": null,
+              "seq_count": 4,
+              "best_score": 0.7556,
+              "best_global_score": 0.7556,
+              "out_kinds": [
+                "Dict",
+                "SinglefileData",
+                "FolderData",
+                "SinglefileData",
+                "RemoteData",
+                "SinglefileData"
+              ],
+              "created": "2026-11-14 03:55:40.867153+00:00",
+              "origin_profile": "ai4s-integration-csr"
+            }
+          ],
+          "final_decision": {
+            "action": "reuse",
+            "selected_candidate_uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+            "effective_seed": 44
+          },
+          "reason": {
+            "reason_code": "R01",
+            "reason_text": "策略为允许复用，存在合格候选，按候选顺序选中 6edf6de8-ccd9-4206-99bc-cf24ccc5983f 复用"
+          },
+          "timestamp": "2026-11-14T03:58:52Z"
+        }
+      ]
+    },
+    "force": {
+      "request_id": "req-860a99af-a9dc-43fc-b28b-5c5918fccc07",
+      "state": "finished",
+      "submitted_at": "2026-11-14T03:58:59Z",
+      "updated_at": "2026-11-14T03:59:40Z",
+      "finished_at": "2026-11-14T03:59:38Z",
+      "decision": {
+        "action": "rerun",
+        "reason_code": "R03",
+        "reason_text": "force_rerun ignores candidates and reruns with the original seed"
+      },
+      "process": {
+        "uuid": "0a8abca4-ce34-4b13-af98-47a15ba94487",
+        "pk": 92,
+        "label": "req-860a99af-a9dc-43fc-b28b-5c5918fccc07",
+        "process_state": "finished",
+        "exit_status": 0,
+        "exit_message": null
+      },
+      "cached_from": null,
+      "effective": {
+        "seed": 44,
+        "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+        "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+        "identity_unresolved": null
+      },
+      "outputs": {
+        "artifacts": {
+          "sequences": "5966b890-f538-4f3d-8771-e1fe9aab192d",
+          "scores": "c0a879b6-5ffe-4386-ab34-e71b950e515e",
+          "probabilities": "e715e266-84cc-4f40-8309-cfac7cfd1556"
+        },
+        "result": "7cc1291b-e541-400c-b975-11e0fb94cc65",
+        "selected_sequences": "f6d730a4-8e1c-41cd-8102-8dd26964fbb5",
+        "sample_table": "ae1c149a-7a83-454e-834a-0f586c0b2468",
+        "selection_report": "9424221b-0d08-40a1-908a-13ad0c674c4c"
+      },
+      "error": null,
+      "sharing": {
+        "peer_errors": [],
+        "candidates": [
+          {
+            "uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+            "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+            "member": "陈思睿",
+            "location": "profile://ai4s-integration-qhy/6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+            "size_bytes": 34287,
+            "elapsed_s": 31.9,
+            "qualified": true,
+            "reason": null,
+            "note": "",
+            "process_uuid": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+            "process_pk": 55,
+            "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+            "process_state": "finished",
+            "profile": "ai4s-integration-qhy",
+            "cached": false,
+            "cached_from": null,
+            "seq_count": 4,
+            "best_score": 0.7556,
+            "best_global_score": 0.7556,
+            "out_kinds": [
+              "Dict",
+              "SinglefileData",
+              "FolderData",
+              "SinglefileData",
+              "RemoteData",
+              "SinglefileData"
+            ],
+            "created": "2026-11-14 03:55:40.867153+00:00",
+            "origin_profile": "ai4s-integration-csr"
+          },
+          {
+            "uuid": "bf7bb302-ba1a-4b2d-95e1-4a9e562a699a",
+            "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+            "member": "曲鸿烨",
+            "location": "profile://ai4s-integration-qhy/bf7bb302-ba1a-4b2d-95e1-4a9e562a699a",
+            "size_bytes": 34287,
+            "elapsed_s": 0,
+            "qualified": true,
+            "reason": null,
+            "note": "cached_from=39433984-ccad-42b5-8feb-0a9a69c2197e",
+            "process_uuid": "f2d65bb3-6082-4232-b151-b857dfa27147",
+            "process_pk": 78,
+            "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+            "process_state": "finished",
+            "profile": "ai4s-integration-qhy",
+            "cached": true,
+            "cached_from": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+            "seq_count": 4,
+            "best_score": 0.7556,
+            "best_global_score": 0.7556,
+            "out_kinds": [
+              "Dict",
+              "SinglefileData",
+              "FolderData",
+              "SinglefileData",
+              "RemoteData",
+              "SinglefileData"
+            ],
+            "created": "2026-11-14 03:58:51.058445+00:00",
+            "origin_profile": "ai4s-integration-qhy"
+          }
+        ]
+      },
+      "execution": {
+        "calcjobs": [
+          {
+            "uuid": "6b936804-a554-4719-983d-215b43c73f5e",
+            "pk": 93,
+            "label": "ai4s-mpnn:0a8abca4-ce34-4b13-af98-47a15ba94487:01",
+            "process_state": "finished",
+            "exit_status": 0,
+            "exit_message": null,
+            "cache_source": null
+          }
+        ],
+        "selection_report": {
+          "attempts": [
+            {
+              "attempt": 1,
+              "label": "ai4s-mpnn:0a8abca4-ce34-4b13-af98-47a15ba94487:01",
+              "model_launches_before": 0,
+              "model_launches_after": 1,
+              "status": "succeeded",
+              "calcjob_pk": 93,
+              "calcjob_uuid": "6b936804-a554-4719-983d-215b43c73f5e",
+              "process_state": "finished",
+              "exit_status": 0,
+              "cache_source": null
+            }
+          ],
+          "attempt_count": 1,
+          "max_attempts": 2,
+          "retry_attempt": 0,
+          "model_launches": 1,
+          "calcjob_submissions": 1,
+          "request_id": "req-860a99af-a9dc-43fc-b28b-5c5918fccc07",
+          "reuse_policy": "force_rerun",
+          "reuse_decision": "rerun",
+          "reason_code": "R03",
+          "selected_candidate_uuid": null,
+          "effective_seed": 44,
+          "cached_from": null,
+          "status": "completed",
+          "mpnn_cache_source": null,
+          "upstream_result_uuid": "7cc1291b-e541-400c-b975-11e0fb94cc65",
+          "filter_params": {
+            "score_threshold": 10.0,
+            "top_k": 2
+          },
+          "selected_count": 2
+        }
+      },
+      "records": [
+        {
+          "request_id": "req-860a99af-a9dc-43fc-b28b-5c5918fccc07",
+          "process_uuid": "0a8abca4-ce34-4b13-af98-47a15ba94487",
+          "reuse_policy": "force_rerun",
+          "candidate_compare_list": [
+            {
+              "member": "陈思睿",
+              "location": "profile://ai4s-integration-qhy/6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+              "size_bytes": 34287,
+              "elapsed_s": 31.9,
+              "reason": null,
+              "note": "",
+              "process_uuid": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+              "process_pk": 55,
+              "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+              "process_state": "finished",
+              "profile": "ai4s-integration-qhy",
+              "cached": false,
+              "cached_from": null,
+              "seq_count": 4,
+              "best_score": 0.7556,
+              "best_global_score": 0.7556,
+              "out_kinds": [
+                "Dict",
+                "SinglefileData",
+                "FolderData",
+                "SinglefileData",
+                "RemoteData",
+                "SinglefileData"
+              ],
+              "created": "2026-11-14 03:55:40.867153+00:00",
+              "origin_profile": "ai4s-integration-csr",
+              "uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+              "qualified": true,
+              "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded"
+            },
+            {
+              "member": "曲鸿烨",
+              "location": "profile://ai4s-integration-qhy/bf7bb302-ba1a-4b2d-95e1-4a9e562a699a",
+              "size_bytes": 34287,
+              "elapsed_s": 0,
+              "reason": null,
+              "note": "cached_from=39433984-ccad-42b5-8feb-0a9a69c2197e",
+              "process_uuid": "f2d65bb3-6082-4232-b151-b857dfa27147",
+              "process_pk": 78,
+              "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+              "process_state": "finished",
+              "profile": "ai4s-integration-qhy",
+              "cached": true,
+              "cached_from": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+              "seq_count": 4,
+              "best_score": 0.7556,
+              "best_global_score": 0.7556,
+              "out_kinds": [
+                "Dict",
+                "SinglefileData",
+                "FolderData",
+                "SinglefileData",
+                "RemoteData",
+                "SinglefileData"
+              ],
+              "created": "2026-11-14 03:58:51.058445+00:00",
+              "origin_profile": "ai4s-integration-qhy",
+              "uuid": "bf7bb302-ba1a-4b2d-95e1-4a9e562a699a",
+              "qualified": true,
+              "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded"
+            }
+          ],
+          "final_decision": {
+            "action": "rerun",
+            "selected_candidate_uuid": null,
+            "effective_seed": 44
+          },
+          "reason": {
+            "reason_code": "R03",
+            "reason_text": "force_rerun ignores candidates and reruns with the original seed"
+          },
+          "timestamp": "2026-11-14T03:59:01Z"
+        }
+      ]
+    },
+    "new_sample": {
+      "request_id": "req-4f4fc7e7-8ef9-4793-99bb-472d4c78e3a5",
+      "state": "finished",
+      "submitted_at": "2026-11-14T03:59:41Z",
+      "updated_at": "2026-11-14T04:00:20Z",
+      "finished_at": "2026-11-14T04:00:20Z",
+      "decision": {
+        "action": "new_sample",
+        "reason_code": "R04",
+        "reason_text": "new_sample ignores candidates and reruns with a different seed"
+      },
+      "process": {
+        "uuid": "ce2ba923-25b0-4713-83b0-3af48cffe2b0",
+        "pk": 112,
+        "label": "req-4f4fc7e7-8ef9-4793-99bb-472d4c78e3a5",
+        "process_state": "finished",
+        "exit_status": 0,
+        "exit_message": null
+      },
+      "cached_from": null,
+      "effective": {
+        "seed": 681281606,
+        "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+        "fingerprint": "873fb7ac4ac55cf8bd88a0970f88b7c9fb467fe8c03af753c11ebe38c60b5c45",
+        "identity_unresolved": null
+      },
+      "outputs": {
+        "artifacts": {
+          "sequences": "9ad823e9-e8b1-4d57-915e-860b1164ae25",
+          "scores": "25ed5dd0-06a0-4efc-b3b9-e51a05ed0654",
+          "probabilities": "c647d340-cca1-425e-a523-28bb3142547e"
+        },
+        "result": "9bf9b70d-77a9-437e-80f6-c08dbd956454",
+        "selected_sequences": "08e260c3-ed3b-4c2d-86ea-55650ed855ce",
+        "sample_table": "4c211828-f402-4133-a3da-48da4cb7c72a",
+        "selection_report": "a81ec311-8265-45f0-82be-279e2241f7dd"
+      },
+      "error": null,
+      "sharing": {
+        "peer_errors": [],
+        "candidates": [
+          {
+            "uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+            "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+            "member": "陈思睿",
+            "location": "profile://ai4s-integration-qhy/6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+            "size_bytes": 34287,
+            "elapsed_s": 31.9,
+            "qualified": true,
+            "reason": null,
+            "note": "",
+            "process_uuid": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+            "process_pk": 55,
+            "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+            "process_state": "finished",
+            "profile": "ai4s-integration-qhy",
+            "cached": false,
+            "cached_from": null,
+            "seq_count": 4,
+            "best_score": 0.7556,
+            "best_global_score": 0.7556,
+            "out_kinds": [
+              "Dict",
+              "SinglefileData",
+              "FolderData",
+              "SinglefileData",
+              "RemoteData",
+              "SinglefileData"
+            ],
+            "created": "2026-11-14 03:55:40.867153+00:00",
+            "origin_profile": "ai4s-integration-csr"
+          },
+          {
+            "uuid": "bf7bb302-ba1a-4b2d-95e1-4a9e562a699a",
+            "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+            "member": "曲鸿烨",
+            "location": "profile://ai4s-integration-qhy/bf7bb302-ba1a-4b2d-95e1-4a9e562a699a",
+            "size_bytes": 34287,
+            "elapsed_s": 0,
+            "qualified": true,
+            "reason": null,
+            "note": "cached_from=39433984-ccad-42b5-8feb-0a9a69c2197e",
+            "process_uuid": "f2d65bb3-6082-4232-b151-b857dfa27147",
+            "process_pk": 78,
+            "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+            "process_state": "finished",
+            "profile": "ai4s-integration-qhy",
+            "cached": true,
+            "cached_from": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+            "seq_count": 4,
+            "best_score": 0.7556,
+            "best_global_score": 0.7556,
+            "out_kinds": [
+              "Dict",
+              "SinglefileData",
+              "FolderData",
+              "SinglefileData",
+              "RemoteData",
+              "SinglefileData"
+            ],
+            "created": "2026-11-14 03:58:51.058445+00:00",
+            "origin_profile": "ai4s-integration-qhy"
+          },
+          {
+            "uuid": "7cc1291b-e541-400c-b975-11e0fb94cc65",
+            "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+            "member": "曲鸿烨",
+            "location": "profile://ai4s-integration-qhy/7cc1291b-e541-400c-b975-11e0fb94cc65",
+            "size_bytes": 34287,
+            "elapsed_s": 27.9,
+            "qualified": true,
+            "reason": null,
+            "note": "",
+            "process_uuid": "6b936804-a554-4719-983d-215b43c73f5e",
+            "process_pk": 93,
+            "process_label": "ai4s-mpnn:0a8abca4-ce34-4b13-af98-47a15ba94487:01",
+            "process_state": "finished",
+            "profile": "ai4s-integration-qhy",
+            "cached": false,
+            "cached_from": null,
+            "seq_count": 4,
+            "best_score": 0.7556,
+            "best_global_score": 0.7556,
+            "out_kinds": [
+              "RemoteData",
+              "FolderData",
+              "SinglefileData",
+              "SinglefileData",
+              "SinglefileData",
+              "Dict"
+            ],
+            "created": "2026-11-14 03:59:06.223921+00:00",
+            "origin_profile": "ai4s-integration-qhy"
+          }
+        ]
+      },
+      "execution": {
+        "calcjobs": [
+          {
+            "uuid": "ec2bc0da-959d-43f4-a02e-8f9bd9f2fcc0",
+            "pk": 113,
+            "label": "ai4s-mpnn:ce2ba923-25b0-4713-83b0-3af48cffe2b0:01",
+            "process_state": "finished",
+            "exit_status": 0,
+            "exit_message": null,
+            "cache_source": null
+          }
+        ],
+        "selection_report": {
+          "attempts": [
+            {
+              "attempt": 1,
+              "label": "ai4s-mpnn:ce2ba923-25b0-4713-83b0-3af48cffe2b0:01",
+              "model_launches_before": 0,
+              "model_launches_after": 1,
+              "status": "succeeded",
+              "calcjob_pk": 113,
+              "calcjob_uuid": "ec2bc0da-959d-43f4-a02e-8f9bd9f2fcc0",
+              "process_state": "finished",
+              "exit_status": 0,
+              "cache_source": null
+            }
+          ],
+          "attempt_count": 1,
+          "max_attempts": 2,
+          "retry_attempt": 0,
+          "model_launches": 1,
+          "calcjob_submissions": 1,
+          "request_id": "req-4f4fc7e7-8ef9-4793-99bb-472d4c78e3a5",
+          "reuse_policy": "new_sample",
+          "reuse_decision": "new_sample",
+          "reason_code": "R04",
+          "selected_candidate_uuid": null,
+          "effective_seed": 681281606,
+          "cached_from": null,
+          "status": "completed",
+          "mpnn_cache_source": null,
+          "upstream_result_uuid": "9bf9b70d-77a9-437e-80f6-c08dbd956454",
+          "filter_params": {
+            "score_threshold": 10.0,
+            "top_k": 2
+          },
+          "selected_count": 2
+        }
+      },
+      "records": [
+        {
+          "request_id": "req-4f4fc7e7-8ef9-4793-99bb-472d4c78e3a5",
+          "process_uuid": "ce2ba923-25b0-4713-83b0-3af48cffe2b0",
+          "reuse_policy": "new_sample",
+          "candidate_compare_list": [
+            {
+              "member": "陈思睿",
+              "location": "profile://ai4s-integration-qhy/6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+              "size_bytes": 34287,
+              "elapsed_s": 31.9,
+              "reason": null,
+              "note": "",
+              "process_uuid": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+              "process_pk": 55,
+              "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+              "process_state": "finished",
+              "profile": "ai4s-integration-qhy",
+              "cached": false,
+              "cached_from": null,
+              "seq_count": 4,
+              "best_score": 0.7556,
+              "best_global_score": 0.7556,
+              "out_kinds": [
+                "Dict",
+                "SinglefileData",
+                "FolderData",
+                "SinglefileData",
+                "RemoteData",
+                "SinglefileData"
+              ],
+              "created": "2026-11-14 03:55:40.867153+00:00",
+              "origin_profile": "ai4s-integration-csr",
+              "uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+              "qualified": true,
+              "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded"
+            },
+            {
+              "member": "曲鸿烨",
+              "location": "profile://ai4s-integration-qhy/bf7bb302-ba1a-4b2d-95e1-4a9e562a699a",
+              "size_bytes": 34287,
+              "elapsed_s": 0,
+              "reason": null,
+              "note": "cached_from=39433984-ccad-42b5-8feb-0a9a69c2197e",
+              "process_uuid": "f2d65bb3-6082-4232-b151-b857dfa27147",
+              "process_pk": 78,
+              "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+              "process_state": "finished",
+              "profile": "ai4s-integration-qhy",
+              "cached": true,
+              "cached_from": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+              "seq_count": 4,
+              "best_score": 0.7556,
+              "best_global_score": 0.7556,
+              "out_kinds": [
+                "Dict",
+                "SinglefileData",
+                "FolderData",
+                "SinglefileData",
+                "RemoteData",
+                "SinglefileData"
+              ],
+              "created": "2026-11-14 03:58:51.058445+00:00",
+              "origin_profile": "ai4s-integration-qhy",
+              "uuid": "bf7bb302-ba1a-4b2d-95e1-4a9e562a699a",
+              "qualified": true,
+              "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded"
+            },
+            {
+              "member": "曲鸿烨",
+              "location": "profile://ai4s-integration-qhy/7cc1291b-e541-400c-b975-11e0fb94cc65",
+              "size_bytes": 34287,
+              "elapsed_s": 27.9,
+              "reason": null,
+              "note": "",
+              "process_uuid": "6b936804-a554-4719-983d-215b43c73f5e",
+              "process_pk": 93,
+              "process_label": "ai4s-mpnn:0a8abca4-ce34-4b13-af98-47a15ba94487:01",
+              "process_state": "finished",
+              "profile": "ai4s-integration-qhy",
+              "cached": false,
+              "cached_from": null,
+              "seq_count": 4,
+              "best_score": 0.7556,
+              "best_global_score": 0.7556,
+              "out_kinds": [
+                "RemoteData",
+                "FolderData",
+                "SinglefileData",
+                "SinglefileData",
+                "SinglefileData",
+                "Dict"
+              ],
+              "created": "2026-11-14 03:59:06.223921+00:00",
+              "origin_profile": "ai4s-integration-qhy",
+              "uuid": "7cc1291b-e541-400c-b975-11e0fb94cc65",
+              "qualified": true,
+              "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded"
+            }
+          ],
+          "final_decision": {
+            "action": "new_sample",
+            "selected_candidate_uuid": null,
+            "effective_seed": 681281606
+          },
+          "reason": {
+            "reason_code": "R04",
+            "reason_text": "new_sample ignores candidates and reruns with a different seed"
+          },
+          "timestamp": "2026-11-14T03:59:43Z"
+        }
+      ]
+    },
+    "below_threshold": {
+      "request_id": "req-8d5057d1-f7e7-46b8-8ab3-75e0f71da48a",
+      "state": "finished",
+      "submitted_at": "2026-11-14T04:00:20Z",
+      "updated_at": "2026-11-14T04:01:12Z",
+      "finished_at": "2026-11-14T04:01:10Z",
+      "decision": {
+        "action": "rerun",
+        "reason_code": "R02",
+        "reason_text": "allow_reuse found no qualified candidate; rerun with the original seed"
+      },
+      "process": {
+        "uuid": "4bc1d841-f441-4dc1-9c71-02ac7653e869",
+        "pk": 132,
+        "label": "req-8d5057d1-f7e7-46b8-8ab3-75e0f71da48a",
+        "process_state": "finished",
+        "exit_status": 0,
+        "exit_message": null
+      },
+      "cached_from": null,
+      "effective": {
+        "seed": 44,
+        "identity_digest": "865635b5e489a115b5572f1ad72384f80517ce57d30100d673d38a7c4b5d36a0",
+        "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+        "identity_unresolved": null
+      },
+      "outputs": {
+        "artifacts": {
+          "sequences": "10dcc784-96c7-47a6-acca-6d7b25d94bd4",
+          "scores": "8dfc08a3-3e80-487c-ab79-b6b97d31f588",
+          "probabilities": "7349fc75-368c-4ed0-99ee-bc83327cf83f"
+        },
+        "result": "5da415fe-67d3-4ec4-8df8-e5fc296a2f03",
+        "selected_sequences": "a94a1b9b-b33b-4ea0-871a-5a5867306f62",
+        "sample_table": "15e2a38f-19d4-47e1-aa50-ecd729538b91",
+        "selection_report": "aedad250-b526-4b24-829b-49f4c1f2b7b6"
+      },
+      "error": null,
+      "sharing": {
+        "peer_errors": [],
+        "candidates": [
+          {
+            "uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+            "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+            "member": "陈思睿",
+            "location": "profile://ai4s-integration-qhy/6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+            "size_bytes": 34287,
+            "elapsed_s": 31.9,
+            "qualified": false,
+            "reason": "below_threshold: 最优分数 0.7556 > 阈值 -1.0",
+            "note": "",
+            "process_uuid": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+            "process_pk": 55,
+            "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+            "process_state": "finished",
+            "profile": "ai4s-integration-qhy",
+            "cached": false,
+            "cached_from": null,
+            "seq_count": 4,
+            "best_score": 0.7556,
+            "best_global_score": 0.7556,
+            "out_kinds": [
+              "Dict",
+              "SinglefileData",
+              "FolderData",
+              "SinglefileData",
+              "RemoteData",
+              "SinglefileData"
+            ],
+            "created": "2026-11-14 03:55:40.867153+00:00",
+            "origin_profile": "ai4s-integration-csr"
+          },
+          {
+            "uuid": "bf7bb302-ba1a-4b2d-95e1-4a9e562a699a",
+            "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+            "member": "曲鸿烨",
+            "location": "profile://ai4s-integration-qhy/bf7bb302-ba1a-4b2d-95e1-4a9e562a699a",
+            "size_bytes": 34287,
+            "elapsed_s": 0,
+            "qualified": false,
+            "reason": "below_threshold: 最优分数 0.7556 > 阈值 -1.0",
+            "note": "cached_from=39433984-ccad-42b5-8feb-0a9a69c2197e",
+            "process_uuid": "f2d65bb3-6082-4232-b151-b857dfa27147",
+            "process_pk": 78,
+            "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+            "process_state": "finished",
+            "profile": "ai4s-integration-qhy",
+            "cached": true,
+            "cached_from": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+            "seq_count": 4,
+            "best_score": 0.7556,
+            "best_global_score": 0.7556,
+            "out_kinds": [
+              "Dict",
+              "SinglefileData",
+              "FolderData",
+              "SinglefileData",
+              "RemoteData",
+              "SinglefileData"
+            ],
+            "created": "2026-11-14 03:58:51.058445+00:00",
+            "origin_profile": "ai4s-integration-qhy"
+          },
+          {
+            "uuid": "7cc1291b-e541-400c-b975-11e0fb94cc65",
+            "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded",
+            "member": "曲鸿烨",
+            "location": "profile://ai4s-integration-qhy/7cc1291b-e541-400c-b975-11e0fb94cc65",
+            "size_bytes": 34287,
+            "elapsed_s": 27.9,
+            "qualified": false,
+            "reason": "below_threshold: 最优分数 0.7556 > 阈值 -1.0",
+            "note": "",
+            "process_uuid": "6b936804-a554-4719-983d-215b43c73f5e",
+            "process_pk": 93,
+            "process_label": "ai4s-mpnn:0a8abca4-ce34-4b13-af98-47a15ba94487:01",
+            "process_state": "finished",
+            "profile": "ai4s-integration-qhy",
+            "cached": false,
+            "cached_from": null,
+            "seq_count": 4,
+            "best_score": 0.7556,
+            "best_global_score": 0.7556,
+            "out_kinds": [
+              "RemoteData",
+              "FolderData",
+              "SinglefileData",
+              "SinglefileData",
+              "SinglefileData",
+              "Dict"
+            ],
+            "created": "2026-11-14 03:59:06.223921+00:00",
+            "origin_profile": "ai4s-integration-qhy"
+          }
+        ]
+      },
+      "execution": {
+        "calcjobs": [
+          {
+            "uuid": "d0e7a258-e414-4d8a-838a-5150366029ac",
+            "pk": 133,
+            "label": "ai4s-mpnn:4bc1d841-f441-4dc1-9c71-02ac7653e869:01",
+            "process_state": "finished",
+            "exit_status": 0,
+            "exit_message": null,
+            "cache_source": null
+          }
+        ],
+        "selection_report": {
+          "attempts": [
+            {
+              "attempt": 1,
+              "label": "ai4s-mpnn:4bc1d841-f441-4dc1-9c71-02ac7653e869:01",
+              "model_launches_before": 0,
+              "model_launches_after": 1,
+              "status": "succeeded",
+              "calcjob_pk": 133,
+              "calcjob_uuid": "d0e7a258-e414-4d8a-838a-5150366029ac",
+              "process_state": "finished",
+              "exit_status": 0,
+              "cache_source": null
+            }
+          ],
+          "attempt_count": 1,
+          "max_attempts": 2,
+          "retry_attempt": 0,
+          "model_launches": 1,
+          "calcjob_submissions": 1,
+          "request_id": "req-8d5057d1-f7e7-46b8-8ab3-75e0f71da48a",
+          "reuse_policy": "allow_reuse",
+          "reuse_decision": "rerun",
+          "reason_code": "R02",
+          "selected_candidate_uuid": null,
+          "effective_seed": 44,
+          "cached_from": null,
+          "status": "completed",
+          "mpnn_cache_source": null,
+          "upstream_result_uuid": "5da415fe-67d3-4ec4-8df8-e5fc296a2f03",
+          "filter_params": {
+            "score_threshold": -1.0,
+            "top_k": 2
+          },
+          "selected_count": 0
+        }
+      },
+      "records": [
+        {
+          "request_id": "req-8d5057d1-f7e7-46b8-8ab3-75e0f71da48a",
+          "process_uuid": "4bc1d841-f441-4dc1-9c71-02ac7653e869",
+          "reuse_policy": "allow_reuse",
+          "candidate_compare_list": [
+            {
+              "member": "陈思睿",
+              "location": "profile://ai4s-integration-qhy/6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+              "size_bytes": 34287,
+              "elapsed_s": 31.9,
+              "reason": "below_threshold: 最优分数 0.7556 > 阈值 -1.0",
+              "note": "",
+              "process_uuid": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+              "process_pk": 55,
+              "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+              "process_state": "finished",
+              "profile": "ai4s-integration-qhy",
+              "cached": false,
+              "cached_from": null,
+              "seq_count": 4,
+              "best_score": 0.7556,
+              "best_global_score": 0.7556,
+              "out_kinds": [
+                "Dict",
+                "SinglefileData",
+                "FolderData",
+                "SinglefileData",
+                "RemoteData",
+                "SinglefileData"
+              ],
+              "created": "2026-11-14 03:55:40.867153+00:00",
+              "origin_profile": "ai4s-integration-csr",
+              "uuid": "6edf6de8-ccd9-4206-99bc-cf24ccc5983f",
+              "qualified": false,
+              "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded"
+            },
+            {
+              "member": "曲鸿烨",
+              "location": "profile://ai4s-integration-qhy/bf7bb302-ba1a-4b2d-95e1-4a9e562a699a",
+              "size_bytes": 34287,
+              "elapsed_s": 0,
+              "reason": "below_threshold: 最优分数 0.7556 > 阈值 -1.0",
+              "note": "cached_from=39433984-ccad-42b5-8feb-0a9a69c2197e",
+              "process_uuid": "f2d65bb3-6082-4232-b151-b857dfa27147",
+              "process_pk": 78,
+              "process_label": "req-7309bd8b-a7d2-4488-b925-2b2030510bd9",
+              "process_state": "finished",
+              "profile": "ai4s-integration-qhy",
+              "cached": true,
+              "cached_from": "39433984-ccad-42b5-8feb-0a9a69c2197e",
+              "seq_count": 4,
+              "best_score": 0.7556,
+              "best_global_score": 0.7556,
+              "out_kinds": [
+                "Dict",
+                "SinglefileData",
+                "FolderData",
+                "SinglefileData",
+                "RemoteData",
+                "SinglefileData"
+              ],
+              "created": "2026-11-14 03:58:51.058445+00:00",
+              "origin_profile": "ai4s-integration-qhy",
+              "uuid": "bf7bb302-ba1a-4b2d-95e1-4a9e562a699a",
+              "qualified": false,
+              "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded"
+            },
+            {
+              "member": "曲鸿烨",
+              "location": "profile://ai4s-integration-qhy/7cc1291b-e541-400c-b975-11e0fb94cc65",
+              "size_bytes": 34287,
+              "elapsed_s": 27.9,
+              "reason": "below_threshold: 最优分数 0.7556 > 阈值 -1.0",
+              "note": "",
+              "process_uuid": "6b936804-a554-4719-983d-215b43c73f5e",
+              "process_pk": 93,
+              "process_label": "ai4s-mpnn:0a8abca4-ce34-4b13-af98-47a15ba94487:01",
+              "process_state": "finished",
+              "profile": "ai4s-integration-qhy",
+              "cached": false,
+              "cached_from": null,
+              "seq_count": 4,
+              "best_score": 0.7556,
+              "best_global_score": 0.7556,
+              "out_kinds": [
+                "RemoteData",
+                "FolderData",
+                "SinglefileData",
+                "SinglefileData",
+                "SinglefileData",
+                "Dict"
+              ],
+              "created": "2026-11-14 03:59:06.223921+00:00",
+              "origin_profile": "ai4s-integration-qhy",
+              "uuid": "7cc1291b-e541-400c-b975-11e0fb94cc65",
+              "qualified": false,
+              "fingerprint": "d38610a6043b7c574fd833b56aff867ca9ec93f3ce16a985fc27b67848593ded"
+            }
+          ],
+          "final_decision": {
+            "action": "rerun",
+            "selected_candidate_uuid": null,
+            "effective_seed": 44
+          },
+          "reason": {
+            "reason_code": "R02",
+            "reason_text": "allow_reuse found no qualified candidate; rerun with the original seed"
+          },
+          "timestamp": "2026-11-14T04:00:23Z"
+        }
+      ]
+    },
+    "changed_weights": {
+      "request_id": "req-789a0548-2656-4be6-bb0e-f4466270ab32",
+      "state": "finished",
+      "submitted_at": "2026-11-14T04:01:12Z",
+      "updated_at": "2026-11-14T04:01:56Z",
+      "finished_at": "2026-11-14T04:01:56Z",
+      "decision": {
+        "action": "rerun",
+        "reason_code": "R02",
+        "reason_text": "allow_reuse found no qualified candidate; rerun with the original seed"
+      },
+      "process": {
+        "uuid": "ec9bf806-2ed9-4a64-9eea-99a3c6f0971f",
+        "pk": 153,
+        "label": "req-789a0548-2656-4be6-bb0e-f4466270ab32",
+        "process_state": "finished",
+        "exit_status": 0,
+        "exit_message": null
+      },
+      "cached_from": null,
+      "effective": {
+        "seed": 44,
+        "identity_digest": "35cf1ef74f9fbcdfc266f0c94a34987f91b7e93e0c247f2cf47c813e213fe801",
+        "fingerprint": "2665f7a3157a6cbfa9b61c406ed8a93f47479908426312cd0bf5240d7be24b57",
+        "identity_unresolved": null
+      },
+      "outputs": {
+        "artifacts": {
+          "sequences": "91c08483-b620-4b6b-b7fc-d23aa3eaff33",
+          "scores": "868b2634-480c-4abb-afee-b5201efe5277",
+          "probabilities": "b4cc56ed-7e54-4818-a4fb-5ef06157ae01"
+        },
+        "result": "ea2659bb-220b-48de-93e4-85d3a0125aa5",
+        "selected_sequences": "ced1eaf9-fb42-4dc7-9798-c70cbc9d9c0d",
+        "sample_table": "327d93bc-a986-4e20-9e58-162dac8e218a",
+        "selection_report": "c0f62b7d-5e5d-4f58-bcfe-f1c9dad36b8c"
+      },
+      "error": null,
+      "sharing": {
+        "peer_errors": [],
+        "candidates": []
+      },
+      "execution": {
+        "calcjobs": [
+          {
+            "uuid": "b0eff8de-e358-40b9-b424-fdaa3ef4320d",
+            "pk": 154,
+            "label": "ai4s-mpnn:ec9bf806-2ed9-4a64-9eea-99a3c6f0971f:01",
+            "process_state": "finished",
+            "exit_status": 0,
+            "exit_message": null,
+            "cache_source": null
+          }
+        ],
+        "selection_report": {
+          "attempts": [
+            {
+              "attempt": 1,
+              "label": "ai4s-mpnn:ec9bf806-2ed9-4a64-9eea-99a3c6f0971f:01",
+              "model_launches_before": 0,
+              "model_launches_after": 1,
+              "status": "succeeded",
+              "calcjob_pk": 154,
+              "calcjob_uuid": "b0eff8de-e358-40b9-b424-fdaa3ef4320d",
+              "process_state": "finished",
+              "exit_status": 0,
+              "cache_source": null
+            }
+          ],
+          "attempt_count": 1,
+          "max_attempts": 2,
+          "retry_attempt": 0,
+          "model_launches": 1,
+          "calcjob_submissions": 1,
+          "request_id": "req-789a0548-2656-4be6-bb0e-f4466270ab32",
+          "reuse_policy": "allow_reuse",
+          "reuse_decision": "rerun",
+          "reason_code": "R02",
+          "selected_candidate_uuid": null,
+          "effective_seed": 44,
+          "cached_from": null,
+          "status": "completed",
+          "mpnn_cache_source": null,
+          "upstream_result_uuid": "ea2659bb-220b-48de-93e4-85d3a0125aa5",
+          "filter_params": {
+            "score_threshold": 10.0,
+            "top_k": 2
+          },
+          "selected_count": 2
+        }
+      },
+      "records": [
+        {
+          "request_id": "req-789a0548-2656-4be6-bb0e-f4466270ab32",
+          "process_uuid": "ec9bf806-2ed9-4a64-9eea-99a3c6f0971f",
+          "reuse_policy": "allow_reuse",
+          "candidate_compare_list": [],
+          "final_decision": {
+            "action": "rerun",
+            "selected_candidate_uuid": null,
+            "effective_seed": 44
+          },
+          "reason": {
+            "reason_code": "R02",
+            "reason_text": "allow_reuse found no qualified candidate; rerun with the original seed"
+          },
+          "timestamp": "2026-11-14T04:01:12Z"
+        }
+      ]
+    }
+  },
+  "checks": {
+    "cross_member_filter": "passed",
+    "cross_member_single": "passed",
+    "force": "passed",
+    "new_sample": "passed",
+    "below_threshold": "passed",
+    "changed_weights": "passed"
+  },
+  "resumed_from": "cross-member-05.json",
+  "source_health": {
+    "status": "ok",
+    "profile": "ai4s-integration-csr",
+    "aiida_version": "2.9.4+ai4s.2",
+    "daemon_running": true,
+    "member": "陈思睿",
+    "peers": [
+      "qhy"
+    ]
+  },
+  "target_health": {
+    "status": "ok",
+    "profile": "ai4s-integration-qhy",
+    "aiida_version": "2.9.4+ai4s.2",
+    "daemon_running": true,
+    "member": "曲鸿烨",
+    "peers": [
+      "csr"
+    ]
+  },
+  "uploads": {
+    "source": {
+      "upload_id": "up-0d184802-5859-4468-8e65-2698da87a16c",
+      "sha256": "42199a30a0701864a2a5cc76cd7f35cc544cd0e65fbcf63e03c166543249b811",
+      "size_bytes": 49491
+    },
+    "target": {
+      "upload_id": "up-dfe27153-fd0e-4303-8afc-1daa86459355",
+      "sha256": "42199a30a0701864a2a5cc76cd7f35cc544cd0e65fbcf63e03c166543249b811",
+      "size_bytes": 49491
+    }
+  },
+  "file_sha256": {
+    "sequences": "939199742a0563d7d9bb400f35155c8ad7e9b5b245e8d6e91aa41a54d8c73070",
+    "scores": "5d47db26f474c1f82c1c06199f66ab2afa63872ad6e539b87f7b012ce1305d77",
+    "probabilities": "ab0e39281aa4dd312606a52223a007f86f51f3b6078c67215bd44a46f7d51ecf"
+  }
+}

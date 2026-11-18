@@ -36,10 +36,22 @@ bash tools/pymol_web/start-workspace.sh
 | --- | --- |
 | `GET api/graph-contract` | 操作 Schema、模型端口与布局能力 |
 | `GET api/workflows/{id}` | 完整草稿和当前修订号 |
+| `GET api/experiments/workflows` | 当前有效登记的实验流程视图，校验上传输入内容 |
+| `POST api/experiments/messages` | 共用模型配置生成实验草稿建议，不修改登记或启动任务 |
 | `POST api/workflows/{id}/changes/preview` | 只读校验和修改摘要 |
 | `POST api/workflows/{id}/changes` | 按 `expected_revision`、`operation_id` 和 `operations` 保存；破坏性操作须 `confirmed` |
 
 图操作包括 `move_node`、`set_layout`、`add_relation`、`remove_relation`，与原有节点、连接及参数操作共用类型和版本检查，不执行任意代码。
+
+## 登记交接与实验配置
+
+在接入页点击“用已登记流程创建实验”，读取当前有效登记的不可变快照、输入绑定、设计链和模型参数。模型节点参数使用独立命名空间；实验覆盖值单独保存，不回写登记。展开后的流程最多 64 步，包含自动添加的序列筛选与结果汇总；手工接入表单仍保持原有 12 步限制。
+
+实验配置 Agent 直接共用本接入页的模型设置、服务实例和调用并发限制，创建页没有独立 API 配置。选中节点后可询问参数或修改登记字段；已有实验快照只读。请求期间切换节点、产物或配置会令旧回复失效。引用可读 FASTA 可建立仅执行筛选的新草稿；已有未完成草稿时先处理它，避免覆盖。
+
+创建页不显示概述。点击“创建实验”后先保存待运行记录，再弹出概述；确认后才进入候选检查。关闭弹窗或刷新仍保留待确认状态，不会自动启动模拟。开始模拟后进入运行与结果视图。
+
+交接和执行仍为模拟：筛选按已有序列顺序保留前 N 条，汇总不产生科学评分。复用身份包含输入内容哈希、端口／记录选择和设计链，正常筛选读取上游 FASTA；仅重筛选读取明确绑定的已有 FASTA。真实 AiiDA 查询快照继续只读。
 
 ## 数据与边界
 

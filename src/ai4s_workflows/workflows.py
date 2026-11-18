@@ -118,7 +118,7 @@ def upstream_problem(node, code, pdb_file, params):
     plugin = code.default_calc_job_plugin or DEFAULT_MPNN_CALCULATION
     if source.process_type != f"aiida.calculations:{plugin}":
         return "upstream calculation plugin differs from requested plugin"
-    if source.inputs.code.uuid != code.uuid:
+    if source.inputs.code.base.caching.compute_hash() != code.base.caching.compute_hash():
         return "upstream Code differs from requested Code"
     def pdb_hash(data):
         with data.open(mode="rb") as handle:
@@ -267,29 +267,30 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         if "existing_mpnn_result" in self.inputs:
             return None
 
-        try:
-            params = self.inputs.mpnn_params.get_dict()
-            candidates = (
-                self.inputs.reuse_candidates.get_list()
-                if "reuse_candidates" in self.inputs
-                else []
-            )
-            decision_function = (
-                load_decision_function(self.inputs.decision_function.value)
-                if "decision_function" in self.inputs
-                else None
-            )
-            return ReuseConfiguration(
-                request_id=self.inputs.request_id.value,
-                reuse_policy=self.inputs.reuse_policy.value,
-                original_seed=params["seed"],
-                input_rewriter=self._rewrite_reuse_inputs,
-                candidates=candidates,
-                decision_function=decision_function,
-                materialization=ReuseMaterialization.CONSUME_CANDIDATE,
-            )
-        except Exception:
-            return None
+        # Do not swallow decision-loader failures. A submitted request that
+        # names a decision function must either use it or fail explicitly; a
+        # daemon-side import or environment error must not silently change the
+        # effective reuse policy.
+        params = self.inputs.mpnn_params.get_dict()
+        candidates = (
+            self.inputs.reuse_candidates.get_list()
+            if "reuse_candidates" in self.inputs
+            else []
+        )
+        decision_function = (
+            load_decision_function(self.inputs.decision_function.value)
+            if "decision_function" in self.inputs
+            else None
+        )
+        return ReuseConfiguration(
+            request_id=self.inputs.request_id.value,
+            reuse_policy=self.inputs.reuse_policy.value,
+            original_seed=params["seed"],
+            input_rewriter=self._rewrite_reuse_inputs,
+            candidates=candidates,
+            decision_function=decision_function,
+            materialization=ReuseMaterialization.CONSUME_CANDIDATE,
+        )
 
     def _rewrite_reuse_inputs(self, inputs, decision):
         """Apply the kernel decision to the concrete WorkChain inputs."""

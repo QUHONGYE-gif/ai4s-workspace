@@ -1,0 +1,587 @@
+{
+  "schema_version": "ai4s-r008-cost-decision-acceptance-1",
+  "status": "running",
+  "started_at": "2026-11-18T07:27:30Z",
+  "profile": "ai4s-wyh-reuse",
+  "code": {
+    "label": "proteinmpnn-8907e667",
+    "uuid": "fa81bdf7-1832-4a7a-88ca-bd6ddb27037e",
+    "pk": 1,
+    "plugin": "ai4s.proteinmpnn"
+  },
+  "inputs": {
+    "pdb_path": "/opt/ai4s/proteinmpnn/releases/8907e667-py312-torch260cu124/examples/1CRN.pdb",
+    "pdb_sha256": "42199a30a0701864a2a5cc76cd7f35cc544cd0e65fbcf63e03c166543249b811",
+    "mpnn_params": {
+      "chains": "A",
+      "num_sequences": 4,
+      "sampling_temperature": 0.1,
+      "seed": 41,
+      "model_name": "v_48_020",
+      "batch_size": 1,
+      "save_probabilities": true
+    },
+    "filter_params": {
+      "score_threshold": 10.0,
+      "top_k": 2
+    }
+  },
+  "policy_file": "cost-policy.json",
+  "phases": {
+    "source": {
+      "process": {
+        "pk": 63,
+        "uuid": "801e6456-08d7-4c6d-ab8b-4719e3ba066a",
+        "label": "r008-source-c1f0ce70-2b21-4dab-81d8-0a693edd2098",
+        "process_type": "aiida.workflows:ai4s.protein-mpnn-filter",
+        "process_state": "finished",
+        "process_status": null,
+        "exit_status": 0,
+        "exit_message": null,
+        "is_finished_ok": true,
+        "created_at": "2026-11-18T07:27:30Z",
+        "ended_at": "2026-11-18T07:28:23Z",
+        "cache_source": null
+      },
+      "decision_record": null,
+      "selection_report": {
+        "attempts": [
+          {
+            "attempt": 1,
+            "label": "ai4s-mpnn:801e6456-08d7-4c6d-ab8b-4719e3ba066a:01",
+            "model_launches_before": 0,
+            "model_launches_after": 1,
+            "status": "succeeded",
+            "calcjob_pk": 64,
+            "calcjob_uuid": "6933ec34-8dc9-4077-8ac9-17f2c179db66",
+            "process_state": "finished",
+            "exit_status": 0,
+            "cache_source": null
+          }
+        ],
+        "attempt_count": 1,
+        "max_attempts": 2,
+        "retry_attempt": 0,
+        "model_launches": 1,
+        "calcjob_submissions": 1,
+        "request_id": "req-9d98ba31-cdd4-4309-b1af-5e71b0309aa9",
+        "reuse_policy": "force_rerun",
+        "reuse_decision": "rerun",
+        "reason_code": "R03",
+        "selected_candidate_uuid": null,
+        "effective_seed": 41,
+        "cached_from": null,
+        "status": "completed",
+        "mpnn_cache_source": null,
+        "upstream_result_uuid": "aae215ce-3796-4e9c-bbd6-6455cf104c08",
+        "filter_params": {
+          "score_threshold": 10.0,
+          "top_k": 2
+        },
+        "selected_count": 2
+      },
+      "calcjobs": [
+        {
+          "pk": 64,
+          "uuid": "6933ec34-8dc9-4077-8ac9-17f2c179db66",
+          "label": "ai4s-mpnn:801e6456-08d7-4c6d-ab8b-4719e3ba066a:01",
+          "process_type": "aiida.calculations:ai4s.proteinmpnn",
+          "process_state": "finished",
+          "process_status": null,
+          "exit_status": 0,
+          "exit_message": null,
+          "is_finished_ok": true,
+          "created_at": "2026-11-18T07:27:31Z",
+          "ended_at": "2026-11-18T07:28:21Z",
+          "cache_source": null
+        }
+      ],
+      "failed_calcjobs": [],
+      "selected_sequences_uuid": "1c4c7e4b-60ae-4e45-b538-31dce8491b97",
+      "sample_table_uuid": "2ff53f81-e495-4473-a60c-11218fc06667",
+      "calcjob": {
+        "pk": 64,
+        "uuid": "6933ec34-8dc9-4077-8ac9-17f2c179db66",
+        "label": "ai4s-mpnn:801e6456-08d7-4c6d-ab8b-4719e3ba066a:01",
+        "process_type": "aiida.calculations:ai4s.proteinmpnn",
+        "process_state": "finished",
+        "process_status": null,
+        "exit_status": 0,
+        "exit_message": null,
+        "is_finished_ok": true,
+        "created_at": "2026-11-18T07:27:31Z",
+        "ended_at": "2026-11-18T07:28:21Z",
+        "cache_source": null
+      }
+    },
+    "default_reuse": {
+      "process": {
+        "pk": 83,
+        "uuid": "878a65e5-d156-4a49-8ba9-a424c40c4bd7",
+        "label": "r008-default-reuse-dc76a18a-28e1-435b-a7cb-1e4697655c61",
+        "process_type": "aiida.workflows:ai4s.protein-mpnn-filter",
+        "process_state": "finished",
+        "process_status": null,
+        "exit_status": 0,
+        "exit_message": null,
+        "is_finished_ok": true,
+        "created_at": "2026-11-18T07:28:23Z",
+        "ended_at": "2026-11-18T07:28:24Z",
+        "cache_source": null
+      },
+      "decision_record": {
+        "request_id": "req-b5694525-01b3-4e4c-a4f1-9cc56fd9c058",
+        "process_uuid": "878a65e5-d156-4a49-8ba9-a424c40c4bd7",
+        "reuse_policy": "allow_reuse",
+        "candidate_compare_list": [
+          {
+            "member": "ai4s-wyh-reuse",
+            "location": "profile://ai4s-wyh-reuse/aae215ce-3796-4e9c-bbd6-6455cf104c08",
+            "size_bytes": 34287,
+            "elapsed_s": 49.9,
+            "elapsed_source": "measured",
+            "reason": null,
+            "note": "",
+            "process_uuid": "6933ec34-8dc9-4077-8ac9-17f2c179db66",
+            "process_pk": 64,
+            "process_label": "ai4s-mpnn:801e6456-08d7-4c6d-ab8b-4719e3ba066a:01",
+            "process_state": "finished",
+            "profile": "ai4s-wyh-reuse",
+            "cached": false,
+            "cached_from": null,
+            "seq_count": 4,
+            "best_score": 0.7703,
+            "best_global_score": 0.7703,
+            "out_kinds": [
+              "RemoteData",
+              "FolderData",
+              "SinglefileData",
+              "SinglefileData",
+              "SinglefileData",
+              "Dict"
+            ],
+            "created": "2026-11-18 07:27:31.761353+00:00",
+            "uuid": "aae215ce-3796-4e9c-bbd6-6455cf104c08",
+            "qualified": true,
+            "fingerprint": "25aac783f44c1a96fccffd04177746d9d77818e035ed1519fc14ea182285af5a"
+          }
+        ],
+        "final_decision": {
+          "action": "reuse",
+          "selected_candidate_uuid": "aae215ce-3796-4e9c-bbd6-6455cf104c08",
+          "effective_seed": 41
+        },
+        "reason": {
+          "reason_code": "R01",
+          "reason_text": "allow_reuse selected the first qualified candidate aae215ce-3796-4e9c-bbd6-6455cf104c08"
+        },
+        "timestamp": "2026-11-18T07:28:23Z"
+      },
+      "selection_report": {
+        "attempts": [],
+        "attempt_count": 0,
+        "max_attempts": 2,
+        "retry_attempt": 0,
+        "model_launches": 0,
+        "calcjob_submissions": 0,
+        "request_id": "req-b5694525-01b3-4e4c-a4f1-9cc56fd9c058",
+        "reuse_policy": "allow_reuse",
+        "reuse_decision": "reuse",
+        "reason_code": "R01",
+        "selected_candidate_uuid": "aae215ce-3796-4e9c-bbd6-6455cf104c08",
+        "effective_seed": 41,
+        "cached_from": "6933ec34-8dc9-4077-8ac9-17f2c179db66",
+        "status": "completed",
+        "mpnn_cache_source": "6933ec34-8dc9-4077-8ac9-17f2c179db66",
+        "upstream_result_uuid": "aae215ce-3796-4e9c-bbd6-6455cf104c08",
+        "filter_params": {
+          "score_threshold": 10.0,
+          "top_k": 2
+        },
+        "selected_count": 2
+      },
+      "calcjobs": [],
+      "failed_calcjobs": [],
+      "selected_sequences_uuid": "40ca8ac3-f37b-4b2a-9fb1-2ff4617c1dcc",
+      "sample_table_uuid": "4cc6bb0a-99ba-4175-af70-92bf00f823f0"
+    },
+    "low_cost_policy": {
+      "schema_version": "ai4s-cost-policy-1",
+      "enabled": true,
+      "transfer_fixed_seconds": 0.5,
+      "transfer_bytes_per_second": 1048576,
+      "materialization_seconds": 0.2,
+      "min_savings_seconds": 1.0
+    },
+    "cost_reuse": {
+      "process": {
+        "pk": 96,
+        "uuid": "b0a245e6-be25-42c3-bada-b4a3c761da7e",
+        "label": "r008-cost-reuse-9e0c1264-22ce-4552-8a85-7bb1d6d585b7",
+        "process_type": "aiida.workflows:ai4s.protein-mpnn-filter",
+        "process_state": "finished",
+        "process_status": null,
+        "exit_status": 0,
+        "exit_message": null,
+        "is_finished_ok": true,
+        "created_at": "2026-11-18T07:28:26Z",
+        "ended_at": "2026-11-18T07:28:26Z",
+        "cache_source": null
+      },
+      "decision_record": {
+        "request_id": "req-61b1e417-b478-448b-a41d-4f981d49b5ca",
+        "process_uuid": "b0a245e6-be25-42c3-bada-b4a3c761da7e",
+        "reuse_policy": "allow_reuse",
+        "candidate_compare_list": [
+          {
+            "member": "ai4s-wyh-reuse",
+            "location": "profile://ai4s-wyh-reuse/aae215ce-3796-4e9c-bbd6-6455cf104c08",
+            "size_bytes": 34287,
+            "elapsed_s": 49.9,
+            "elapsed_source": "measured",
+            "reason": null,
+            "note": "",
+            "process_uuid": "6933ec34-8dc9-4077-8ac9-17f2c179db66",
+            "process_pk": 64,
+            "process_label": "ai4s-mpnn:801e6456-08d7-4c6d-ab8b-4719e3ba066a:01",
+            "process_state": "finished",
+            "profile": "ai4s-wyh-reuse",
+            "cached": false,
+            "cached_from": null,
+            "seq_count": 4,
+            "best_score": 0.7703,
+            "best_global_score": 0.7703,
+            "out_kinds": [
+              "RemoteData",
+              "FolderData",
+              "SinglefileData",
+              "SinglefileData",
+              "SinglefileData",
+              "Dict"
+            ],
+            "created": "2026-11-18 07:27:31.761353+00:00",
+            "uuid": "aae215ce-3796-4e9c-bbd6-6455cf104c08",
+            "qualified": true,
+            "fingerprint": "25aac783f44c1a96fccffd04177746d9d77818e035ed1519fc14ea182285af5a"
+          }
+        ],
+        "final_decision": {
+          "action": "reuse",
+          "selected_candidate_uuid": "aae215ce-3796-4e9c-bbd6-6455cf104c08",
+          "effective_seed": 41
+        },
+        "reason": {
+          "reason_code": "R05",
+          "reason_text": "成本策略选择 aae215ce-3796-4e9c-bbd6-6455cf104c08 复用：重算预计 49.900s，复用预计 0.733s，预计节省 49.167s（阈值 1.000s）；policy_fixed=0.500s；policy_bandwidth=1048576.000B/s；policy_materialization=0.200s；cost_source=estimated；rerun_source=measured；reuse_source=estimated"
+        },
+        "timestamp": "2026-11-18T07:28:26Z"
+      },
+      "selection_report": {
+        "attempts": [],
+        "attempt_count": 0,
+        "max_attempts": 2,
+        "retry_attempt": 0,
+        "model_launches": 0,
+        "calcjob_submissions": 0,
+        "request_id": "req-61b1e417-b478-448b-a41d-4f981d49b5ca",
+        "reuse_policy": "allow_reuse",
+        "reuse_decision": "reuse",
+        "reason_code": "R05",
+        "selected_candidate_uuid": "aae215ce-3796-4e9c-bbd6-6455cf104c08",
+        "effective_seed": 41,
+        "cached_from": "6933ec34-8dc9-4077-8ac9-17f2c179db66",
+        "status": "completed",
+        "mpnn_cache_source": "6933ec34-8dc9-4077-8ac9-17f2c179db66",
+        "upstream_result_uuid": "aae215ce-3796-4e9c-bbd6-6455cf104c08",
+        "filter_params": {
+          "score_threshold": 10.0,
+          "top_k": 2
+        },
+        "selected_count": 2
+      },
+      "calcjobs": [],
+      "failed_calcjobs": [],
+      "selected_sequences_uuid": "d9c1ca00-4b89-42ff-b1fc-ab16909fb2ce",
+      "sample_table_uuid": "c000a699-d122-46b3-b3fa-715707ac1f40"
+    },
+    "high_cost_policy": {
+      "schema_version": "ai4s-cost-policy-1",
+      "enabled": true,
+      "transfer_fixed_seconds": 60,
+      "transfer_bytes_per_second": 1048576,
+      "materialization_seconds": 0.0,
+      "min_savings_seconds": 1.0
+    },
+    "cost_rerun": {
+      "process": {
+        "pk": 109,
+        "uuid": "cd1d1a3b-e143-4f16-ba18-473bd59f9539",
+        "label": "r008-cost-rerun-371967d6-752d-4bb8-b8f7-89130ab78a77",
+        "process_type": "aiida.workflows:ai4s.protein-mpnn-filter",
+        "process_state": "finished",
+        "process_status": null,
+        "exit_status": 0,
+        "exit_message": null,
+        "is_finished_ok": true,
+        "created_at": "2026-11-18T07:28:28Z",
+        "ended_at": "2026-11-18T07:29:06Z",
+        "cache_source": null
+      },
+      "decision_record": {
+        "request_id": "req-de00a19b-fd25-4c12-81d3-9138c7de50db",
+        "process_uuid": "cd1d1a3b-e143-4f16-ba18-473bd59f9539",
+        "reuse_policy": "allow_reuse",
+        "candidate_compare_list": [
+          {
+            "member": "ai4s-wyh-reuse",
+            "location": "profile://ai4s-wyh-reuse/aae215ce-3796-4e9c-bbd6-6455cf104c08",
+            "size_bytes": 34287,
+            "elapsed_s": 49.9,
+            "elapsed_source": "measured",
+            "reason": null,
+            "note": "",
+            "process_uuid": "6933ec34-8dc9-4077-8ac9-17f2c179db66",
+            "process_pk": 64,
+            "process_label": "ai4s-mpnn:801e6456-08d7-4c6d-ab8b-4719e3ba066a:01",
+            "process_state": "finished",
+            "profile": "ai4s-wyh-reuse",
+            "cached": false,
+            "cached_from": null,
+            "seq_count": 4,
+            "best_score": 0.7703,
+            "best_global_score": 0.7703,
+            "out_kinds": [
+              "RemoteData",
+              "FolderData",
+              "SinglefileData",
+              "SinglefileData",
+              "SinglefileData",
+              "Dict"
+            ],
+            "created": "2026-11-18 07:27:31.761353+00:00",
+            "uuid": "aae215ce-3796-4e9c-bbd6-6455cf104c08",
+            "qualified": true,
+            "fingerprint": "25aac783f44c1a96fccffd04177746d9d77818e035ed1519fc14ea182285af5a"
+          }
+        ],
+        "final_decision": {
+          "action": "rerun",
+          "selected_candidate_uuid": null,
+          "effective_seed": 41
+        },
+        "reason": {
+          "reason_code": "R05",
+          "reason_text": "成本策略比较后选择重算：最佳候选 aae215ce-3796-4e9c-bbd6-6455cf104c08 的预计节省未达到阈值；重算预计 49.900s，复用预计 60.033s，预计节省 -10.133s（阈值 1.000s）；policy_fixed=60.000s；policy_bandwidth=1048576.000B/s；policy_materialization=0.000s；cost_source=estimated；rerun_source=measured；reuse_source=estimated"
+        },
+        "timestamp": "2026-11-18T07:28:28Z"
+      },
+      "selection_report": {
+        "attempts": [
+          {
+            "attempt": 1,
+            "label": "ai4s-mpnn:cd1d1a3b-e143-4f16-ba18-473bd59f9539:01",
+            "model_launches_before": 0,
+            "model_launches_after": 1,
+            "status": "succeeded",
+            "calcjob_pk": 110,
+            "calcjob_uuid": "be13aa50-98c2-4e94-ad24-fe9c7c76c2f1",
+            "process_state": "finished",
+            "exit_status": 0,
+            "cache_source": null
+          }
+        ],
+        "attempt_count": 1,
+        "max_attempts": 2,
+        "retry_attempt": 0,
+        "model_launches": 1,
+        "calcjob_submissions": 1,
+        "request_id": "req-de00a19b-fd25-4c12-81d3-9138c7de50db",
+        "reuse_policy": "allow_reuse",
+        "reuse_decision": "rerun",
+        "reason_code": "R05",
+        "selected_candidate_uuid": null,
+        "effective_seed": 41,
+        "cached_from": null,
+        "status": "completed",
+        "mpnn_cache_source": null,
+        "upstream_result_uuid": "a65d782f-5dd8-4431-8287-15bf78acaa30",
+        "filter_params": {
+          "score_threshold": 10.0,
+          "top_k": 2
+        },
+        "selected_count": 2
+      },
+      "calcjobs": [
+        {
+          "pk": 110,
+          "uuid": "be13aa50-98c2-4e94-ad24-fe9c7c76c2f1",
+          "label": "ai4s-mpnn:cd1d1a3b-e143-4f16-ba18-473bd59f9539:01",
+          "process_type": "aiida.calculations:ai4s.proteinmpnn",
+          "process_state": "finished",
+          "process_status": null,
+          "exit_status": 0,
+          "exit_message": null,
+          "is_finished_ok": true,
+          "created_at": "2026-11-18T07:28:28Z",
+          "ended_at": "2026-11-18T07:29:04Z",
+          "cache_source": null
+        }
+      ],
+      "failed_calcjobs": [],
+      "selected_sequences_uuid": "db9ff9e4-5036-4fd6-bca9-7e0f7ed23e41",
+      "sample_table_uuid": "5a34d9f9-586c-48c0-bcd7-69251270585f"
+    },
+    "new_sample": {
+      "process": {
+        "pk": 128,
+        "uuid": "ea5d8618-4d33-4e9d-a3f4-7a89f3567a14",
+        "label": "r008-new-sample-6a1a36d7-addc-4233-b7c6-a6ca7abd8e9c",
+        "process_type": "aiida.workflows:ai4s.protein-mpnn-filter",
+        "process_state": "finished",
+        "process_status": null,
+        "exit_status": 0,
+        "exit_message": null,
+        "is_finished_ok": true,
+        "created_at": "2026-11-18T07:29:07Z",
+        "ended_at": "2026-11-18T07:29:37Z",
+        "cache_source": null
+      },
+      "decision_record": {
+        "request_id": "req-0bed5982-a415-4668-862d-2dfeb87a8802",
+        "process_uuid": "ea5d8618-4d33-4e9d-a3f4-7a89f3567a14",
+        "reuse_policy": "new_sample",
+        "candidate_compare_list": [
+          {
+            "member": "ai4s-wyh-reuse",
+            "location": "profile://ai4s-wyh-reuse/aae215ce-3796-4e9c-bbd6-6455cf104c08",
+            "size_bytes": 34287,
+            "elapsed_s": 49.9,
+            "elapsed_source": "measured",
+            "reason": null,
+            "note": "",
+            "process_uuid": "6933ec34-8dc9-4077-8ac9-17f2c179db66",
+            "process_pk": 64,
+            "process_label": "ai4s-mpnn:801e6456-08d7-4c6d-ab8b-4719e3ba066a:01",
+            "process_state": "finished",
+            "profile": "ai4s-wyh-reuse",
+            "cached": false,
+            "cached_from": null,
+            "seq_count": 4,
+            "best_score": 0.7703,
+            "best_global_score": 0.7703,
+            "out_kinds": [
+              "RemoteData",
+              "FolderData",
+              "SinglefileData",
+              "SinglefileData",
+              "SinglefileData",
+              "Dict"
+            ],
+            "created": "2026-11-18 07:27:31.761353+00:00",
+            "uuid": "aae215ce-3796-4e9c-bbd6-6455cf104c08",
+            "qualified": true,
+            "fingerprint": "25aac783f44c1a96fccffd04177746d9d77818e035ed1519fc14ea182285af5a"
+          }
+        ],
+        "final_decision": {
+          "action": "new_sample",
+          "selected_candidate_uuid": null,
+          "effective_seed": 1035027373
+        },
+        "reason": {
+          "reason_code": "R04",
+          "reason_text": "new_sample ignores candidates and reruns with a different seed"
+        },
+        "timestamp": "2026-11-18T07:29:07Z"
+      },
+      "selection_report": {
+        "attempts": [
+          {
+            "attempt": 1,
+            "label": "ai4s-mpnn:ea5d8618-4d33-4e9d-a3f4-7a89f3567a14:01",
+            "model_launches_before": 0,
+            "model_launches_after": 1,
+            "status": "succeeded",
+            "calcjob_pk": 129,
+            "calcjob_uuid": "66d641b4-becc-4447-8506-4e7860f6b00b",
+            "process_state": "finished",
+            "exit_status": 0,
+            "cache_source": null
+          }
+        ],
+        "attempt_count": 1,
+        "max_attempts": 2,
+        "retry_attempt": 0,
+        "model_launches": 1,
+        "calcjob_submissions": 1,
+        "request_id": "req-0bed5982-a415-4668-862d-2dfeb87a8802",
+        "reuse_policy": "new_sample",
+        "reuse_decision": "new_sample",
+        "reason_code": "R04",
+        "selected_candidate_uuid": null,
+        "effective_seed": 1035027373,
+        "cached_from": null,
+        "status": "completed",
+        "mpnn_cache_source": null,
+        "upstream_result_uuid": "5d5447b1-6172-4206-9826-b616079eaea6",
+        "filter_params": {
+          "score_threshold": 10.0,
+          "top_k": 2
+        },
+        "selected_count": 2
+      },
+      "calcjobs": [
+        {
+          "pk": 129,
+          "uuid": "66d641b4-becc-4447-8506-4e7860f6b00b",
+          "label": "ai4s-mpnn:ea5d8618-4d33-4e9d-a3f4-7a89f3567a14:01",
+          "process_type": "aiida.calculations:ai4s.proteinmpnn",
+          "process_state": "finished",
+          "process_status": null,
+          "exit_status": 0,
+          "exit_message": null,
+          "is_finished_ok": true,
+          "created_at": "2026-11-18T07:29:08Z",
+          "ended_at": "2026-11-18T07:29:37Z",
+          "cache_source": null
+        }
+      ],
+      "failed_calcjobs": [],
+      "selected_sequences_uuid": "0cbcebbd-1ace-4893-82c2-dcd7814b9cc5",
+      "sample_table_uuid": "e0556800-bc45-4a87-974f-a1d7b834cde0"
+    }
+  },
+  "checks": {},
+  "updated_at": "2026-11-18T07:29:39Z",
+  "source_candidate": {
+    "uuid": "aae215ce-3796-4e9c-bbd6-6455cf104c08",
+    "fingerprint": "25aac783f44c1a96fccffd04177746d9d77818e035ed1519fc14ea182285af5a",
+    "member": "ai4s-wyh-reuse",
+    "location": "profile://ai4s-wyh-reuse/aae215ce-3796-4e9c-bbd6-6455cf104c08",
+    "size_bytes": 34287,
+    "elapsed_s": 49.9,
+    "elapsed_source": "measured",
+    "qualified": true,
+    "reason": null,
+    "note": "",
+    "process_uuid": "6933ec34-8dc9-4077-8ac9-17f2c179db66",
+    "process_pk": 64,
+    "process_label": "ai4s-mpnn:801e6456-08d7-4c6d-ab8b-4719e3ba066a:01",
+    "process_state": "finished",
+    "profile": "ai4s-wyh-reuse",
+    "cached": false,
+    "cached_from": null,
+    "seq_count": 4,
+    "best_score": 0.7703,
+    "best_global_score": 0.7703,
+    "out_kinds": [
+      "RemoteData",
+      "FolderData",
+      "SinglefileData",
+      "SinglefileData",
+      "SinglefileData",
+      "Dict"
+    ],
+    "created": "2026-11-18 07:27:31.761353+00:00"
+  }
+}

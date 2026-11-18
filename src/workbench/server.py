@@ -8,6 +8,7 @@ from functools import partial
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
 from urllib.parse import urlsplit
 from xmlrpc.client import Error as PyMOLError
@@ -44,6 +45,8 @@ class DemoHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path).path
+        if path.startswith("/api/engine/"):
+            return self.proxy_engine()
         if path == "/agent" or path.startswith("/agent/"):
             return self.proxy_agent()
         try:
@@ -126,6 +129,8 @@ class DemoHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path).path
+        if path.startswith("/api/engine/"):
+            return self.proxy_engine()
         if path.startswith("/agent/"):
             return self.proxy_agent()
         if path not in (
@@ -161,6 +166,34 @@ class DemoHandler(SimpleHTTPRequestHandler):
             return self.reply(400, {"error": str(error)})
         except (OSError, PyMOLError):
             return self.reply(503, {"error": "PyMOL 操作未返回，请检查会话；耗时命令可能仍在运行"})
+
+    def proxy_engine(self):
+        """Fixed loopback target; the workbench stays free of AiiDA dependencies."""
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            return self.reply(400, {"error": "Invalid Content-Length"})
+        if self.headers.get("Transfer-Encoding") or not 0 <= length <= MAX_BODY:
+            self.close_connection = True
+            return self.reply(413, {"error": "Engine request exceeds 2 MiB"})
+        connection = http.client.HTTPConnection("127.0.0.1", int(os.environ.get("AI4S_ENGINE_PORT", "3003")), timeout=30)
+        try:
+            connection.request(self.command, self.path, self.rfile.read(length) if length else None,
+                               {"Content-Type": self.headers.get("Content-Type", "application/json")})
+            response = connection.getresponse()
+            body = response.read()
+        except (OSError, http.client.HTTPException):
+            return self.reply(503, {"error": "真实引擎暂不可用，请稍后重试"})
+        finally:
+            connection.close()
+        self.send_response(response.status)
+        for key, value in response.getheaders():
+            if key.lower() in {"content-type", "content-disposition"}:
+                self.send_header(key, value)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
 
     def proxy_agent(self):
         """Forward only the fixed Agent service; preserve the browser's Host/Origin."""
