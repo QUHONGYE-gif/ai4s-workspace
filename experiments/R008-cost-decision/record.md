@@ -1,10 +1,10 @@
 # R008：成本决策真实验收
 
-状态：已通过。基于真实 Coder／AiiDA Profile 和真实 CPU ProteinMPNN 形成最终证据，六项硬性检查全部为真。本轮不提交、不推送、不合并 `main`，也不评价蛋白质功能或模型质量。
+状态：已通过。基于真实 Coder／AiiDA Profile 和真实 CPU ProteinMPNN 形成最终证据，六项硬性检查全部为真。本轮只推送个人分支 `dev-wyh`，不直接推送或合并 `main`，也不评价蛋白质功能或模型质量。
 
 ## 范围与运行身份
 
-- 日期：2026-11-18。执行源码来自 `dev-wyh` 工作区，基线为 `e9ddf3feaf297392eb070f761d950bb665afe153`，并包含本次尚未提交的成本决策实现。运行快照位于 `/home/coder/runs/cost-decision-20261118/snapshot`；之后只整理文档，不改写本次结果。
+- 日期：2026-11-18。执行源码来自 `dev-wyh` 工作区，基线为 `e9ddf3feaf297392eb070f761d950bb665afe153`；成本决策实现随后提交并推送至 `dev-wyh`。运行快照位于 `/home/coder/runs/cost-decision-20261118/snapshot`；之后只整理文档，不改写本次结果。
 - AiiDA：`2.9.4`；真实 Profile：`ai4s-wyh-reuse`；执行位置：个人 Coder 工作区。
 - Code：`proteinmpnn-8907e667@localhost`，UUID `fa81bdf7-1832-4a7a-88ca-bd6ddb27037e`，PK `1`，插件 `ai4s.proteinmpnn`。
 - 输入：`/opt/ai4s/proteinmpnn/releases/8907e667-py312-torch260cu124/examples/1CRN.pdb`，SHA-256 `42199a30a0701864a2a5cc76cd7f35cc544cd0e65fbcf63e03c166543249b811`。

@@ -932,6 +932,7 @@
       <nav class="nav-links" aria-label="页面导航">
         <a href="#why">为什么</a>
         <a href="#flow">总流程</a>
+        <a href="#config">配置开关</a>
         <a href="#paths">四路径</a>
         <a href="#safety">安全门</a>
         <a href="#sequence">两阶段</a>
@@ -1082,11 +1083,69 @@
       </div>
     </section>
 
+    <section id="config" class="section" aria-labelledby="config-title">
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <div class="kicker">03 · 函数与配置开关</div>
+            <h2 id="config-title">默认不改变旧行为，显式配置后才启用成本决策</h2>
+            <p class="lead">成本决策函数只接管 <code>allow_reuse</code>：输入是合格候选及其成本元数据，输出是复用或重算、选中候选、原因代码和可复核参数。</p>
+          </div>
+          <span class="tag amber">默认 enabled=false</span>
+        </div>
+
+        <div class="formula-box">
+          <article class="formula-card">
+            <div class="formula-title">成本决策函数的输入与输出</div>
+            <div class="formula">
+              输入：reuse_policy + 合格候选 + 大小／耗时／来源 + 原种子<br>
+              比较：rerun_estimate vs reuse_estimate<br>
+              输出：reuse／rerun + selected_uuid + R05 reason_text
+            </div>
+            <div class="rule-inline">只处理 <code>allow_reuse</code>；<code>force_rerun</code> 和 <code>new_sample</code> 保持原语义，不会被成本策略改写。</div>
+          </article>
+          <article class="formula-card">
+            <div class="formula-title">启用时要改的最小配置</div>
+            <pre class="record" style="margin-top:12px;padding:14px;font-size:12px">{
+  "schema_version": "ai4s-cost-policy-1",
+  "enabled": true,
+  "transfer_fixed_seconds": 0.5,
+  "transfer_bytes_per_second": 1048576,
+  "materialization_seconds": 0.2,
+  "min_savings_seconds": 1.0
+}</pre>
+          </article>
+        </div>
+
+        <div class="grid-3" style="margin-top:18px">
+          <article class="card">
+            <div class="card-number">1</div>
+            <h3>默认关闭</h3>
+            <p>未设置 <code>AI4S_COST_POLICY_FILE</code> 时不安装成本决策函数，原有 R01／R02／R03／R04 行为保持不变。</p>
+          </article>
+          <article class="card">
+            <div class="card-number">2</div>
+            <h3>显式启用</h3>
+            <p>复制示例配置并设 <code>enabled=true</code>；网页服务与 AiiDA daemon 指向同一个绝对路径，然后同时重启。</p>
+          </article>
+          <article class="card">
+            <div class="card-number">3</div>
+            <h3>失败不静默降级</h3>
+            <p>文件缺失、JSON 非法、字段未知或数值无效时显式报错；daemon 看不到所需策略时请求失败，不会偷偷换回另一套规则。</p>
+          </article>
+        </div>
+
+        <div class="callout amber">
+          <b>配置切换方式：</b>服务进程和 daemon 都设置 <code>AI4S_COST_POLICY_FILE=&lt;同一策略文件的绝对路径&gt;</code>，修改后重启两边；随后检查决策记录是否出现 <code>R05</code>、<code>cost_source</code>、<code>rerun_source</code> 和 <code>reuse_source</code>。<a href="../configs/reuse-cost-policy.example.json">查看示例配置</a>
+        </div>
+      </div>
+    </section>
+
     <section id="paths" class="section" aria-labelledby="paths-title">
       <div class="panel">
         <div class="section-head">
           <div>
-            <div class="kicker">03 · 四条路径</div>
+            <div class="kicker">04 · 四条路径</div>
             <h2 id="paths-title">用户策略决定大方向，成本决策只处理其中一个岔路</h2>
             <p class="lead">把四条路径放在同一张图里，最容易和队友对齐：复用、成本判定后重算、新采样、失败拦截。</p>
           </div>
@@ -1160,7 +1219,7 @@
       <div class="panel">
         <div class="section-head">
           <div>
-            <div class="kicker">04 · 安全门</div>
+            <div class="kicker">05 · 安全门</div>
             <h2 id="safety-title">任何一项不通过，都先失去“被比较”的资格</h2>
             <p class="lead">成本估计只对合格候选有意义。以下情况统一视为横切安全条件，不允许用“节省很大”绕过。</p>
           </div>
@@ -1194,7 +1253,7 @@
       <div class="panel">
         <div class="section-head">
           <div>
-            <div class="kicker">05 · 两阶段时序</div>
+            <div class="kicker">06 · 两阶段时序</div>
             <h2 id="sequence-title">为什么服务端先选一次，daemon 还要再选一次？</h2>
             <p class="lead">远程候选在服务端只有元数据。为了避免把全部候选都搬回来，服务端必须先用同一套成本口径预选；daemon 再按同一策略生成最终、可审计的 R05 决策记录。</p>
           </div>
@@ -1256,7 +1315,7 @@
       <div class="panel">
         <div class="section-head">
           <div>
-            <div class="kicker">06 · 公式</div>
+            <div class="kicker">07 · 公式</div>
             <h2 id="formula-title">四行公式，把“值不值得”变成可复核计算</h2>
             <p class="lead">公式故意保持简单：每一项都能在决策记录里找到对应字段，队友可以手算复核。</p>
           </div>
@@ -1297,7 +1356,7 @@
       <div class="panel">
         <div class="section-head">
           <div>
-            <div class="kicker">07 · 可交互算例</div>
+            <div class="kicker">08 · 可交互算例</div>
             <h2 id="calculator-title">拿 R008 真实来源数据现场演示：参数一改，决定就会翻转</h2>
             <p class="lead">默认参数下，R008 的 34287 字节产物对应 49.9 秒实测重算耗时，复用估算约 0.733 秒，因此选择复用；把固定搬运开销调到 60 秒后，复用反而更慢，系统选择重算。</p>
           </div>
@@ -1369,7 +1428,7 @@
       <div class="panel">
         <div class="section-head">
           <div>
-            <div class="kicker">08 · 成本来源</div>
+            <div class="kicker">09 · 成本来源</div>
             <h2 id="sources-title">“实测、估计、缺失”必须分开写，不能混成一个数</h2>
             <p class="lead">同一个 49.9 秒，在本机实测和跨成员历史记录里的可信含义不同。R008 的 49.9 秒来源耗时是实测，0.733 秒复用耗时则是策略估算。</p>
           </div>
@@ -1427,7 +1486,7 @@
       <div class="panel">
         <div class="section-head">
           <div>
-            <div class="kicker">09 · 决策记录</div>
+            <div class="kicker">10 · 决策记录</div>
             <h2 id="record-title">决策记录：每一次选择都能说清楚“用了谁、为什么”</h2>
             <p class="lead">一条可解释的 R05 记录至少能回答：用了什么策略、选了谁、为什么、成本来源是什么、参数是多少。</p>
           </div>
@@ -1463,11 +1522,59 @@
       <div class="panel">
         <div class="section-head">
           <div>
-            <div class="kicker">10 · R008 真实验收与边界</div>
+            <div class="kicker">11 · R008 真实验收与边界</div>
             <h2 id="boundary-title">真实成本决策路径已通过，剩余是标定与扩展验证</h2>
             <p class="lead">在单个真实 Coder／AiiDA Profile 和真实 CPU ProteinMPNN 下，六项检查全部通过。当前证据证明路径按受控参数工作，不证明跨机器性能优势。</p>
           </div>
           <span class="tag green">可配置 · 可解释 · 可安全降级</span>
+        </div>
+
+        <div class="table-wrap" style="margin:0 0 18px">
+          <table aria-label="R008 四条路径真实运行记录">
+            <thead>
+              <tr>
+                <th>演示路径</th>
+                <th>决定</th>
+                <th>原生过程</th>
+                <th>关键参数</th>
+                <th>真实结果</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>复用</b></td>
+                <td>R05 <code>reuse</code></td>
+                <td>WorkChain <b>96</b></td>
+                <td>原种子 <code>41</code></td>
+                <td>0 个 CalcJob；预计复用 <code>0.733s</code>。另以 WorkChain 83 的 R01 复用作为默认规则基线。</td>
+              </tr>
+              <tr>
+                <td><b>成本判定重算</b></td>
+                <td>R05 <code>rerun</code></td>
+                <td>WorkChain <b>109</b>／CalcJob <b>110</b></td>
+                <td>固定开销 <code>60s</code>；原种子 <code>41</code></td>
+                <td>1 个 CalcJob；复用预计 <code>60.033s</code>，预计节省 <code>-10.133s</code>，没有搬运候选。</td>
+              </tr>
+              <tr>
+                <td><b>新采样</b></td>
+                <td>R04 <code>new_sample</code></td>
+                <td>WorkChain <b>128</b>／CalcJob <b>129</b></td>
+                <td>新种子 <code>1035027373</code></td>
+                <td>1 个真实 CalcJob；有效种子不同于来源种子 41，不是复用旧结果。</td>
+              </tr>
+              <tr>
+                <td><b>失败拦截</b></td>
+                <td><code>qualified=false</code> → 安全重算</td>
+                <td>失败 CalcJob <b>143</b>；重算 WorkChain <b>154</b>／CalcJob <b>155</b></td>
+                <td>原种子 <code>41</code></td>
+                <td><code>exit_status=301</code>；失败候选未复用，随后真实重算 1 次并成功。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout green">
+          <b>证据阅读方式：</b>上表已经把四条路径各自的关键原生过程编号、种子和结果放进演示页；完整运行身份、原始状态、子过程和六项硬性检查保存在 <a href="../experiments/R008-cost-decision/evidence/real-run-3.json">real-run-3.json</a>，逐阶段说明见 <a href="../experiments/R008-cost-decision/record.md">R008 运行记录</a>。
         </div>
 
         <div class="boundary-grid">
@@ -1504,7 +1611,7 @@
 
   <footer>
     <p>成本决策原理 · 开发任务 5.0 · 2026-11-18</p>
-    <p>实现依据：<a href="cost_decision.md">成本决策实现说明</a> · <a href="../configs/reuse-cost-policy.example.json">示例策略配置</a></p>
+    <p>实现依据：<a href="cost_decision.md">成本决策实现说明</a> · <a href="../src/ai4s_workflows/cost_decision.py">成本决策源码</a> · <a href="../configs/reuse-cost-policy.example.json">示例策略配置</a></p>
   </footer>
 
   <script>
