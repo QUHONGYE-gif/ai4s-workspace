@@ -1,5 +1,6 @@
 """Immutable registration-to-experiment view. Does not alter registrations."""
 import copy
+import hashlib
 
 from .catalog import CATALOG
 from .service import fingerprint
@@ -11,7 +12,10 @@ FILTER_FIELDS = [{"key": "filter_count", "label": "筛选数量", "type": "numbe
                   "description": "按已有序列记录顺序保留前 N 条；模拟筛选，不计算科学评分。"}]
 
 
-def build_workflow(name, snapshot, source):
+MAX_EXPERIMENT_STEPS = 64
+
+
+def build_workflow(name, snapshot, source, file_loader=None):
     nodes = snapshot["steps"]
     nodes = list({n["id"]: n for n in snapshot.get("dependencies", []) + nodes}.values())
     pending = {n["id"]: n for n in nodes}
@@ -24,6 +28,28 @@ def build_workflow(name, snapshot, source):
         for n in ready:
             ordered.append(n)
             del pending[n["id"]]
+    reserved = {n["id"] for n in nodes}
+
+    def synthetic_id(preferred):
+        candidate, suffix = preferred, 2
+        while candidate in reserved:
+            candidate = f"{preferred}-{suffix}"
+            suffix += 1
+        reserved.add(candidate)
+        return candidate
+
+    def input_identity(ref):
+        ref = copy.deepcopy(ref)
+        if ref.get("kind") == "file":
+            if file_loader is None:
+                raise Problem(422, "登记输入缺少文件内容校验，无法交接")
+            metadata = file_loader(ref.pop("file_id"))
+            ref.update(sha256=metadata["sha256"], format=metadata["format"])
+        elif ref.get("kind") == "sequence":
+            sequence = "".join(ref.pop("sequence").split()).upper()
+            ref["sha256"] = hashlib.sha256(sequence.encode()).hexdigest()
+        return ref
+
     steps, defaults = [], {"input": "registered-input", "seed": 42, "remote": False}
     for n in ordered:
         model = CATALOG[n["model_id"]]
@@ -44,10 +70,12 @@ def build_workflow(name, snapshot, source):
                 "kind": kind, "deps": deps, "cost": 120, "load": 3, "size": 0.01,
                 "icon": "grid" if n["model_id"] == "proteinmpnn" else "atom",
                 "inputs": copy.deepcopy(n.get("inputs", {})), "inputRequirements": model["inputs"],
+                "inputIdentity": {port: input_identity(ref) for port, ref in sorted(n.get("inputs", {}).items())},
+                "chainPolicy": copy.deepcopy(n.get("design_chain_policy")),
                 "codeIdentity": model["code_identity"], "description": model["scenario"]}
         steps.append(step)
         if n["model_id"] == "proteinmpnn":
-            filter_id = n["id"] + "-filter"
+            filter_id = synthetic_id(n["id"] + "-filter")
             fields = [{**f, "key": f"{filter_id}__{f['key']}", "modelKey": f["key"]} for f in FILTER_FIELDS]
             defaults.update({f["key"]: f["default"] for f in fields})
             steps.append({"id": filter_id, "name": "序列筛选", "model": "sequence_filter", "parameters": fields,
@@ -59,19 +87,19 @@ def build_workflow(name, snapshot, source):
     if steps:
         consumed = {dep for step in steps for dep in step['deps']}
         terminals = [step for step in steps if step['id'] not in consumed]
-        analysis_id = 'result-analysis'
-        while any(step['id'] == analysis_id for step in steps):
-            analysis_id += '-report'
+        analysis_id = synthetic_id('result-analysis')
         steps.append({'id': analysis_id, 'name': '结果分析', 'model': 'result_analysis',
                       'parameters': [], 'paramKeys': [], 'deps': [s['id'] for s in terminals],
                       'file': 'summary.json', 'kind': 'JSON', 'icon': 'file',
                       'cost': 1, 'load': 1, 'size': 0.001, 'codeIdentity': 'result-summary-v1',
                       'inputRequirements': {s['id']: s['kind'] for s in terminals},
                       'description': '汇总本次流程的产物来源、序列数量和结构输出。仅展示模拟记录，不计算科学评分或模型置信度。'})
+    if len(steps) > MAX_EXPERIMENT_STEPS:
+        raise Problem(422, f"展开后的实验步骤超过 {MAX_EXPERIMENT_STEPS} 个，请减少登记节点")
     profiles = [{"id": s["id"], "version": s.get("codeIdentity", "filter-v1"), "command": "simulation-only",
                  "modelPath": s["model"], "input": ",".join(s.get("inputRequirements", {}).values()),
                  "output": s["file"]} for s in steps]
-    identity = fingerprint({'source': source, 'view_version': 2})[:20]
+    identity = fingerprint({'source': source, 'view_version': 3})[:20]
     return {"id": "registered-" + identity, "name": name, "short": name, "template": "custom", "custom": True,
             "english": "REGISTERED WORKFLOW", "tags": ["登记参数", "实验配置", "模拟执行"], "color": "green",
             "description": "读取不可变登记快照；实验修改与登记默认值分开保存。", "steps": steps,
@@ -90,5 +118,5 @@ def registrations(service):
                     result.append(build_workflow(envelope["draft"]["name"], registration["snapshot"],
                         {"kind": "registration", "workflowId": envelope["draft"]["id"],
                          "registrationId": registration["id"], "revision": registration["revision"],
-                         "fingerprint": registration["fingerprint"]}))
+                         "fingerprint": registration["fingerprint"]}, service._file))
     return result

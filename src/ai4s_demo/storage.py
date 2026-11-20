@@ -29,9 +29,12 @@ class Store:
     def path(self, kind, resource_id):
         return self.root / kind / f"{identifier(resource_id)}.json"
 
-    def read(self, kind, resource_id):
+    def read(self, kind, resource_id, *, include_deleted=False):
         try:
-            return json.loads(self.path(kind, resource_id).read_text())
+            value = json.loads(self.path(kind, resource_id).read_text())
+            if value.get("deleted") and not include_deleted:
+                raise Problem(404, "该记录已删除，可从回收站恢复")
+            return value
         except FileNotFoundError:
             raise Problem(404, "没有找到该资源") from None
 
@@ -49,8 +52,21 @@ class Store:
             if os.path.exists(temp):
                 os.unlink(temp)
 
-    def list_workflows(self):
+    def set_deleted(self, kind, resource_id, expected_revision, deleted):
+        # Retain the envelope and invalidate all proposals made before deletion.
+        with self.lock:
+            value = self.read(kind, resource_id, include_deleted=True)
+            revision_holder = value["draft"] if kind == "workflows" else value
+            if revision_holder["revision"] != expected_revision:
+                raise Problem(409, "记录已变化，请刷新列表后重试")
+            if bool(value.get("deleted")) != deleted:
+                value["deleted"] = deleted
+                revision_holder["revision"] += 1
+                self.write(kind, resource_id, value)
+            return {"id": resource_id, "revision": revision_holder["revision"], "deleted": deleted}
+
+    def list_workflows(self, *, deleted=False):
         with self.lock:
             return [{"id": d["draft"]["id"], "name": d["draft"]["name"], "revision": d["draft"]["revision"]}
                     for p in sorted((self.root / "workflows").glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-                    if (d := json.loads(p.read_text()))]
+                    if bool((d := json.loads(p.read_text())).get("deleted")) == deleted]

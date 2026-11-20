@@ -78,14 +78,18 @@
     },
     {
       "name": "landing-hero",
-      "width": 1672,
-      "height": 941,
+      "width": 3840,
+      "height": 2162,
       "transparent": false,
       "generated_on": "2026-11-06",
-      "tool": "Codex CLI built-in image generation",
+      "tool": "built-in image_gen.imagegen (edit)",
       "prompt": "Hero background: on the right two thirds, a large glowing protein structure rendered as smooth translucent glass ribbons (alpha helices and beta sheets) floating in dark space; from it, thin luminous lines carry small glowing glass cubes and spheres (data artifacts) along a gentle curved pipeline toward the right edge, some branching and reconnecting like a dependency graph. The left 40 percent is calm, dark, nearly empty navy space for overlay headline text. Style: premium scientific product illustration, deep navy and cobalt blue palette (#1c2c54, #263d6b, #3857c8, #5937b5 violet accents, soft #a8b7ff glow, tiny warm sand #cda151 highlights used sparingly), translucent frosted blue glass surfaces, soft volumetric light, subtle depth of field, clean and calm academic tone, no text, no letters, no numbers, no watermark, no logos, no UI chrome. Output exactly one image.",
-      "edit_prompt": null,
-      "export": "cwebp -q 78, resized to 1600 px wide"
+      "edit_prompt": "Use case: precise-object-edit. Asset type: high resolution website hero background. Edit target is the supplied original 1672x941 artwork, NOT a UI screenshot. Primary request: produce a faithful high-resolution restoration / super-resolution of this exact artwork for crisp Retina and 4K display, ideally 4096x2304 or 3840x2160 pixels, 16:9 landscape. Keep the exact existing composition, subject geometry, framing, silhouette, position and relative scale of the protein helices and beta sheets, the thin dependency lines and the same small glass cubes and spheres on the right. Preserve the same quiet navy empty space on the left and existing navy/cobalt/lavender palette with tiny warm highlights. Enhance local optical detail in the translucent glass ribbons, clean continuous ribbon edges, fine specular reflections and smooth dark gradients; remove compression softness and blurry contour artifacts. Keep the original atmospheric background and subtle glow; make the MAIN protein structure optically sharp. No redesign, no new elements, no new ribbon folds or objects, no repositioning, no cropping, no changed lighting scheme, no excessive glow, no noise, no sharpening halos, no text, no lettering, no logos, no UI, no watermarks. Deliver one full-bleed standalone image at the largest native resolution available.",
+      "export": "cwebp -q 94 -m 6 -sharp_yuv -resize 3840 0; AI-restored 1672x941 source, resampled 3840x2162 export",
+      "native_width": 1672,
+      "native_height": 941,
+      "resampled": true,
+      "restored_png_sha256": "caed7fae58e9b1dbefa9cc436b0288d8e23a37f1fd5fe0991e9b72b188d3807d"
     },
     {
       "name": "landing-network",

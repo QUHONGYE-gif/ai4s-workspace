@@ -6,7 +6,6 @@ keeps the single-worker boundary in ``create_app`` identical on either platform.
 """
 
 import os
-import sys
 
 if os.name == "nt":  # pragma: no cover - exercised only on Windows
     import msvcrt
@@ -37,9 +36,3 @@ else:
 
     def release_lock(fileobj):
         fcntl.flock(fileobj, fcntl.LOCK_UN)
-
-
-__all__ = ["acquire_lock", "release_lock", "LOCK_PLATFORM"]
-
-
-LOCK_PLATFORM = "windows-msvcrt" if os.name == "nt" else f"posix-fcntl-{sys.platform}"
