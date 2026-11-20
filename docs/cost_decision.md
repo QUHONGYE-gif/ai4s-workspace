@@ -4,7 +4,6 @@
 
 投屏页面：[成本决策原理可视化](cost_decision_visual.html)（成本函数接口、配置开关、四路径流程图、公式、真实数据算例和 R008 四路径原生证据）。
 
-演示讲稿：[投屏演示讲稿](cost_decision_speech.md)（逐段口述、三个现场演示步骤和可能追问）。
 
 真实运行记录：[R008 成本决策真实验收](../experiments/R008-cost-decision/record.md)。
 

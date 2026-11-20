@@ -64,7 +64,7 @@ python scripts/verify_cost_decision_real.py \
 - 最终运行日志：[run-3.log](evidence/run-3.log)。文件为空是正常的；脚本仅在出现错误时写入日志。
 - 无效输入：[invalid-input.pdb](evidence/invalid-input.pdb)。
 - 验证脚本：[verify_cost_decision_real.py](../../scripts/verify_cost_decision_real.py)，SHA-256 `0539a98a2875f9544b158308749fce13ba66cae3b2e6a18ae95bf966fb59d91e`。
-- 说明与展示入口：[成本决策说明](../../docs/cost_decision.md) · [投屏页面](../../docs/cost_decision_visual.html) · [演示讲稿](../../docs/cost_decision_speech.md)。
+- 说明与展示入口：[成本决策说明](../../docs/cost_decision.md) · [投屏页面](../../docs/cost_decision_visual.html)。
 
 验收提交 `0ca663d` 的关键源码 SHA-256（运行使用外部 snapshot，以下哈希用于核对仓库内容）：
 
