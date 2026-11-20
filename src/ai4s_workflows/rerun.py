@@ -1,6 +1,6 @@
-from aiida.orm import load_node, Dict
 from aiida.engine import submit
-from .workflows import ProteinMPNNFilterWorkChain
+from aiida.orm import CalcJobNode, Dict, load_node
+from .workflows import WORKCHAIN_PROCESS_TYPE, ProteinMPNNFilterWorkChain
 
 
 def rerun_filter_only(old_wc_pk: int, new_top_k=None, new_threshold=None):
@@ -12,6 +12,8 @@ def rerun_filter_only(old_wc_pk: int, new_top_k=None, new_threshold=None):
     :return: 新提交workchain实例
     """
     old_wc = load_node(old_wc_pk)
+    if not isinstance(old_wc, ProteinMPNNFilterWorkChain) and old_wc.process_type != WORKCHAIN_PROCESS_TYPE:
+        raise TypeError("old_wc_pk 必须指向 ProteinMPNNFilterWorkChain")
     if not old_wc.is_finished_ok:
         raise RuntimeError("原始WorkChain必须成功完成，才允许重筛选")
 
@@ -20,10 +22,17 @@ def rerun_filter_only(old_wc_pk: int, new_top_k=None, new_threshold=None):
         old_wc.inputs.existing_mpnn_result if "existing_mpnn_result" in old_wc.inputs else None
     )
     if upstream_mpnn_result is None:
-        for child in old_wc.called:
-            if child.is_finished_ok and hasattr(child, "outputs") and hasattr(child.outputs, "result"):
-                upstream_mpnn_result = child.outputs.result
-                break
+        inference_children = [
+            child for child in old_wc.called
+            if isinstance(child, CalcJobNode)
+            and child.is_finished_ok
+            and "result" in child.outputs
+        ]
+        if len(inference_children) != 1:
+            raise RuntimeError(
+                f"原始workchain应恰有一个成功推理子任务，实际为 {len(inference_children)} 个"
+            )
+        upstream_mpnn_result = inference_children[0].outputs.result
     if upstream_mpnn_result is None:
         raise RuntimeError("无法从原始workchain获取上游MPNN结果，不能执行重筛选")
 
@@ -39,6 +48,7 @@ def rerun_filter_only(old_wc_pk: int, new_top_k=None, new_threshold=None):
     builder.mpnn_params = old_wc.inputs.mpnn_params
     builder.filter_params = Dict(new_filter_dict)
     builder.existing_mpnn_result = upstream_mpnn_result
+    builder.metadata.label = f"ai4s-filter-rerun:{old_wc.uuid}"
 
     new_wc = submit(builder)
     print(f"重筛选流程提交完成，新workchain pk={new_wc.pk}")

@@ -18,16 +18,7 @@ python scripts/serve_workbench.py --host 127.0.0.1 --port 3000 \
 
 安装 `uv sync --frozen` 后，继续通过原 [PyMOL 联合启动入口](../tools/pymol_web/README.md) 运行；通过“工作流 → 接入自定义流程 → AI 辅助生成”编辑并回填；`./agent/` 兼容旧链接并跳转到该页。普通服务入口保留，仅运行原工作台。模型 API、数据目录和验证边界见 [最小说明](../docs/agent_demo_run.md)。
 
-## 智能体接入
-
-安装项目业务依赖后，可用一条命令同时运行现有工作台和 Agent：
-
-```bash
-uv sync --frozen
-uv run python scripts/run_agent_demo.py --with-workbench --port 3000
-```
-
-工作台左侧「智能体接入」进入 `./agent/`。原有模拟快照与 Agent 数据分开保存；先停止本人已有的 3000 端口服务。模型 API 设置、数据目录、单用户边界与验证范围见 [Agent 运行说明](../docs/agent_demo_run.md)。仅用普通启动命令时，不会自动启动 Agent；未启动时入口返回明确的不可用提示。
+已登记流程可直接交接到创建实验页；实验助手复用接入页模型配置，创建后确认概述再检查候选。操作与模拟限制见 [登记交接说明](../docs/agent_demo_run.md#登记交接与实验配置)。
 
 ## 状态目录与启动切换
 
@@ -94,3 +85,9 @@ node tests/test_api_client.cjs
 界面改动按需验证真实预览中的资源、路由、刷新、交互与 WebSocket。Node.js 仅用于上述逻辑检查。
 
 返回 [仓库入口](../README.md) · [成员协作](../docs/collaboration.md)。
+
+## 真实实验入口
+
+`web/demo/engine.html` 使用已发布声明生成参数表单，并通过标准库工作台后端调用独立引擎。接口、启动与范围统一见 [引擎说明](../docs/engine_service.md)；最新跨成员证据见 [R007](../experiments/R007-member-reuse/record.md)，历史单成员证据见 [R006](../experiments/R006-aiida-engine/record.md)。原模拟实验流程继续保留。
+
+任务注册中心与工作流编辑器使用独立入口，声明草稿的提案、确认、导出及恢复见[登记说明](../docs/task_declarations.md)。

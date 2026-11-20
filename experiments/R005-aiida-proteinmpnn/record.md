@@ -1,6 +1,6 @@
 # R005：AiiDA ProteinMPNN 接入与两阶段最小验证
 
-状态：所列四次运行已完成，2026-11-05 通过原生 ORM 回查；没有在补文档时重新启动模型。目标是验证真实任务接入、单任务缓存和局部重算，不评价蛋白质功能或模型优劣。入口：[A 模块](../../docs/aiida_tasks.md)、[C 模块](../../README_C.md)、[当前状态](../../docs/status.md)。
+状态：2026-11-05 的四次历史运行和 2026-11-11 的真实 GPU 三种复用策略复验均已完成；2026-11-13 完成 fork 内核接入的 CPU mock 隔离验证，并在独立 profile `ai4s-wyh-reuse` 上完成同一 `request_id` 的真实 GPU 三策略复验。各部分分别保留当时的环境和身份，旧运行不能替代新链路证据。目标是验证真实任务接入、单任务缓存、局部重算和复用决策记录，不评价蛋白质功能或模型优劣。入口：[A 模块](../../docs/aiida_tasks.md)、[C 模块](../../README_C.md)、[当前状态](../../docs/status.md)。
 
 ## 代码与执行环境
 
@@ -101,7 +101,112 @@ pk 22 的取回节点为 `78f6788d-c599-43b9-8c9f-9f83fab385e2`，含 `outputs/r
 
 - 本次文档补充前重新运行 `PYTHONPATH=src /opt/homebrew/Caskroom/miniforge/base/envs/lab/bin/python -m pytest -q tests/test_ai4s_tasks.py`，4 项通过；仅覆盖参数、FASTA 和分数辅助函数，不是完整 Parser 集成测试。
 - PR 原有记录报告：目标服务器直接调用四个辅助测试函数通过，`python tests/test_aiida_workflows.py` 在独立临时 profile 的 7 项 CPU mock 检查通过。本次未重跑该组，也未把它当作真实 GPU 或 daemon 中断恢复的证据。
-- 尚未验证真实 WorkChain 缓存命中、daemon 停启恢复、B 的真实产物查询、多成员／跨 profile 访问、完整缓存失效条件和正式网页提交。
-- 权重哈希仅被记录；完整运行身份、概率数值及样本映射、异常文件诊断和正式端口差异的实现边界见模块说明。当前三次提交上限与本轮两次尝试要求仍待对齐。
+- 2026-11-05 记录对应的运行未覆盖真实 WorkChain 缓存命中、daemon 停启恢复、B 的真实产物查询、多成员／跨 profile 访问、完整缓存失效条件和正式网页提交；2026-11-11 的真实三种复用策略复验见后文，其余各项仍未由本次复验覆盖。
+- 权重哈希仅被记录；完整运行身份、概率数值及样本映射、异常文件诊断和正式端口差异的实现边界见模块说明。记录时源码仍为三次提交上限，后续已改为最多两次尝试，见下一节。
+
+## 2026-11-08 后续源码变更（未重跑）
+
+C 模块之后将提交上限改为最多两次尝试，并加入逐次尝试明细、稳定 label 提交核对、已知失效清单门禁、原生恢复报告和 daemon 排队／停启检查。上述源码变更后的运行记录不能沿用本页旧 PK 冒充；已有真实两阶段与仅重筛选仍只对应本页旧源码版本。新变更的快速逻辑检查和 Linux CPU mock 集成检查已通过；2026-11-11 当前个人 profile 中的真实三种复用策略复验见下一节。
+
+## 2026-11-11 真实 GPU 三种复用策略复验
+
+本节及后续 11 月 13 日记录由 `dev-wyh@1f31ae6` 交付，个人 profile 指吴昱慧的环境；与前面的曲鸿烨历史运行分开识别。
+
+本节记录 2026-11-11 在当前个人 `ai4s` profile 上对新复用决策与记录链路的真实执行事实。上文 PK 22／31／41／55 属于更早环境和来源版本，不能与本节的 PK 74／94／107 混用。
+
+| 策略 | WorkChain | 决策／理由码 | 实际种子 | 模型启动 | CalcJob／结果 |
+| --- | --- | --- | ---: | ---: | --- |
+| `allow_reuse` | PK 94 / `599e385a-cb5a-4de7-9180-0ffdde836a8f` | `reuse` / `R01` | 41 | 0 | 无 CalcJob；复用结果 `87ada36e-8a31-4805-b5f8-52813d27219f` |
+| `force_rerun` | PK 74 / `89fea7d1-1fdd-41c8-904d-788b674ab888` | `rerun` / `R03` | 41 | 1 | CalcJob PK 75 / `77f45c98-8471-4f88-8034-1e0198b3e0e7` |
+| `new_sample` | PK 107 / `439c5913-830e-4f60-b05f-3895185cbd57` | `new_sample` / `R04` | 3491716553 | 1 | CalcJob PK 109 / `1197e36a-0afc-4d5d-a851-299c33e8f988` |
+
+公共执行条件：
+
+| 项目 | 实际数据 |
+| --- | --- |
+| AiiDA | `aiida-core 2.9.4`，`ai4s` profile，daemon 单 worker |
+| Code | `proteinmpnn-8907e667@localhost`，PK 57，UUID `037c05e5-9f42-470b-8df8-03d7e61ec386` |
+| 输入 | release `8907e667-py312-torch260cu124` 的 `examples/1CRN.pdb`，链 A |
+| 参数 | `num_sequences=4`、温度 0.1、原种子 41、阈值 0.82、`top_k=2` |
+| 单任务证据 | CalcJob PK 60 / `9e6d9350-f564-465b-90b6-07178e12535b`，`Finished [0]`，无缓存来源 |
+
+### `force_rerun`
+
+- 请求编号：`req-a8ae5d84-430a-44c8-88d1-6a35b7eaf4a2`
+- 决策：`force_rerun` → `rerun`，`R03`，`effective_seed=41`
+- 启动计数：`model_launches=1`、`attempt_count=1`、`retry_attempt=0`
+- 筛选：`selected_count=2`，`selection_report` PK 86
+- 上游结果 UUID：`87ada36e-8a31-4805-b5f8-52813d27219f`
+
+`verdi process report 74` 依次记录复用决策、唯一一次 MPNN 提交和筛选完成，没有错误或重试。Recovery 返回 WorkChain 和 CalcJob 均为 `finished`、退出码 0，CalcJob 的 `cache_source` 为 `null`。决策记录可按 `request_id` 查回：
+
+```text
+reuse_policy: force_rerun
+action: rerun
+effective_seed: 41
+reason_code: R03
+```
+
+### `allow_reuse`
+
+- 请求编号：`req-67946afc-bc54-4ee6-a09c-c3ddd93cd695`
+- 候选结果 UUID：`87ada36e-8a31-4805-b5f8-52813d27219f`
+- 候选 fingerprint：`fb62f09bd450f8fe`
+- 结果来源过程：CalcJob PK 75 / `77f45c98-8471-4f88-8034-1e0198b3e0e7`
+- 决策：`allow_reuse` → `reuse`，`R01`，`effective_seed=41`
+- 启动计数：`model_launches=0`、`attempt_count=0`、`calcjob_submissions=0`
+- WorkChain PK 94 下没有 CalcJob；`selected_candidate_uuid` 为结果节点 UUID，`cached_from` 为来源过程 UUID
+- 筛选：`selected_count=2`
+- 决策记录可按 `request_id` 查回 R01
+
+### `new_sample`
+
+- 请求编号：`req-2e5db5c5-e75b-4fac-9942-3c59cbb85bea`
+- 决策：`new_sample` → `new_sample`，`R04`，`effective_seed=3491716553`
+- 启动计数：`model_launches=1`、`attempt_count=1`、`calcjob_submissions=1`
+- 实际 CalcJob PK 109 的参数种子与 `selection_report.effective_seed` 均为 `3491716553`
+- CalcJob PK 109 为 `Finished [0]`，`cache_source=null`
+- 筛选：`selected_count=2`，新结果 UUID 为 `76055eb8-9201-4ff5-9e5e-eeabe42a98c7`
+- `ai4s_decision_records` 按 `request_id` 仅返回一条 R04 记录，决策中的 `effective_seed` 与实际 CalcJob 一致
+
+```text
+request_id: req-2e5db5c5-e75b-4fac-9942-3c59cbb85bea
+process_uuid: 439c5913-830e-4f60-b05f-3895185cbd57
+reuse_policy: new_sample
+action: new_sample
+effective_seed: 3491716553
+reason_code: R04
+```
+
+这次复验证明当前个人 profile 中的真实 ProteinMPNN CalcJob、两阶段筛选、三种复用策略和 `ai4s_decision_records` 查询均可用。`allow_reuse` 复用同一 profile 中由 PK 75 产生的真实结果候选，不是跨成员或跨 profile 共享证据。本次没有证明网页实时回显、真实 daemon 中断恢复或团队共享 profile；这些边界仍需后续联调。该次运行发生在此次 fork 内核接入之前，不能替代接入后的真实 GPU 复验。
+
+## 2026-11-13 AiiDA 内核接入隔离验证（CPU mock）
+
+本轮只验证项目 WorkChain 与团队 AiiDA fork 的接入和自动化测试，不运行真实 GPU 模型，也不修改共享 `ai4s` profile。fork 仓库为 `https://github.com/WuYuhui01/aiida-core.git`，分支 `dev-wyh`，验证提交 `9a1e474f2`；使用独立环境 `~/.venvs/aiida-reuse` 和临时 profile。
+
+| 验证项 | 命令 | 结果 |
+| --- | --- | --- |
+| 主项目 CPU mock 集成 | `python tests/test_aiida_workflows.py` | `Ran 15 tests`，`OK` |
+| fork 复用内核 | `python -m pytest -q -o addopts='' --broker-backend=zmq tests/engine/test_reuse.py` | `15 passed` |
+
+主项目检查覆盖三种复用策略、实际种子与启动次数、候选注入、决策记录、daemon 停止／重启恢复、重试上限、无效清单和 schema 门禁；fork 检查覆盖受控决策、跨类型候选结果消费、原生缓存边界和用户策略约束。默认 RabbitMQ 后端未配置，因此 fork 测试使用 ZeroMQ。
+
+本轮证明接入代码在隔离 CPU mock 环境中可用；同一 fork 接入后的真实 GPU 同一请求复验见下一节，二者不能互相替代。
+
+## 2026-11-13 同一 request_id 三策略真实 GPU 复验（fork 接入）
+
+在 Coder 独立 profile `ai4s-wyh-reuse` 上执行[当时的三策略验证脚本](https://github.com/QUHONGYE-gif/ai4s-workspace/blob/1f31ae61d9c7510647d5cc793130d0c59a1672e4/scripts/verify_same_request_reuse_policies.py)。Python 指向独立 fork `/home/coder/aiida-core-dev-wyh-clean2/src/aiida/__init__.py`，daemon 使用独立环境，未修改共享 `ai4s` profile。真实运行使用 release `8907e667-py312-torch260cu124` 的 `examples/1CRN.pdb`，链 A、原种子 41、阈值 0.82、`top_k=2`。
+
+同一请求编号为 `req-f433676d-d4b0-429b-8b44-cb8a21813678`，三个 WorkChain 和两个实际 CalcJob 均为 `Finished [0]`，CalcJob 的 `cache_source` 均为 `null`：
+
+| 策略 | WorkChain PK／UUID | 决策 | 有效种子 | 模型启动 | CalcJob |
+| --- | --- | --- | ---: | ---: | --- |
+| `force_rerun` | PK 7 / `5d994ce7-bc9f-40ea-91f5-3ba20cefc644` | `rerun`／R03 | 41 | 1 | PK 8 / `da701192-e199-43f6-9993-117378de6067` |
+| `allow_reuse` | PK 24 / `88ecb08e-cb90-4acb-a09e-ea5da92bbfbf` | `reuse`／R01 | 41 | 0 | 无；`cached_from=da701192-e199-43f6-9993-117378de6067` |
+| `new_sample` | PK 33 / `79a480dc-737a-40b5-bc19-8021fc10a1b1` | `new_sample`／R04 | `883420096` | 1 | PK 34 / `1d25e8fd-a72a-46ab-93d5-a39d52a971e8` |
+
+脚本最终输出 `status=passed`、`decision_record_count=3`，按该 `request_id` 查回的决策记录恰好为 R03／R01／R04 三条。证据文件为 `experiments/R005-aiida-proteinmpnn/same-request-f433676d.json`。
+
+本次证明 fork 接入后的独立 profile 可以完成同一请求下的真实 GPU 三策略：强制重跑使用原种子启动真实 CalcJob，允许复用消费前一条真实结果且不启动 CalcJob，新采样更换种子后再次启动真实 CalcJob。它不证明网页实时回显、共享 profile、跨成员／跨 profile 复用或真实 daemon 中断恢复已经完成。
 
 返回：[A 模块](../../docs/aiida_tasks.md) · [C 模块](../../README_C.md) · [当前状态](../../docs/status.md) · [仓库](../../README.md)。

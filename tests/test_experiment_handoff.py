@@ -65,3 +65,70 @@ def test_multiple_model_nodes_have_independent_keys():
     workflow = build_workflow('Two nodes',snapshot,{'kind':'test'})
     assert 'rfd-a__length' in workflow['defaults']
     assert 'rfd-b__length' in workflow['defaults']
+
+
+def test_input_identity_tracks_content_record_and_chain_policy():
+    snapshot = catalog_snapshot()
+    snapshot['steps'] = [snapshot['steps'][1]]
+    node = snapshot['steps'][0]
+    node['inputs'] = {'backbone': {'kind': 'file', 'file_id': 'upload-a'}}
+    node['design_chain_policy'] = {'mode': 'selected', 'chains': ['A']}
+    metadata = {'upload-a': {'sha256': 'a' * 64, 'format': 'PDB'},
+                'upload-same': {'sha256': 'a' * 64, 'format': 'PDB'},
+                'upload-other': {'sha256': 'b' * 64, 'format': 'PDB'}}
+    first = build_workflow('A', snapshot, {}, metadata.__getitem__)['steps'][0]
+    node['inputs']['backbone']['file_id'] = 'upload-same'
+    same = build_workflow('Renamed', snapshot, {}, metadata.__getitem__)['steps'][0]
+    assert first['inputIdentity'] == same['inputIdentity']
+    node['inputs']['backbone']['file_id'] = 'upload-other'
+    other = build_workflow('B', snapshot, {}, metadata.__getitem__)['steps'][0]
+    assert first['inputIdentity'] != other['inputIdentity']
+    assert first['chainPolicy'] == {'mode': 'selected', 'chains': ['A']}
+    assert first['inputs']['backbone']['file_id'] == 'upload-a'
+    node['inputs'] = {'sequence': {'kind': 'file', 'file_id': 'upload-a', 'record_id': 'record-2'}}
+    record = build_workflow('Record', snapshot, {}, metadata.__getitem__)['steps'][0]
+    assert record['inputIdentity']['sequence']['record_id'] == 'record-2'
+
+
+def test_synthetic_ids_reserve_all_user_nodes_and_expanded_limit():
+    import pytest
+    from ai4s_demo.storage import Problem
+    snapshot = catalog_snapshot()
+    snapshot['steps'][0]['id'] = 'mpnn-1-filter'
+    snapshot['steps'][1]['inputs']['backbone']['node_id'] = 'mpnn-1-filter'
+    snapshot['steps'][2]['id'] = 'result-analysis'
+    workflow = build_workflow('Collisions', snapshot, {})
+    ids = [s['id'] for s in workflow['steps']]
+    assert len(ids) == len(set(ids))
+    assert next(s for s in workflow['steps'] if s['model'] == 'sequence_filter')['id'] == 'mpnn-1-filter-2'
+    assert workflow['steps'][-1]['id'] == 'result-analysis-2'
+    template = snapshot['steps'][0]
+    snapshot = {'steps': [{**copy.deepcopy(template), 'id': f'rfd-{i}'} for i in range(12)]}
+    assert len(build_workflow('Twelve', snapshot, {})['steps']) == 13
+    snapshot['steps'] = [{**copy.deepcopy(template), 'id': f'rfd-{i}'} for i in range(64)]
+    with pytest.raises(Problem, match='64'):
+        build_workflow('Too large', snapshot, {})
+
+
+def test_handoff_rechecks_uploaded_bytes(tmp_path):
+    from ai4s_demo.files import upload
+    from ai4s_demo.handoff import registrations
+    from ai4s_demo.models import ChangeRequest, CreateWorkflow, RegisterRequest
+    from ai4s_demo.service import WorkflowService
+    from ai4s_demo.storage import Store, Problem
+    import pytest
+    service = WorkflowService(Store(tmp_path))
+    data = b'ATOM      1  CA  ALA A   1       1.000   2.000   3.000  1.00 20.00           C  \nEND\n'
+    file = upload(service.store, 'input.pdb', data)
+    state = service.create(CreateWorkflow(name='File input', template='empty'))
+    workflow_id = state['draft']['id']
+    state = service.change(workflow_id, ChangeRequest.model_validate({'expected_revision': 0,
+        'operation_id': 'setup', 'operations': [
+            {'type': 'add_node', 'node_id': 'mpnn', 'model_id': 'proteinmpnn', 'label': 'MPNN'},
+            {'type': 'set_input', 'node_id': 'mpnn', 'port': 'backbone', 'value': {'kind': 'file', 'file_id': file['id']}},
+            {'type': 'set_chains', 'node_id': 'mpnn', 'policy': {'mode': 'all', 'chains': []}}]}))['state']
+    service.register(workflow_id, RegisterRequest(expected_revision=state['draft']['revision'], operation_id='register', node_ids=['mpnn']))
+    assert registrations(service)[0]['steps'][0]['inputIdentity']['backbone']['sha256'] == file['sha256']
+    (tmp_path / 'uploads' / file['id']).write_bytes(b'changed')
+    with pytest.raises(Problem, match='内容已变化'):
+        registrations(service)

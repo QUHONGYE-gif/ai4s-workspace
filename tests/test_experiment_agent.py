@@ -65,3 +65,24 @@ def test_rescreen_targets_only_filter_and_selected_sequence():
     assert result['operations'][0]['intent'] == 'replay'
     with pytest.raises(Problem):
         invoke(decision, {**context, 'currentArtifact':{'id':'ART-other','kind':'FASTA'}})
+
+
+def test_experiment_route_uses_the_existing_gateway_and_settings(tmp_path):
+    from fastapi.testclient import TestClient
+    from ai4s_demo.app import create_app
+    class SharedGateway(Gateway):
+        def __init__(self, settings, service):
+            super().__init__(DraftDecision(intent='answer', reply='共用模型配置'))
+            self.settings = settings
+            self.models = []
+        def _model(self):
+            self.models.append(self.settings.public()['model'])
+            return None
+    app = create_app(tmp_path, gateway_factory=SharedGateway)
+    with patch('ai4s_demo.experiment_agent.Agent'), TestClient(app) as client:
+        client.post('/api/settings/model', json={'model': 'shared-test-model', 'api_key': 'test-key'})
+        response = client.post('/api/experiments/messages', json={'message': '解释当前参数', 'context': {}})
+        assert response.status_code == 200
+        assert response.json()['reply'] == '共用模型配置'
+        assert app.state.gateway.models == ['shared-test-model']
+        assert 'test-key' not in response.text

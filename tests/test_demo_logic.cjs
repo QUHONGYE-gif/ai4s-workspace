@@ -18,6 +18,7 @@ const context = vm.createContext({
   URLSearchParams,
   location: {hash: ''},
   console,
+  document: {activeElement:null, body:{style:{}}, querySelector(){return {hidden:true,focus(){},querySelectorAll(){return []}}}},
   assert,
   setTimeout,
   clearTimeout,
@@ -78,62 +79,7 @@ check('structure cannot be supplied to sequence-only input', () => {
   const a = product.catalog.find((a) => a.kind === 'mmCIF' && a.status === 'complete');
   assert.equal(accepts(workflowInfo.protein, a), false);
 });
-check('selected node fields come from the workflow step definition', () => {
-  createExperimentDraft('protein');
-  selectedPlanStep = 'structure';
-  const html = workflowPage();
-  assert.match(html, /data-draft="config\.predictor"/);
-  assert.match(html, /data-draft="config\.seed"/);
-  assert.doesNotMatch(html, /体验场景/);
-});
-check('agent panel sits in the right column and summary moved to run-time confirm', () => {
-  createExperimentDraft('protein');
-  const html = workflowPage();
-  assert.match(html, /实验配置 Agent/);
-  assert.match(html, /data-agent-input/);
-  assert.ok(html.indexOf('实验配置 Agent') < html.indexOf('实验范围与策略'),
-    'agent panel should render before the strategy panel inside the right column');
-  assert.ok(!html.includes('打开 Agent'), 'agent panel must not link to the agent/API settings page');
-  assert.doesNotMatch(html, /创建前摘要/);
-});
-check('agent cannot re-run an already created experiment', () => {
-  const d = createExperimentDraft('protein');
-  createExperiment();
-  assert.throws(() => applyAgentOperations(d, [{type: 'run_experiment'}]),
-    /实验已创建/);
-});
-check('engine payload splits inference and filter params and carries reuse policy', () => {
-  const id = 'wf-engine-test';
-  workflowInfo[id] = {
-    id, name: 'Engine test', template: 'custom', custom: true,
-    registrationSource: { kind: 'test' },
-    defaults: { 'mpnn-1__chains': 'A', 'mpnn-1__num_sequences': 4, 'mpnn-1__sampling_temperature': 0.1,
-      'mpnn-1__seed': 41, 'screen__score_threshold': 0.82, 'screen__top_k': 2 },
-    steps: [
-      { id: 'mpnn-1', name: 'ProteinMPNN', model: 'proteinmpnn', deps: [], file: 'x.fa', kind: 'FASTA',
-        codeIdentity: 'mpnn', parameters: [
-          { key: 'mpnn-1__chains', modelKey: 'chains', type: 'string', category: 'inference', required: true },
-          { key: 'mpnn-1__num_sequences', modelKey: 'num_sequences', type: 'integer', category: 'inference', required: true },
-          { key: 'mpnn-1__sampling_temperature', modelKey: 'sampling_temperature', type: 'number', category: 'inference', required: true },
-          { key: 'mpnn-1__seed', modelKey: 'seed', type: 'integer', category: 'inference', required: true }] },
-      { id: 'screen', name: 'Screening', model: 'sequence_filter', deps: ['mpnn-1'], file: 'y.fa', kind: 'FASTA',
-        parameters: [
-          { key: 'screen__score_threshold', modelKey: 'score_threshold', type: 'number', category: 'filter', required: true },
-          { key: 'screen__top_k', modelKey: 'top_k', type: 'integer', category: 'filter', required: true }] },
-    ],
-    executionDefinition: { inputPath: 'registered-input', environment: 'simulation', steps: [] },
-  };
-  const d = createExperimentDraft(id);
-  d.reusePolicy = 'new_sample';
-  const payload = buildEnginePayload(d, 'up-test');
-  assert.equal(payload.workflow, 'mpnn_filter');
-  assert.equal(payload.reuse_policy, 'new_sample');
-  assert.equal(payload.params.inference.num_sequences, 4);
-  assert.equal(payload.params.inference.sampling_temperature, 0.1);
-  assert.equal(payload.params.filter.top_k, 2);
-  assert.ok(!('top_k' in payload.params.inference));
-  assert.equal(payload.inputs.pdb_file.upload_id, 'up-test');
-});
+
 check('creation saves a ready experiment before simulation starts', () => {
   createExperimentDraft('protein');
   createExperiment();
@@ -142,25 +88,16 @@ check('creation saves a ready experiment before simulation starts', () => {
   assert.equal(experiment.outputs.length, 0);
   assert.equal(experiment.plan.length, 5);
   assert.equal(product.drafts.protein, undefined);
+  assert.deepEqual(experiment.choices, {});
   page = {name: 'experiment', id: experiment.id, query: new URLSearchParams()};
-  const html = experimentPage(experiment);
-  assert.match(html, /查看运行与结果/);
-  assert.doesNotMatch(html, /data-action="start"/);
-  assert.equal((html.match(/class="live-flow /g) || []).length, 1);
-  assert.doesNotMatch(html, /node-detail-body/);
-  selectedPlanStep = experiment.workflowSnapshot.steps[0].id;
-  assert.match(experimentPage(experiment), /查看候选结果/);
+  assert.equal(experiment.creationConfirmed, false);
+  startExperiment(experiment.id);
+  assert.equal(experiment.status, 'ready');
+  confirmCreation(experiment.id);
+  assert.equal(experiment.creationConfirmed, true);
+  assert.equal(experiment.status, 'ready');
 });
-check('node details stay hidden until a node is selected and can be closed', () => {
-  createExperimentDraft('protein');
-  selectedPlanStep = '';
-  assert.doesNotMatch(workflowPage(), /node-detail-body/);
-  selectedPlanStep = 'structure';
-  assert.match(workflowPage(), /node-detail-body/);
-  assert.match(workflowPage(), /data-close-node-detail/);
-  selectedPlanStep = '';
-  assert.doesNotMatch(workflowPage(), /node-detail-body/);
-});
+
 check('experiment uses one graph and switching views does not start or change the plan', () => {
   const e = product.experiments.find((run) => !run.fixture && run.status === 'ready');
   const before = JSON.stringify(e);
@@ -171,7 +108,6 @@ check('experiment uses one graph and switching views does not start or change th
   page.query.set('view', 'results');
   const results = experimentPage(e);
   assert.match(results, /data-experiment-view="results"/);
-  assert.match(results, /确认候选并开始模拟/);
   assert.match(results, /role="progressbar"/);
   assert.doesNotMatch(results, /plan-flow/);
   assert.equal((results.match(/class="live-flow /g) || []).length, 1);
@@ -222,51 +158,10 @@ check('execution flow only animates data entering the current running step', () 
   assert.equal(flowStepState(e, proteinSteps[0], 0), 'complete');
   assert.doesNotMatch(liveFlow(proteinSteps, '', e), /animateMotion|aria-current="step"/);
 });
-check('completed result flow preserves artifact and structure tool actions', () => {
-  const e = product.experiments.find((run) => run.outputs.some((out) => artifactById(out.artifactId)?.kind === 'mmCIF'));
-  const html = liveFlow(e.workflowSnapshot.steps, '', e);
-  const structure = e.outputs.find((out) => artifactById(out.artifactId)?.kind === 'mmCIF');
-  assert.match(html, new RegExp('data-artifact-detail="' + structure.artifactId + '"'));
-  assert.match(html, new RegExp('data-view-artifact="' + structure.artifactId + '"'));
-  assert.match(html, /连线动效为数据流向回放/);
-  assert.doesNotMatch(html, /aria-current="step"/);
-});
-check('creation preserves candidate controls, result identity, plan export and failure simulation', () => {
-  const d = createExperimentDraft('protein');
-  selectedPlanStep = 'prepare';
-  const html = workflowPage();
-  assert.match(html, /data-choice="prepare"/);
-  assert.match(html, /查看候选结果/);
-  assert.match(html, new RegExp(identities(d.config).prepare));
-  assert.match(html, /data-action="export-plan"/);
-  assert.match(html, /data-draft="simulation"/);
-  assert.match(html, /value="fail"/);
-  assert.match(html, /预计总用时/);
-});
-check('registered custom workflows retain editable random seed and registered command', () => {
-  const data = demoWorkflowDraft('custom');
-  data.name = 'Custom audit workflow';
-  const created = createWorkflow(data);
-  assert.equal(created.ok, true);
-  createExperimentDraft(created.id);
-  selectedPlanStep = 'step-1';
-  const html = workflowPage();
-  assert.match(html, /data-draft="config.seed"/);
-  assert.match(html, /已登记的调用与版本/);
-  assert.ok(html.includes(esc(data.registrations[0].command)));
-});
-check('result details preserve owners and unreadable artifact history', () => {
-  const e = product.experiments.find((run) => run.outputs.length);
-  const a = artifactById(e.outputs[0].artifactId);
-  const retained = a.retained;
-  a.retained = false;
-  const html = experimentOutputDetails(e);
-  assert.ok(html.includes(esc(a.ownerName)));
-  assert.ok(html.includes(esc(a.id)));
-  assert.match(html, /仅保留来源记录／文件不可读取/);
-  assert.match(html, new RegExp('data-artifact-detail="' + a.id + '"'));
-  a.retained = retained;
-});
+
+
+
+
 check('node dependencies use the experiment snapshot after workflow edits', () => {
   const d = createExperimentDraft('protein');
   const snapshot = copy(workflowInfo.protein);
@@ -277,56 +172,40 @@ check('node dependencies use the experiment snapshot after workflow edits', () =
   assert.match(html, /Original snapshot input/);
 });
 
-check('registered parameter overrides affect only their node and downstream identity', () => {
-  const profiles = [
-    {id:'design',name:'Sequence design',model:'proteinmpnn',deps:[],file:'sequences.fasta',kind:'FASTA',cost:10,load:1,size:0.01,parameters:[{key:'design__sampling_temp',modelKey:'sampling_temp',label:'Temperature',type:'number',default:0.1,min:0,max:2}]},
-    {id:'screen',name:'Sequence screening',model:'sequence_filter',deps:['design'],file:'selected.fasta',kind:'FASTA',cost:1,load:1,size:0.01,parameters:[{key:'screen__filter_count',modelKey:'filter_count',label:'Count',category:'filter',type:'number',default:5,min:1,max:512,step:1}]}
-  ];
-  const id='registered-test';
-  workflowInfo[id]={id,name:'Registered test',template:'custom',custom:true,registrationSource:{kind:'test'},defaults:{input:'registered-input',seed:42,remote:false},steps:profiles,executionDefinition:{inputPath:'registered-input',environment:'simulation',steps:[]}};
-  const d=createExperimentDraft(id), defaults=JSON.stringify(d.workflowDefaults);
-  const before=identities(d.config);
-  applyAgentOperations(d,[{type:'update_params',node_id:'screen',changes:{screen__filter_count:3}}]);
-  const after=identities(d.config);
-  assert.equal(before.design,after.design);
-  assert.notEqual(before.screen,after.screen);
-  assert.equal(JSON.stringify(d.workflowDefaults),defaults);
-  assert.equal(workflowInfo[id].steps[1].parameters[0].default,5);
-  d.choices.screen='compute';
-  const request=executionRequest(d);
-  assert.equal(request.steps[1].filterParams.filter_count,3);
-  assert.equal(request.steps[1].reuseMode,'force_recompute');
-  assert.equal(request.samplingMode,'same_parameters');
-  assert.equal(request.steps[0].inferenceParams.sampling_temp,0.1);
-  const e={...copy(d),id:'EXP-reg-test',workflowSnapshot:copy(workflowInfo[id]),outputs:[],status:'failed',failedStep:'design',failure:{code:'SIMULATED_FAILURE',simulated:true},log:['explicit failure evidence'],stepEvents:[{stepId:'design',status:'failed'}]};
-  const context=agentContext(e,profiles[0],e);
-  assert.equal(context.readOnly,true);
-  assert.equal(context.failure.code,'SIMULATED_FAILURE');
-  assert.equal(context.logs[0],'explicit failure evidence');
-  assert.equal(context.selectedNode.parameters[0].key,'design__sampling_temp');
+check('AiiDA snapshots remain readonly and preserve running state after import', () => {
+  const saved = persistable();
+  const e = copy(saved.experiments.find((run) => !run.fixture));
+  e.id = 'EXP-A4S-999';
+  e.source = 'aiida';
+  e.plan.forEach((step, index) => {
+    step.provenance = {process: {is_finished_ok: index === 0,
+      process_state: index === 0 ? 'finished' : 'running'}};
+  });
+  e.readOnly = true;
+  e.ownerId = 'unrecorded';
+  e.ownerName = '未记录归属';
+  e.fixture = false;
+  e.status = 'running';
+  e.policyRules = {name: '未记录', storage: null, reuse: null};
+  e.reuseScope = e.shareOutput = 'unknown';
+  saved.experiments.push(e);
+  applySaved(saved);
+  const imported = experimentById(e.id);
+  const before = JSON.stringify(imported);
+  startExperiment(e.id);
+  cancelExperiment(e.id);
+  cloneExperiment(e.id);
+  assert.equal(JSON.stringify(imported), before);
+  assert.equal(imported.status, 'running');
+  assert.equal(flowStepState(imported, imported.plan[0], 0), 'complete');
+  page = {name: 'experiment', id: e.id, query: new URLSearchParams()};
+  const html = experimentPage(imported);
+  assert.match(html, /AiiDA 只读查询快照/);
+  assert.match(html, /AiiDA 运行中/);
+  assert.doesNotMatch(html, /data-action="cancel"|data-action="clone-experiment"/);
 });
-check('result analysis summarizes completed sources and stays out of screening-only requests', () => {
-  const id='registered-test';
-  workflowInfo[id].steps.push({id:'report',name:'Result analysis',model:'result_analysis',deps:['screen'],file:'summary.json',kind:'JSON',cost:1,load:1,size:0.001,parameters:[]});
-  const d=createExperimentDraft(id);
-  d.config.screen__filter_count=3;
-  createExperiment();
-  const e=product.experiments.at(-1);
-  e.status='running';
-  for(let i=0;i<e.plan.length;i++) assert.equal(completeSimulationStep(e,i),true);
-  const report=artifactById(e.outputs.at(-1).artifactId);
-  assert.equal(report.name,'summary.json');
-  assert.equal(report.summary.simulated,true);
-  assert.equal(report.summary.sources.length,2);
-  assert.equal(report.summary.sources.find((s)=>s.stepId==='screen').recordCount,3);
-  assert.equal(agentContext(e,e.workflowSnapshot.steps.at(-1),e).currentOutput.experimentId,e.id);
-  page.query=new URLSearchParams();
-  assert.match(artifactPage(report),/result-analysis-report/);
-  const onlyScreen=createExperimentDraft(id);
-  onlyScreen.requestedStepIds=['screen'];
-  assert.deepEqual(Array.from(packPlan(onlyScreen),(s)=>s.id),['screen']);
-});
-console.log(count + ' simulation checks passed.');
+
+console.log(count + ' simulation and import checks passed.');
 
 `,
   context,

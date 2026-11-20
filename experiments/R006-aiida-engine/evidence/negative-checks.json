@@ -1,0 +1,84 @@
+[
+  {
+    "case": "zero_seed",
+    "http_status": 202,
+    "request_id": "req-9d44255f-f9ab-4d6d-9004-cd622e17d89b",
+    "state": "failed",
+    "submitted_at": "2026-11-12T14:29:57Z",
+    "updated_at": "2026-11-12T14:29:58Z",
+    "finished_at": "2026-11-12T14:29:58Z",
+    "decision": null,
+    "process": null,
+    "cached_from": null,
+    "effective": null,
+    "outputs": null,
+    "error": {
+      "code": "invalid_params",
+      "message": "seed must be an integer between 1 and 2**32 - 1"
+    }
+  },
+  {
+    "case": "wrong_version",
+    "http_status": 202,
+    "request_id": "req-2e225b4a-9a27-464e-b043-8367705d1f7c",
+    "state": "failed",
+    "submitted_at": "2026-11-12T14:29:58Z",
+    "updated_at": "2026-11-12T14:29:58Z",
+    "finished_at": "2026-11-12T14:29:58Z",
+    "decision": null,
+    "process": null,
+    "cached_from": null,
+    "effective": null,
+    "outputs": null,
+    "error": {
+      "code": "invalid_declaration",
+      "message": "unknown task declaration or version"
+    }
+  },
+  {
+    "case": "missing_upload",
+    "http_status": 202,
+    "request_id": "req-c6284356-5220-4bb1-977b-07c8b4dbefb3",
+    "state": "failed",
+    "submitted_at": "2026-11-12T14:29:58Z",
+    "updated_at": "2026-11-12T14:29:58Z",
+    "finished_at": "2026-11-12T14:29:58Z",
+    "decision": null,
+    "process": null,
+    "cached_from": null,
+    "effective": null,
+    "outputs": null,
+    "error": {
+      "code": "input_not_found",
+      "message": "upload not found"
+    }
+  },
+  {
+    "case": "bad_requester",
+    "http_status": 202,
+    "request_id": "req-bf3891ba-08ce-49f9-9d12-1448d2ae7322",
+    "state": "failed",
+    "submitted_at": "2026-11-12T14:29:58Z",
+    "updated_at": "2026-11-12T14:29:58Z",
+    "finished_at": "2026-11-12T14:29:58Z",
+    "decision": null,
+    "process": null,
+    "cached_from": null,
+    "effective": null,
+    "outputs": null,
+    "error": {
+      "code": "invalid_params",
+      "message": "requester requires member_id and display_name"
+    }
+  },
+  {
+    "case": "idempotency_payload_conflict",
+    "http_status": 400,
+    "response": {
+      "error": {
+        "code": "invalid_params",
+        "message": "client_ref already belongs to a different request"
+      }
+    }
+  }
+]

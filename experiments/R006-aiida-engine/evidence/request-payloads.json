@@ -1,0 +1,206 @@
+{
+  "first": {
+    "schema_version": "ai4s-request-1",
+    "client_ref": "acceptance-01b72e03-01ef-4ef5-95f4-462f3b238357",
+    "requester": {
+      "member_id": "qhy",
+      "display_name": "曲鸿烨"
+    },
+    "declaration": {
+      "task_id": "proteinmpnn",
+      "version": "1"
+    },
+    "workflow": "single",
+    "inputs": {
+      "pdb_file": {
+        "source": "upload",
+        "upload_id": "up-bdcce7fa-3d0f-4ca7-940f-0a668e809b57"
+      }
+    },
+    "params": {
+      "inference": {
+        "chains": "A",
+        "num_sequences": 4,
+        "sampling_temperature": 0.1,
+        "seed": 41
+      }
+    },
+    "reuse_policy": "allow_reuse"
+  },
+  "repeat": {
+    "schema_version": "ai4s-request-1",
+    "client_ref": "matrix-e56f1a09-0e5a-4951-a5ec-6ed22dd7d0f0",
+    "requester": {
+      "member_id": "qhy",
+      "display_name": "曲鸿烨"
+    },
+    "declaration": {
+      "task_id": "proteinmpnn",
+      "version": "1"
+    },
+    "workflow": "single",
+    "inputs": {
+      "pdb_file": {
+        "source": "upload",
+        "upload_id": "up-bdcce7fa-3d0f-4ca7-940f-0a668e809b57"
+      }
+    },
+    "params": {
+      "inference": {
+        "chains": "A",
+        "num_sequences": 4,
+        "sampling_temperature": 0.1,
+        "seed": 41
+      }
+    },
+    "reuse_policy": "allow_reuse"
+  },
+  "explicit_defaults": {
+    "schema_version": "ai4s-request-1",
+    "client_ref": "matrix-ab865f70-a3f1-485d-870e-c681bdc49b10",
+    "requester": {
+      "member_id": "qhy",
+      "display_name": "曲鸿烨"
+    },
+    "declaration": {
+      "task_id": "proteinmpnn",
+      "version": "1"
+    },
+    "workflow": "single",
+    "inputs": {
+      "pdb_file": {
+        "source": "upload",
+        "upload_id": "up-bdcce7fa-3d0f-4ca7-940f-0a668e809b57"
+      }
+    },
+    "params": {
+      "inference": {
+        "chains": "A",
+        "num_sequences": 4,
+        "sampling_temperature": 0.1,
+        "seed": 41,
+        "model_name": "v_48_020",
+        "batch_size": 1,
+        "save_probabilities": true
+      }
+    },
+    "reuse_policy": "allow_reuse"
+  },
+  "force_rerun": {
+    "schema_version": "ai4s-request-1",
+    "client_ref": "matrix-7f17c15f-6c52-4be3-9675-3e348a660faf",
+    "requester": {
+      "member_id": "qhy",
+      "display_name": "曲鸿烨"
+    },
+    "declaration": {
+      "task_id": "proteinmpnn",
+      "version": "1"
+    },
+    "workflow": "single",
+    "inputs": {
+      "pdb_file": {
+        "source": "upload",
+        "upload_id": "up-bdcce7fa-3d0f-4ca7-940f-0a668e809b57"
+      }
+    },
+    "params": {
+      "inference": {
+        "chains": "A",
+        "num_sequences": 4,
+        "sampling_temperature": 0.1,
+        "seed": 41
+      }
+    },
+    "reuse_policy": "force_rerun"
+  },
+  "new_sample": {
+    "schema_version": "ai4s-request-1",
+    "client_ref": "matrix-19ac39c5-7e56-4ea0-8ba1-92b50680864b",
+    "requester": {
+      "member_id": "qhy",
+      "display_name": "曲鸿烨"
+    },
+    "declaration": {
+      "task_id": "proteinmpnn",
+      "version": "1"
+    },
+    "workflow": "single",
+    "inputs": {
+      "pdb_file": {
+        "source": "upload",
+        "upload_id": "up-bdcce7fa-3d0f-4ca7-940f-0a668e809b57"
+      }
+    },
+    "params": {
+      "inference": {
+        "chains": "A",
+        "num_sequences": 4,
+        "sampling_temperature": 0.1,
+        "seed": 41
+      }
+    },
+    "reuse_policy": "new_sample"
+  },
+  "weight_change": {
+    "schema_version": "ai4s-request-1",
+    "client_ref": "matrix-6c378549-8cc9-42cb-96d6-fedddf067866",
+    "requester": {
+      "member_id": "qhy",
+      "display_name": "曲鸿烨"
+    },
+    "declaration": {
+      "task_id": "proteinmpnn",
+      "version": "1"
+    },
+    "workflow": "single",
+    "inputs": {
+      "pdb_file": {
+        "source": "upload",
+        "upload_id": "up-bdcce7fa-3d0f-4ca7-940f-0a668e809b57"
+      }
+    },
+    "params": {
+      "inference": {
+        "chains": "A",
+        "num_sequences": 4,
+        "sampling_temperature": 0.1,
+        "seed": 41,
+        "model_name": "v_48_030"
+      }
+    },
+    "reuse_policy": "allow_reuse"
+  },
+  "two_stage": {
+    "schema_version": "ai4s-request-1",
+    "client_ref": "matrix-c225e087-55b1-46ae-8635-4a85a7e182a5",
+    "requester": {
+      "member_id": "qhy",
+      "display_name": "曲鸿烨"
+    },
+    "declaration": {
+      "task_id": "proteinmpnn",
+      "version": "1"
+    },
+    "workflow": "mpnn_filter",
+    "inputs": {
+      "pdb_file": {
+        "source": "upload",
+        "upload_id": "up-bdcce7fa-3d0f-4ca7-940f-0a668e809b57"
+      }
+    },
+    "params": {
+      "inference": {
+        "chains": "A",
+        "num_sequences": 4,
+        "sampling_temperature": 0.1,
+        "seed": 41
+      },
+      "filter": {
+        "score_threshold": 10.0,
+        "top_k": 2
+      }
+    },
+    "reuse_policy": "allow_reuse"
+  }
+}
