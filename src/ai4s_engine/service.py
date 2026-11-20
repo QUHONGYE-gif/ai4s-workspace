@@ -18,7 +18,16 @@ from aiida.manage import get_manager
 from aiida.plugins import CalculationFactory, WorkflowFactory
 from ai4s_declarations.registry import DeclarationRegistry, validate_values
 from ai4s_tasks.proteinmpnn_outputs import complete_parameters, parameter_problem
+from ai4s_workflows.cost_decision import (
+    COST_DECISION_FUNCTION,
+    decide_by_cost,
+    load_configured_cost_policy,
+)
 from ai4s_workflows.decision import default_seed_factory, find_decisions_by_request, validate_reuse_policy
+from .candidate_selection import (
+    materialize_selected_candidate,
+    reject_unmaterialized_candidates,
+)
 from .identity import identity_digest, resolve_identity
 
 
@@ -172,15 +181,74 @@ class EngineService:
                 raise RequestError('invalid_declaration', 'declaration does not support deployed model release')
             if not self.health()['daemon_running']:
                 raise RequestError('engine_unavailable', 'isolated AiiDA daemon is not running')
-            from .sharing import search_request, collect_candidates
+            from .sharing import search_request, collect_candidates, materialize
             query = search_request(code, pdb, inference, params.get('filter') if workflow == 'mpnn_filter' else None)
-            candidate_list, peer_errors = collect_candidates(self, query, policy) if not unresolved else ([], [])
+            cost_policy = (
+                load_configured_cost_policy()
+                if policy == 'allow_reuse'
+                else None
+            )
+            candidate_list, peer_errors = (
+                collect_candidates(
+                    self,
+                    query,
+                    policy,
+                    materialize_remote=cost_policy is None,
+                )
+                if not unresolved
+                else ([], [])
+            )
             status['sharing'] = {'peer_errors': peer_errors, 'candidates': candidate_list}
             if policy == 'new_sample':
                 inference['seed'] = default_seed_factory(original_seed)
             context = dict(request_id=request_id, reuse_policy=policy, original_seed=original_seed,
                            effective_seed=inference['seed'], requester=requester, profile=self.profile,
-                           num_sequences=inference['num_sequences'])
+                           num_sequences=inference['num_sequences'],
+                           cost_decision_required=cost_policy is not None)
+
+            if cost_policy is not None and not unresolved:
+                peers_by_member = {}
+                for peer in self.peers:
+                    peers_by_member.setdefault(peer['member'], []).append(peer)
+                transfer_attempts = []
+                materialized_candidates = []
+
+                def materialize_selected(candidate):
+                    origin_peer = candidate.get('origin_peer')
+                    matching_peers = peers_by_member.get(origin_peer, [])
+                    if len(matching_peers) != 1:
+                        raise ValueError(
+                            'remote candidate does not identify exactly one configured peer'
+                        )
+                    transfer_attempts.append(candidate['uuid'])
+                    materialize(self, matching_peers[0], candidate, query)
+                    materialized_candidates.append(candidate['uuid'])
+
+                selection_context = dict(
+                    request_id=request_id,
+                    reuse_policy=policy,
+                    original_seed=original_seed,
+                    effective_seed=inference['seed'],
+                    requester=requester,
+                    profile=self.profile,
+                    num_sequences=inference['num_sequences'],
+                )
+                cost_preselection = materialize_selected_candidate(
+                    candidate_list,
+                    selection_context,
+                    lambda value: decide_by_cost(value, cost_policy),
+                    materialize_selected,
+                )
+                # A daemon may read a different policy version later. Only a
+                # candidate with a verified local native source may remain
+                # eligible after this server-side preselection.
+                reject_unmaterialized_candidates(candidate_list)
+                status['sharing']['cost_preselection'] = {
+                    'decision': cost_preselection,
+                    'transfer_attempts': transfer_attempts,
+                    'materialized_candidates': materialized_candidates,
+                }
+
             context['shared_candidates'] = candidate_list
             if workflow == 'single':
                 builder = CalculationFactory('ai4s.proteinmpnn').get_builder()
@@ -196,6 +264,8 @@ class EngineService:
                 result_map = {item['uuid'] + '::' + item['fingerprint']: item['uuid']
                               for item in candidate_list if item['qualified'] and policy == 'allow_reuse'}
                 builder.reuse_candidates, builder.candidate_results = orm.List(list=candidate_list), orm.Dict(result_map)
+                if cost_policy is not None:
+                    builder.decision_function = orm.Str(COST_DECISION_FUNCTION)
             builder.metadata.label = request_id
             node = submit(builder)
             node.base.extras.set('ai4s_requester', requester)

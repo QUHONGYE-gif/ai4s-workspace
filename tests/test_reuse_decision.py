@@ -9,6 +9,7 @@ import pytest
 from ai4s_workflows.decision import (
     DecisionError,
     decision_records_from_nodes,
+    load_decision_function,
     make_decision_record,
     save_decision_record,
     validate_decision_record,
@@ -292,6 +293,11 @@ def test_decision_record_rejects_malformed_timestamp_and_missing_fields():
     del incomplete["reuse_policy"]
     with pytest.raises(DecisionError, match="missing fields"):
         validate_decision_record(incomplete)
+
+
+def test_decision_function_loader_supports_module_colon_function():
+    function = load_decision_function("ai4s_workflows.decision:default_reuse_decision")
+    assert callable(function)
 
 
 class _Extras:

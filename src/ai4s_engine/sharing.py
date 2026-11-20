@@ -12,6 +12,7 @@ from urllib.request import Request, ProxyHandler, build_opener
 from aiida import orm
 from aiida.tools.archive import create_archive, import_archive
 from ai4s_query.candidates import build_candidate
+from ai4s_engine.candidate_selection import prepare_remote_candidate
 from ai4s_tasks.proteinmpnn_outputs import complete_parameters
 from ai4s_workflows.workflows import upstream_problem
 
@@ -51,6 +52,7 @@ def local_candidates(query, profile, member):
         origin = source.base.extras.get('ai4s_origin', {})
         candidate['member'] = origin.get('display_name') or producer.get('display_name') or member
         candidate['origin_profile'] = origin.get('profile', profile)
+        candidate['native_source_available'] = True
         if 'result' not in source.outputs:
             candidate.update(qualified=False, reason=candidate['reason'] or 'missing_file: result manifest missing')
         if candidate['qualified']:
@@ -98,8 +100,13 @@ def peer_request(peer, path, payload=None):
         return raw, response.headers.get('X-Content-SHA256')
 
 
-def collect_candidates(service, query, policy):
-    """Keep rejected candidates visible; only import usable allow_reuse results."""
+def collect_candidates(service, query, policy, *, materialize_remote=True):
+    """Collect local and remote metadata without losing rejected candidates.
+
+    ``materialize_remote=False`` leaves remote entries as metadata-only records.
+    The caller can then make a cost decision and call ``materialize`` for only
+    the selected result. The default keeps the pre-cost-policy behavior.
+    """
     candidates = local_candidates(query, service.profile, service.member)
     seen = {(item['uuid'], item['fingerprint']) for item in candidates}
     errors = []
@@ -115,11 +122,22 @@ def collect_candidates(service, query, policy):
             if key in seen:
                 continue
             seen.add(key)
-            if candidate['qualified'] and policy == 'allow_reuse':
+            candidate = prepare_remote_candidate(candidate)
+            # A peer display name is enough to route a later archive request;
+            # never persist the peer URL or token in candidate or decision data.
+            candidate['origin_peer'] = peer['member']
+            candidate.setdefault('origin_profile', peer['member'])
+            if materialize_remote and candidate['qualified'] and policy == 'allow_reuse':
                 try:
                     materialize(service, peer, candidate, query)
+                    candidate['native_source_available'] = True
                 except Exception as error:
-                    candidate.update(qualified=False, reason=f'missing_file: archive transfer failed: {error}')
+                    candidate.update(
+                        native_source_available=False,
+                        qualified=False,
+                        reason=f'missing_file: archive transfer failed: {error}',
+                        transfer_error=f'{type(error).__name__}: {error}',
+                    )
             candidates.append(candidate)
     return candidates, errors
 

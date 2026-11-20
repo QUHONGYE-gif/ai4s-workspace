@@ -1,0 +1,1762 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>成本决策原理｜项目汇报</title>
+  <style>
+    :root {
+      --ink: #142033;
+      --muted: #60708a;
+      --line: #dbe3ef;
+      --paper: #ffffff;
+      --bg: #f4f7fb;
+      --navy: #101b31;
+      --navy-2: #182944;
+      --green: #15803d;
+      --green-soft: #e9f7ee;
+      --amber: #b45309;
+      --amber-soft: #fff4dc;
+      --blue: #1d4ed8;
+      --blue-soft: #eaf1ff;
+      --red: #b91c1c;
+      --red-soft: #fff0f0;
+      --gray-soft: #eff3f8;
+      --shadow: 0 16px 45px rgba(23, 43, 77, .09);
+      --radius: 18px;
+      --mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+      --sans: "Microsoft YaHei UI", "PingFang SC", "Noto Sans CJK SC", "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.7;
+      background:
+        radial-gradient(circle at 7% 5%, rgba(29, 78, 216, .08), transparent 24rem),
+        radial-gradient(circle at 95% 18%, rgba(21, 128, 61, .07), transparent 25rem),
+        var(--bg);
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, pre { font-family: var(--mono); }
+    code {
+      padding: .12rem .35rem;
+      border-radius: 6px;
+      background: #eef2f8;
+      color: #24334b;
+      font-size: .92em;
+    }
+    h1, h2, h3, h4 { line-height: 1.25; margin: 0; letter-spacing: -.02em; }
+    p { margin: .55rem 0 0; }
+    ul, ol { margin: .55rem 0 0; padding-left: 1.35rem; }
+    li + li { margin-top: .35rem; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid rgba(219, 227, 239, .9);
+      background: rgba(255, 255, 255, .9);
+      backdrop-filter: blur(15px);
+    }
+    .topbar-inner {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      min-height: 62px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: max-content;
+      color: var(--ink);
+      font-weight: 800;
+      letter-spacing: .01em;
+    }
+    .brand-mark {
+      width: 29px;
+      height: 29px;
+      border-radius: 9px;
+      background: linear-gradient(145deg, #1d4ed8, #0f8b6d);
+      position: relative;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.22);
+    }
+    .brand-mark::before, .brand-mark::after {
+      content: "";
+      position: absolute;
+      left: 7px;
+      right: 7px;
+      height: 3px;
+      border-radius: 4px;
+      background: rgba(255,255,255,.9);
+    }
+    .brand-mark::before { top: 9px; }
+    .brand-mark::after { bottom: 9px; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .nav-links::-webkit-scrollbar { display: none; }
+    .nav-links a {
+      color: #40516d;
+      padding: 7px 10px;
+      border-radius: 9px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .nav-links a:hover { background: #eef3fa; text-decoration: none; }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 28px auto 64px;
+    }
+    section { scroll-margin-top: 82px; }
+    .section { margin-top: 30px; }
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: clamp(20px, 3vw, 34px);
+      box-shadow: var(--shadow);
+    }
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 20px;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 9px;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+    .kicker::before {
+      content: "";
+      width: 22px;
+      height: 3px;
+      border-radius: 4px;
+      background: currentColor;
+    }
+    h2 { font-size: clamp(24px, 3vw, 34px); }
+    h3 { font-size: clamp(18px, 2vw, 22px); }
+    .lead { color: var(--muted); font-size: 16px; max-width: 800px; }
+    .small { color: var(--muted); font-size: 13px; }
+    .mono { font-family: var(--mono); }
+    .nowrap { white-space: nowrap; }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 430px;
+      display: grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap: 38px;
+      align-items: center;
+      padding: clamp(28px, 5vw, 62px);
+      color: #fff;
+      border-radius: 26px;
+      background:
+        linear-gradient(125deg, rgba(8, 18, 38, .98), rgba(17, 38, 67, .94) 58%, rgba(14, 72, 71, .92)),
+        var(--navy);
+      box-shadow: 0 28px 70px rgba(16, 27, 49, .22);
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      width: 560px;
+      height: 560px;
+      right: -230px;
+      top: -210px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 50%;
+      box-shadow: 0 0 0 70px rgba(255,255,255,.025), 0 0 0 140px rgba(255,255,255,.018);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: .17;
+      background-image: linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px);
+      background-size: 52px 52px;
+      mask-image: linear-gradient(to right, transparent, #000 55%);
+      pointer-events: none;
+    }
+    .hero-copy, .hero-card { position: relative; z-index: 1; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 11px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      color: #dce8ff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .05em;
+    }
+    .hero h1 {
+      margin-top: 17px;
+      font-size: clamp(32px, 3.8vw, 50px);
+      line-height: 1.12;
+      letter-spacing: -.045em;
+    }
+    .hero h1 span { color: #8ee7bd; }
+    .hero .hero-lead {
+      max-width: 650px;
+      margin-top: 20px;
+      color: #cbd8ea;
+      font-size: 17px;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 26px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 9px 15px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 750;
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); text-decoration: none; }
+    .btn-primary { color: #0f2a28; background: #8ee7bd; box-shadow: 0 8px 18px rgba(80, 220, 160, .16); }
+    .btn-ghost { color: #fff; border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.07); }
+    .btn-light { color: #18304e; border-color: #d8e1ed; background: #fff; }
+    .btn-danger { color: #7c2d12; border-color: #f3c98b; background: #fff7e8; }
+
+    .hero-card {
+      padding: 24px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 20px;
+      background: rgba(255,255,255,.085);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+      backdrop-filter: blur(8px);
+    }
+    .hero-card-title {
+      color: #b9cbe2;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .hero-equation {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      margin-top: 17px;
+    }
+    .hero-equation .term {
+      min-height: 106px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 15px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.09);
+    }
+    .hero-equation .term b { font-size: 20px; }
+    .hero-equation .term small { margin-top: 4px; color: #b8c9dd; }
+    .hero-equation .vs {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #8ee7bd;
+      color: #13322d;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .hero-rule {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,.13);
+      color: #d9e5f3;
+      font-size: 14px;
+    }
+    .hero-rule strong { color: #8ee7bd; }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .metric {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, #fff, #f9fbfe);
+    }
+    .metric .value { font: 800 24px/1.1 var(--mono); color: #10223f; }
+    .metric .label { margin-top: 6px; color: var(--muted); font-size: 12px; }
+    .metric .note { margin-top: 2px; color: #8a98ab; font-size: 11px; }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .card {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: #fff;
+    }
+    .card.soft { background: #f9fbfe; }
+    .card-number {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 12px;
+      border-radius: 9px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font: 800 14px/1 var(--mono);
+    }
+    .card p { color: var(--muted); font-size: 14px; }
+    .card h3 { font-size: 18px; }
+
+    .callout {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-left: 4px solid var(--blue);
+      border-radius: 0 12px 12px 0;
+      background: var(--blue-soft);
+      color: #24436f;
+    }
+    .callout.green { border-color: var(--green); background: var(--green-soft); color: #21583b; }
+    .callout.amber { border-color: var(--amber); background: var(--amber-soft); color: #71430e; }
+    .callout.red { border-color: var(--red); background: var(--red-soft); color: #742525; }
+    .callout b { color: inherit; }
+
+    .decision-map {
+      padding: 24px;
+      border-radius: 17px;
+      background:
+        linear-gradient(#f7faff, #f7faff) padding-box,
+        linear-gradient(120deg, #c9d8ff, #b9ead8, #ecdcb6) border-box;
+      border: 1px solid transparent;
+    }
+    .flow-node {
+      position: relative;
+      width: min(520px, 100%);
+      margin: 0 auto;
+      padding: 13px 17px;
+      border: 1px solid #cbd7e8;
+      border-radius: 12px;
+      background: #fff;
+      text-align: center;
+      box-shadow: 0 5px 14px rgba(30, 55, 90, .06);
+      font-size: 14px;
+    }
+    .flow-node b { display: block; color: #172947; }
+    .flow-node small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+    .flow-node.start { border-color: #8fb0ef; background: #edf4ff; }
+    .flow-node.judge { border-color: #e4bf7f; background: #fff9ed; }
+    .flow-node.good { border-color: #9cd4af; background: var(--green-soft); }
+    .flow-node.warn { border-color: #e7c176; background: var(--amber-soft); }
+    .flow-node.bad { border-color: #eea2a2; background: var(--red-soft); }
+    .flow-node.blue { border-color: #a8bdf0; background: var(--blue-soft); }
+    .arrow-down {
+      width: 2px;
+      height: 26px;
+      margin: 3px auto;
+      background: #9aaac1;
+      position: relative;
+    }
+    .arrow-down::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -1px;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid #9aaac1;
+      border-bottom: 2px solid #9aaac1;
+      transform: translateX(-50%) rotate(45deg);
+    }
+    .branch-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: start;
+      gap: 14px;
+      margin-top: 18px;
+    }
+    .lane {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: rgba(255,255,255,.86);
+    }
+    .lane.blue { border-top: 4px solid var(--blue); }
+    .lane.amber { border-top: 4px solid var(--amber); }
+    .lane.green { border-top: 4px solid var(--green); }
+    .lane-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-weight: 800;
+    }
+    .lane-title .tag { font-size: 10px; letter-spacing: .06em; }
+    .mini-flow { display: grid; gap: 8px; }
+    .mini-branch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mini-node {
+      padding: 10px 11px;
+      border: 1px solid #d7e0ec;
+      border-radius: 10px;
+      background: #fff;
+      font-size: 12.5px;
+      text-align: center;
+    }
+    .mini-node b { color: #203552; }
+    .mini-node small { display: block; color: var(--muted); margin-top: 1px; }
+    .mini-arrow { text-align: center; color: #9aaac1; height: 13px; line-height: 10px; }
+    .mini-node.decision { border-color: #ebc477; background: #fffaf0; }
+    .mini-node.reuse { border-color: #9ed4b1; background: var(--green-soft); }
+    .mini-node.rerun { border-color: #e7bd72; background: var(--amber-soft); }
+    .mini-node.sample { border-color: #a7bdf0; background: var(--blue-soft); }
+    .mini-node.fail { border-color: #eaa1a1; background: var(--red-soft); }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #eef3fa;
+      color: #536780;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .tag.green { background: var(--green-soft); color: var(--green); }
+    .tag.amber { background: var(--amber-soft); color: var(--amber); }
+    .tag.blue { background: var(--blue-soft); color: var(--blue); }
+    .tag.red { background: var(--red-soft); color: var(--red); }
+
+    .path-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .path-card {
+      position: relative;
+      overflow: hidden;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+    .path-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 5px;
+      background: currentColor;
+    }
+    .path-card.reuse { color: var(--green); }
+    .path-card.rerun { color: var(--amber); }
+    .path-card.sample { color: var(--blue); }
+    .path-card.failure { color: var(--red); }
+    .path-card > * { color: var(--ink); }
+    .path-card h3 { color: inherit; }
+    .path-card .path-icon {
+      width: 39px;
+      height: 39px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 13px;
+      border-radius: 12px;
+      background: color-mix(in srgb, currentColor 11%, white);
+      color: inherit;
+      font: 800 17px/1 var(--mono);
+    }
+    .path-card ul { color: var(--muted); font-size: 13px; padding-left: 1.15rem; }
+    .path-card .code-line {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed #dbe3ee;
+      color: #3d506a;
+      font-size: 12px;
+    }
+
+    .gate-strip {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      align-items: stretch;
+      margin-top: 16px;
+    }
+    .gate {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 92px;
+      padding: 12px 9px;
+      border: 1px solid #efc0c0;
+      border-radius: 13px;
+      background: var(--red-soft);
+      text-align: center;
+      color: #7e2929;
+      font-size: 12.5px;
+      font-weight: 750;
+    }
+    .gate small { margin-top: 3px; color: #9b5a5a; font-weight: 500; }
+    .gate-join {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 17px 0;
+      color: var(--red);
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .gate-join::before, .gate-join::after { content: ""; height: 1px; flex: 1; background: #ecc5c5; }
+
+    .sequence {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(150px, 1fr));
+      gap: 0;
+      overflow-x: auto;
+      padding: 10px 3px 15px;
+    }
+    .sequence-step {
+      position: relative;
+      min-width: 150px;
+      padding: 16px 13px;
+      border-top: 3px solid #9eb4d4;
+      background: linear-gradient(180deg, #f4f8fe, transparent);
+    }
+    .sequence-step:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -8px;
+      top: 16px;
+      z-index: 2;
+      color: #8194ae;
+      font-weight: 900;
+      background: #fff;
+      padding: 0 2px;
+    }
+    .sequence-step .step-num { color: var(--blue); font: 800 12px/1 var(--mono); }
+    .sequence-step b { display: block; margin-top: 8px; font-size: 13.5px; }
+    .sequence-step small { display: block; margin-top: 4px; color: var(--muted); font-size: 11.5px; line-height: 1.45; }
+    .sequence-step.green { border-color: var(--green); }
+    .sequence-step.amber { border-color: var(--amber); }
+    .sequence-step.red { border-color: var(--red); }
+
+    .formula-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    .formula-card {
+      padding: 19px;
+      border: 1px solid #d7e2f1;
+      border-radius: 15px;
+      background: #f8fbff;
+    }
+    .formula-card .formula-title { color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .07em; }
+    .formula {
+      margin-top: 12px;
+      padding: 15px;
+      border-radius: 11px;
+      background: #12213b;
+      color: #eaf2ff;
+      font: 600 14px/1.75 var(--mono);
+      overflow-x: auto;
+    }
+    .formula .accent { color: #8ee7bd; }
+    .rule-inline {
+      margin-top: 13px;
+      padding: 12px 14px;
+      border-radius: 11px;
+      background: #fff;
+      border: 1px dashed #cbd8e8;
+      font-size: 13px;
+      color: #40546f;
+    }
+
+    .calculator {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 18px;
+    }
+    .calc-inputs, .calc-output {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+    .preset-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+    .preset-row .btn { min-height: 34px; padding: 6px 11px; font-size: 12px; }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+    .field label { display: block; margin-bottom: 5px; color: #455872; font-size: 12px; font-weight: 750; }
+    .field-unit { position: relative; }
+    .field input {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 48px 8px 10px;
+      border: 1px solid #cad7e7;
+      border-radius: 9px;
+      background: #fbfdff;
+      color: #172b49;
+      font: 600 14px var(--mono);
+      outline: none;
+    }
+    .field input:focus { border-color: #7198df; box-shadow: 0 0 0 3px rgba(29,78,216,.1); }
+    .field-unit .unit {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #8795a8;
+      font-size: 11px;
+      pointer-events: none;
+    }
+    .calc-output { background: linear-gradient(145deg, #f8fbff, #fff); }
+    .decision-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 13px;
+      border-radius: 999px;
+      font-weight: 850;
+      font-size: 14px;
+      background: var(--gray-soft);
+    }
+    .decision-pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .decision-pill.reuse { color: var(--green); background: var(--green-soft); }
+    .decision-pill.rerun { color: var(--amber); background: var(--amber-soft); }
+    .decision-pill.invalid { color: var(--red); background: var(--red-soft); }
+    .calc-summary { margin-top: 14px; }
+    .calc-summary strong { font: 800 21px/1.2 var(--mono); }
+    .calc-summary p { color: var(--muted); font-size: 13px; }
+    .bar-chart { display: grid; gap: 13px; margin-top: 17px; }
+    .bar-row .bar-label { display: flex; justify-content: space-between; gap: 10px; color: #40536e; font-size: 12px; }
+    .bar-track { height: 13px; margin-top: 6px; overflow: hidden; border-radius: 999px; background: #e9eef6; }
+    .bar-fill { height: 100%; width: 0; border-radius: inherit; transition: width .25s ease; }
+    .bar-fill.rerun { background: linear-gradient(90deg, #d38b24, #eab75f); }
+    .bar-fill.reuse { background: linear-gradient(90deg, #238b52, #68c38d); }
+    .calc-footnote { margin-top: 15px; padding-top: 13px; border-top: 1px dashed #d5dfeb; color: var(--muted); font-size: 12px; }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      font-size: 13px;
+    }
+    th, td { padding: 12px 13px; text-align: left; vertical-align: top; border-bottom: 1px solid #e6ecf4; }
+    th { background: #f4f8fd; color: #344963; font-size: 12px; letter-spacing: .02em; }
+    tr:last-child td { border-bottom: 0; }
+    td { color: #53657c; }
+    td b { color: #1e334f; }
+    .table-wrap { overflow-x: auto; }
+
+    .source-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .source-card {
+      padding: 18px;
+      border-radius: 15px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+    .source-card.measured { border-top: 4px solid var(--green); }
+    .source-card.estimated { border-top: 4px solid #7890ae; }
+    .source-card.missing { border-top: 4px solid var(--red); }
+    .source-card h3 { margin-top: 9px; }
+    .source-card p, .source-card li { color: var(--muted); font-size: 13px; }
+
+    .record {
+      overflow-x: auto;
+      margin: 0;
+      padding: 20px;
+      border-radius: 15px;
+      background: #111e34;
+      color: #dce8f8;
+      font-size: 12.5px;
+      line-height: 1.75;
+      white-space: pre-wrap;
+    }
+    .record .k { color: #8eb7ff; }
+    .record .s { color: #8ee7bd; }
+    .record .w { color: #f2c879; }
+    .read-list { display: grid; gap: 10px; }
+    .read-item { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 13px; padding: 11px 0; border-bottom: 1px dashed #d8e1ed; }
+    .read-item:last-child { border-bottom: 0; }
+    .read-item code { align-self: start; min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
+    .read-item p { min-width: 0; margin: 0; color: var(--muted); font-size: 13px; }
+
+    .script {
+      counter-reset: step;
+      display: grid;
+      gap: 13px;
+    }
+    .script-step {
+      position: relative;
+      padding: 17px 18px 17px 58px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+    .script-step::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: #eaf1ff;
+      color: var(--blue);
+      font: 800 12px var(--mono);
+    }
+    .script-time { color: var(--blue); font: 750 11px/1 var(--mono); letter-spacing: .03em; }
+    .script-step h3 { margin-top: 5px; font-size: 16px; }
+    .script-step p { color: #50637c; font-size: 14px; }
+    .say {
+      margin-top: 11px;
+      padding: 13px 15px;
+      border-radius: 10px;
+      background: #f5f8fc;
+      border-left: 3px solid #8ca8d7;
+      color: #293d59;
+      font-size: 13.5px;
+    }
+    .say::before { content: "可直接这样讲："; display: block; margin-bottom: 4px; color: #6c7f98; font-size: 11px; font-weight: 800; }
+
+    .faq { display: grid; gap: 10px; }
+    details {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+    summary {
+      cursor: pointer;
+      padding: 14px 16px;
+      color: #243b5c;
+      font-weight: 800;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; float: right; color: #7c8da4; font: 800 18px/1 var(--mono); }
+    details[open] summary::after { content: "−"; }
+    details .answer { padding: 0 16px 15px; color: var(--muted); font-size: 13.5px; }
+    details .answer p { margin-top: 0; }
+
+    .boundary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .boundary {
+      padding: 20px;
+      border-radius: 15px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+    .boundary.done { border-top: 4px solid var(--green); }
+    .boundary.todo { border-top: 4px solid var(--amber); }
+    .boundary h3 { font-size: 18px; }
+    .boundary ul { color: var(--muted); font-size: 13.5px; }
+
+    .acceptance {
+      display: grid;
+      grid-template-columns: 50px 1fr;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px dashed #d9e2ee;
+    }
+    .acceptance:last-child { border-bottom: 0; }
+    .acceptance .num { color: var(--blue); font: 800 15px var(--mono); }
+    .acceptance b { display: block; }
+    .acceptance p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+
+    footer {
+      margin-top: 34px;
+      padding: 22px 4px 0;
+      border-top: 1px solid #d9e2ee;
+      color: #73839a;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero-card { max-width: 620px; }
+      .metric-grid { grid-template-columns: repeat(3, 1fr); }
+      .path-grid { grid-template-columns: repeat(2, 1fr); }
+      .gate-strip { grid-template-columns: repeat(3, 1fr); }
+      .calculator, .formula-box, .boundary-grid { grid-template-columns: 1fr; }
+      .branch-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .topbar-inner { align-items: flex-start; flex-direction: column; padding: 10px 0; gap: 4px; }
+      .nav-links { width: 100%; }
+      main { width: min(100% - 20px, 1180px); margin-top: 14px; }
+      .hero { min-height: 0; padding: 25px 20px; border-radius: 20px; }
+      .hero h1 { font-size: clamp(31px, 11vw, 45px); }
+      .hero-equation { grid-template-columns: 1fr; }
+      .hero-equation .vs { margin: 0 auto; }
+      .section-head { flex-direction: column; gap: 8px; }
+      .grid-2, .grid-3, .grid-4, .path-grid, .source-grid, .field-grid, .mini-branch { grid-template-columns: 1fr; }
+      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+      .gate-strip { grid-template-columns: repeat(2, 1fr); }
+      .panel { padding: 19px 16px; }
+      .read-item { grid-template-columns: 1fr; gap: 5px; }
+      .sequence { grid-template-columns: repeat(8, 185px); }
+    }
+
+    @media print {
+      @page { size: A4 landscape; margin: 10mm; }
+      body { background: #fff; font-size: 10pt; }
+      .topbar, .hero-actions, .btn { display: none !important; }
+      main { width: 100%; margin: 0; }
+
+      .hero {
+        color: #111;
+        background: #f1f5fb;
+        box-shadow: none;
+        min-height: 165mm;
+        padding: 24px;
+        grid-template-columns: 1.12fr .88fr;
+        break-after: page;
+      }
+      .hero h1 { font-size: 34pt; }
+      .hero .hero-lead, .hero-card-title, .hero-equation .term small, .hero-rule { color: #40536e; }
+      .hero h1 span { color: #126340; }
+      .hero-card { background: #fff; border-color: #ccd8e7; }
+      .hero-equation .term { background: #f4f7fb; }
+
+      .section { margin-top: 22px; break-before: auto; }
+      .panel {
+        padding: 18px 20px;
+        box-shadow: none;
+        break-inside: auto;
+      }
+      .section-head { break-inside: avoid; break-after: avoid; margin-bottom: 10px; }
+      .kicker { margin-bottom: 4px; font-size: 8pt; }
+      .section-head h2 { font-size: 20pt; }
+      .section-head .lead { margin-top: 2px; font-size: 9pt; }
+      .callout, .path-card, .source-card, .boundary, .script-step, details { break-inside: avoid; }
+
+      .decision-map { padding: 7px 9px; break-inside: avoid; }
+      .flow-node { padding: 6px 10px; font-size: 9pt; line-height: 1.3; }
+      .flow-node small { font-size: 7.5pt; }
+      .arrow-down { height: 9px; margin: 1px auto; }
+      .branch-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin-top: 8px; }
+      .lane { padding: 5px; }
+      .lane-title { margin-bottom: 4px; font-size: 9pt; }
+      .mini-flow { gap: 2px; }
+      .mini-node { padding: 2px 4px; font-size: 7.5pt; line-height: 1.2; }
+      .mini-node small { font-size: 6.5pt; margin-top: 0; }
+      .mini-arrow { height: 4px; line-height: 3px; font-size: 7pt; }
+      .decision-map .callout { margin-top: 8px; padding: 8px 10px; font-size: 8pt; }
+
+      .path-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+      .path-card { padding: 12px; }
+      .path-card .code-line { font-size: 9pt; }
+      .gate-strip { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 7px; }
+      .gate { min-height: 65px; padding: 7px; font-size: 8.5pt; }
+      .sequence { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 0; overflow: visible; padding: 6px 0 10px; }
+      .sequence-step { min-width: 0; padding: 10px 7px; }
+      .sequence-step b { font-size: 9pt; }
+      .sequence-step small { font-size: 8pt; }
+
+      .formula-box, .calculator, .boundary-grid { grid-template-columns: 1fr 1fr; }
+      .formula { font-size: 9pt; }
+      .field-grid { grid-template-columns: 1fr 1fr; }
+      .source-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+      .record { overflow: visible; padding: 12px; font-size: 8pt; }
+      .read-item { grid-template-columns: 145px minmax(0, 1fr); gap: 10px; break-inside: avoid; }
+
+      .script { grid-template-columns: 1fr 1fr; gap: 9px; }
+      .script-step { padding: 12px 12px 12px 47px; }
+      .script-step::before { left: 12px; top: 13px; }
+      .script-step h3 { font-size: 14px; }
+      .script-step p, .say { font-size: 9pt; }
+      .faq { display: block; }
+      .faq details + details { margin-top: 8px; }
+
+      details { break-inside: avoid; }
+      details > summary { break-after: avoid; }
+      details .answer { display: block !important; }
+      details:not([open]) summary::after { content: "" !important; }
+      a { color: inherit; }
+    }
+
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#top" aria-label="回到顶部">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>成本决策原理</span>
+      </a>
+      <nav class="nav-links" aria-label="页面导航">
+        <a href="#why">为什么</a>
+        <a href="#flow">总流程</a>
+        <a href="#config">配置开关</a>
+        <a href="#paths">四路径</a>
+        <a href="#safety">安全门</a>
+        <a href="#sequence">两阶段</a>
+        <a href="#calculator">算例</a>
+        <a href="#record">记录</a>
+        <a href="#boundary">结论</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <span class="eyebrow">开发任务 5.0 · 成本、空间与策略面板 · R008 真实验收 6/6 通过</span>
+        <h1 id="hero-title">复用不是“找到就赚到”，<br><span>先比较时间成本再决定</span></h1>
+        <p class="hero-lead">旧结果已经在库里，不等于把它搬回来就更快。系统先确认候选合格，再估算“复用要多久、重算要多久”，只有当节省超过阈值时才复用。</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#flow">先看全景决策图</a>
+          <a class="btn btn-ghost" href="#calculator">跳到现场算例</a>
+        </div>
+      </div>
+      <div class="hero-card" aria-label="核心比较">
+        <div class="hero-card-title">一句话原理</div>
+        <div class="hero-equation">
+          <div class="term">
+            <b>复用时间</b>
+            <small>搬运 + 恢复为可用输入</small>
+          </div>
+          <div class="vs">VS</div>
+          <div class="term">
+            <b>重算时间</b>
+            <small>按已有运行耗时估计</small>
+          </div>
+        </div>
+        <div class="hero-rule">只有当 <strong>预计节省 &gt; 0</strong>，并且 <strong>预计节省 ≥ 最小节省阈值</strong>，才选择复用。</div>
+      </div>
+    </section>
+
+    <section id="why" class="section" aria-labelledby="why-title">
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <div class="kicker">01 · 问题背景</div>
+            <h2 id="why-title">为什么“有旧结果”不等于“应该复用”？</h2>
+            <p class="lead">复用也有成本。找到候选只证明它可能存在，真正决定值不值得的是：把它取回来、校验并恢复为当前步骤可消费的输入，是否明显快于重新计算。</p>
+          </div>
+          <span class="tag blue">比较的是预计墙钟时间</span>
+        </div>
+
+        <div class="grid-3">
+          <article class="card">
+            <div class="card-number">1</div>
+            <h3>固定开销</h3>
+            <p>建立连接、定位归档、发起读取等，每次复用都绕不开。它适合用 <code>transfer_fixed_seconds</code> 表示。</p>
+          </article>
+          <article class="card">
+            <div class="card-number">2</div>
+            <h3>搬运开销</h3>
+            <p>产物越大、链路越慢，搬运越久。基础模型用“大小 ÷ 带宽”估算。</p>
+          </article>
+          <article class="card">
+            <div class="card-number">3</div>
+            <h3>物化开销</h3>
+            <p>把旧结果恢复成当前任务可消费的输入也要时间。对应 <code>materialization_seconds</code>。</p>
+          </article>
+        </div>
+
+        <div class="callout green">
+          <b>核心判断：</b>复用只有在“取回旧结果”明显快于“重新计算”时才划算。这个“明显”由最小节省阈值控制，避免为了节省几毫秒而引入搬运和依赖风险。
+        </div>
+
+        <div class="metric-grid" aria-label="默认参数">
+          <div class="metric"><div class="value">false</div><div class="label">enabled</div><div class="note">默认关闭，保持原行为</div></div>
+          <div class="metric"><div class="value">0.5 s</div><div class="label">固定搬运开销</div><div class="note">工程默认值</div></div>
+          <div class="metric"><div class="value">1 MiB/s</div><div class="label">默认带宽</div><div class="note">可配置假设</div></div>
+          <div class="metric"><div class="value">0.2 s</div><div class="label">物化开销</div><div class="note">恢复输入的时间</div></div>
+          <div class="metric"><div class="value">1.0 s</div><div class="label">最小节省阈值</div><div class="note">不够明显就不复用</div></div>
+        </div>
+        <p class="small" style="margin-top:12px">注意：这些默认值是用于建立透明、可测试基线的工程参数，不是 Lotaru 论文结论，也不是当前项目已经标定的跨机器精度。</p>
+      </div>
+    </section>
+
+    <section id="flow" class="section" aria-labelledby="flow-title">
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <div class="kicker">02 · 全景决策图</div>
+            <h2 id="flow-title">从请求到复用／重算，只走这一套顺序</h2>
+            <p class="lead">先尊重用户选择，再筛资格，再比较成本，最后只搬运真正选中的候选。安全门永远排在“便宜”之前。</p>
+          </div>
+          <span class="tag amber">成本策略只接管 allow_reuse</span>
+        </div>
+
+        <div class="decision-map" role="img" aria-label="成本决策总流程图">
+          <div class="flow-node start"><b>请求到达</b><small>模型、输入、参数、种子和用户复用策略进入引擎</small></div>
+          <div class="arrow-down"></div>
+          <div class="flow-node judge"><b>判断用户选择：reuse_policy</b><small>用户意图优先，成本策略不能擅自改动强算或新采样</small></div>
+
+          <div class="branch-grid">
+            <div class="lane blue">
+              <div class="lane-title"><span>new_sample</span><span class="tag blue">R04</span></div>
+              <div class="mini-flow">
+                <div class="mini-node"><b>忽略旧候选</b><small>用户要的是新样本</small></div>
+                <div class="mini-arrow">↓</div>
+                <div class="mini-node sample"><b>生成不同有效种子</b><small>真实计算并记录</small></div>
+                <div class="mini-arrow">↓</div>
+                <div class="mini-node"><b>成本策略不参与</b><small>不会因“更便宜”而改成复用</small></div>
+              </div>
+            </div>
+            <div class="lane amber">
+              <div class="lane-title"><span>force_rerun</span><span class="tag amber">R03</span></div>
+              <div class="mini-flow">
+                <div class="mini-node"><b>忽略旧候选</b><small>用户明确要求强制重算</small></div>
+                <div class="mini-arrow">↓</div>
+                <div class="mini-node rerun"><b>原参数、原种子重算</b><small>真实计算并记录</small></div>
+                <div class="mini-arrow">↓</div>
+                <div class="mini-node"><b>成本策略不参与</b><small>不会把用户选择改成复用</small></div>
+              </div>
+            </div>
+            <div class="lane green">
+              <div class="lane-title"><span>allow_reuse</span><span class="tag green">成本策略入口</span></div>
+              <div class="mini-flow">
+                <div class="mini-node decision"><b>存在 qualified=true 候选？</b><small>失败、中断、检查不通过、产物缺失、人工否决都排除</small></div>
+                <div class="mini-branch">
+                  <div class="mini-node rerun"><b>否 → 安全重算</b><small>不碰坏结果，记录原因</small></div>
+                  <div class="mini-node decision"><b>是 → 进入成本比较</b><small>只比较合格候选</small></div>
+                </div>
+                <div class="mini-arrow">↓</div>
+                <div class="mini-node decision"><b>至少一个候选成本可比？</b><small>部分缺失时只跳过坏数据</small></div>
+                <div class="mini-branch">
+                  <div class="mini-node rerun"><b>全部缺失 → 回退</b><small>原简单规则 + missing</small></div>
+                  <div class="mini-node decision"><b>有可比数据 → 继续</b><small>逐个计算预计节省</small></div>
+                </div>
+                <div class="mini-arrow">↓</div>
+                <div class="mini-node decision"><b>选择最大预计节省并检查阈值</b><small>节省必须 &gt; 0 且 ≥ min_savings_seconds</small></div>
+                <div class="mini-branch">
+                  <div class="mini-node reuse"><b>达标 → 复用</b><small>只搬运并校验选中候选；R05</small></div>
+                  <div class="mini-node rerun"><b>不达标 → 重算</b><small>不搬运；原参数原种子；R05</small></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="callout amber" style="margin-bottom:0">
+            <b>这里最容易讲错：</b>如果成本判定为“不划算”，系统不会先搬运所有远程候选再比较，而是直接不搬，原参数、原种子重算。只有判定复用且候选不在本地时，才搬运选中的那一个。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="config" class="section" aria-labelledby="config-title">
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <div class="kicker">03 · 函数与配置开关</div>
+            <h2 id="config-title">默认不改变旧行为，显式配置后才启用成本决策</h2>
+            <p class="lead">成本决策函数只接管 <code>allow_reuse</code>：输入是合格候选及其成本元数据，输出是复用或重算、选中候选、原因代码和可复核参数。</p>
+          </div>
+          <span class="tag amber">默认 enabled=false</span>
+        </div>
+
+        <div class="formula-box">
+          <article class="formula-card">
+            <div class="formula-title">成本决策函数的输入与输出</div>
+            <div class="formula">
+              输入：reuse_policy + 合格候选 + 大小／耗时／来源 + 原种子<br>
+              比较：rerun_estimate vs reuse_estimate<br>
+              输出：reuse／rerun + selected_uuid + R05 reason_text
+            </div>
+            <div class="rule-inline">只处理 <code>allow_reuse</code>；<code>force_rerun</code> 和 <code>new_sample</code> 保持原语义，不会被成本策略改写。</div>
+          </article>
+          <article class="formula-card">
+            <div class="formula-title">启用时要改的最小配置</div>
+            <pre class="record" style="margin-top:12px;padding:14px;font-size:12px">{
+  "schema_version": "ai4s-cost-policy-1",
+  "enabled": true,
+  "transfer_fixed_seconds": 0.5,
+  "transfer_bytes_per_second": 1048576,
+  "materialization_seconds": 0.2,
+  "min_savings_seconds": 1.0
+}</pre>
+          </article>
+        </div>
+
+        <div class="grid-3" style="margin-top:18px">
+          <article class="card">
+            <div class="card-number">1</div>
+            <h3>默认关闭</h3>
+            <p>未设置 <code>AI4S_COST_POLICY_FILE</code> 时不安装成本决策函数，原有 R01／R02／R03／R04 行为保持不变。</p>
+          </article>
+          <article class="card">
+            <div class="card-number">2</div>
+            <h3>显式启用</h3>
+            <p>复制示例配置并设 <code>enabled=true</code>；网页服务与 AiiDA daemon 指向同一个绝对路径，然后同时重启。</p>
+          </article>
+          <article class="card">
+            <div class="card-number">3</div>
+            <h3>失败不静默降级</h3>
+            <p>文件缺失、JSON 非法、字段未知或数值无效时显式报错；daemon 看不到所需策略时请求失败，不会偷偷换回另一套规则。</p>
+          </article>
+        </div>
+
+        <div class="callout amber">
+          <b>配置切换方式：</b>服务进程和 daemon 都设置 <code>AI4S_COST_POLICY_FILE=&lt;同一策略文件的绝对路径&gt;</code>，修改后重启两边；随后检查决策记录是否出现 <code>R05</code>、<code>cost_source</code>、<code>rerun_source</code> 和 <code>reuse_source</code>。<a href="../configs/reuse-cost-policy.example.json">查看示例配置</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="paths" class="section" aria-labelledby="paths-title">
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <div class="kicker">04 · 四条路径</div>
+            <h2 id="paths-title">用户策略决定大方向，成本决策只处理其中一个岔路</h2>
+            <p class="lead">把四条路径放在同一张图里，最容易和队友对齐：复用、成本判定后重算、新采样、失败拦截。</p>
+          </div>
+          <span class="tag green">绿色复用 · 琥珀重算 · 蓝色新采样 · 红色失败</span>
+        </div>
+
+        <div class="path-grid">
+          <article class="path-card reuse">
+            <div class="path-icon">↺</div>
+            <h3>1. 复用</h3>
+            <ul>
+              <li>入口：用户选择 <code>allow_reuse</code></li>
+              <li>前提：候选合格，且预计节省达到阈值</li>
+              <li>动作：只搬运、校验并复用选中候选</li>
+              <li>种子：保持原种子</li>
+            </ul>
+            <div class="code-line"><b>记录：</b>成本策略启用时为 R05；默认关闭时沿用原规则。</div>
+          </article>
+
+          <article class="path-card rerun">
+            <div class="path-icon">↻</div>
+            <h3>2. 成本判定后重算</h3>
+            <ul>
+              <li>入口：用户选择 <code>allow_reuse</code></li>
+              <li>条件：复用不划算，或全部成本缺失而回退</li>
+              <li>动作：不搬运远程候选，原参数、原种子重算</li>
+              <li>结果：仍是一次真实计算</li>
+            </ul>
+            <div class="code-line"><b>记录：</b>成本比较做出“重算”决定时为 R05；纯缺少成本而回退时保留原规则并标 <code>cost_source=missing</code>。</div>
+          </article>
+
+          <article class="path-card sample">
+            <div class="path-icon">＋</div>
+            <h3>3. 新采样</h3>
+            <ul>
+              <li>入口：用户选择 <code>new_sample</code></li>
+              <li>动作：更换有效种子并真实计算</li>
+              <li>目的：获得新样本，不是查找旧结果</li>
+              <li>成本：成本策略完全不参与</li>
+            </ul>
+            <div class="code-line"><b>记录：</b>R04。服务端生成并持久化有效种子，后续保持一致。</div>
+          </article>
+
+          <article class="path-card failure">
+            <div class="path-icon">!</div>
+            <h3>4. 失败拦截</h3>
+            <ul>
+              <li>覆盖：模型失败、运行中断、检查不通过</li>
+              <li>还包括：产物缺失、人工否决、模型身份不明</li>
+              <li>动作：候选标记 <code>qualified=false</code></li>
+              <li>结果：成本再低也不能复用，改走安全重算</li>
+            </ul>
+            <div class="code-line"><b>记录：</b>失败原因、重试和最终决定都进入决策记录。</div>
+          </article>
+        </div>
+
+        <div class="grid-2" style="margin-top:18px">
+          <div class="card soft">
+            <h3>用户选择为什么不能被覆盖？</h3>
+            <p>成本策略解决的是“允许复用范围内，哪个动作更划算”。如果用户要新样本，复用旧结果会改变科学语义；如果用户要强制重算，复用会违背用户对可复现性和独立计算的明确要求。</p>
+          </div>
+          <div class="card soft">
+            <h3>为什么把失败单独算一条路径？</h3>
+            <p>失败不是“成本比较高”的问题，而是候选根本不具备被比较的资格。先排除失败，再算成本，才能保证“便宜”永远不会把坏结果重新带回执行链路。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="safety" class="section" aria-labelledby="safety-title">
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <div class="kicker">05 · 安全门</div>
+            <h2 id="safety-title">任何一项不通过，都先失去“被比较”的资格</h2>
+            <p class="lead">成本估计只对合格候选有意义。以下情况统一视为横切安全条件，不允许用“节省很大”绕过。</p>
+          </div>
+          <span class="tag red">qualified=false</span>
+        </div>
+
+        <div class="gate-strip" aria-label="不合格条件">
+          <div class="gate">模型运行失败<small>没有成功产物</small></div>
+          <div class="gate">运行中断<small>结果不完整</small></div>
+          <div class="gate">结果检查不通过<small>科学有效性未成立</small></div>
+          <div class="gate">产物缺失<small>无法恢复为输入</small></div>
+          <div class="gate">人工否决<small>人或规则明确拒绝</small></div>
+          <div class="gate">模型身份不明<small>哈希命中也不够</small></div>
+        </div>
+
+        <div class="gate-join">全部必须先满足：候选合格，才进入成本比较</div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>搬运失败也要立即降级</h3>
+            <p>如果成本预选选中了远程候选，但归档搬运或校验失败，该候选会被标记为不合格并记录失败原因，然后系统重新在剩余候选里决策。搬运失败结果绝不会被当作可用结果复用。</p>
+          </div>
+          <div class="card">
+            <h3>剩余远程候选会被封口</h3>
+            <p>服务端预选后，所有仍未在本地物化的远程候选都会变为不可复用。这样即使 daemon 稍后读到了不同版本策略，也不能选中一个根本没有搬过来的结果；最坏情况是安全重算。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="sequence" class="section" aria-labelledby="sequence-title">
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <div class="kicker">06 · 两阶段时序</div>
+            <h2 id="sequence-title">为什么服务端先选一次，daemon 还要再选一次？</h2>
+            <p class="lead">远程候选在服务端只有元数据。为了避免把全部候选都搬回来，服务端必须先用同一套成本口径预选；daemon 再按同一策略生成最终、可审计的 R05 决策记录。</p>
+          </div>
+          <span class="tag blue">先决策，后搬运；最终仍由 daemon 记录</span>
+        </div>
+
+        <div class="sequence" aria-label="服务端预选与 daemon 最终决策时序">
+          <div class="sequence-step">
+            <div class="step-num">01</div>
+            <b>请求进入服务</b>
+            <small>读取用户策略；只有 allow_reuse 才加载成本策略。</small>
+          </div>
+          <div class="sequence-step">
+            <div class="step-num">02</div>
+            <b>收集候选元数据</b>
+            <small>先拿到 UUID、指纹、大小、耗时、资格和来源，不立即搬运全部归档。</small>
+          </div>
+          <div class="sequence-step">
+            <div class="step-num">03</div>
+            <b>统一成本口径</b>
+            <small>跨成员历史耗时按 estimated 处理；旧记录来源未知也显式保留。</small>
+          </div>
+          <div class="sequence-step">
+            <div class="step-num">04</div>
+            <b>资格与成本比较</b>
+            <small>排除不合格候选，只比较有完整成本的数据，选预计节省最大者。</small>
+          </div>
+          <div class="sequence-step green">
+            <div class="step-num">05</div>
+            <b>只物化选中项</b>
+            <small>判定重算就不搬远程结果；判定复用才搬运选中候选并校验。</small>
+          </div>
+          <div class="sequence-step red">
+            <div class="step-num">06</div>
+            <b>搬运失败再决策</b>
+            <small>失败候选标为不合格，重新选择；全部失败则安全重算。</small>
+          </div>
+          <div class="sequence-step amber">
+            <div class="step-num">07</div>
+            <b>daemon 同策略复核</b>
+            <small>必须看到同一份有效策略；声明需要但加载不到时显式失败，不静默换规则。</small>
+          </div>
+          <div class="sequence-step">
+            <div class="step-num">08</div>
+            <b>写最终 R05 记录</b>
+            <small>记录动作、候选 UUID、种子、来源、参数和可读理由。</small>
+          </div>
+        </div>
+
+        <div class="grid-3" style="margin-top:12px">
+          <div class="card soft"><h3>服务端预选</h3><p>解决“不要把不需要的远程结果都搬过来”的传输浪费问题。</p></div>
+          <div class="card soft"><h3>daemon 最终决策</h3><p>解决“最终执行到底用了谁、为什么”的可审计记录问题。</p></div>
+          <div class="card soft"><h3>同一份策略文件</h3><p>解决两处口径不一致的问题；如果 daemon 看不到策略，宁可显式失败，也不悄悄采用另一套规则。</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="formula" class="section" aria-labelledby="formula-title">
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <div class="kicker">07 · 公式</div>
+            <h2 id="formula-title">四行公式，把“值不值得”变成可复核计算</h2>
+            <p class="lead">公式故意保持简单：每一项都能在决策记录里找到对应字段，队友可以手算复核。</p>
+          </div>
+          <span class="tag amber">预计节省 = 重算时间 − 复用时间</span>
+        </div>
+
+        <div class="formula-box">
+          <div class="formula-card">
+            <div class="formula-title">重算侧</div>
+            <div class="formula"><span class="accent">重算时间</span> = elapsed_s</div>
+            <p class="small"><code>elapsed_s</code> 是候选来源记录中的非零墙钟时间。跨成员时它只作为当前环境重算时间的估计值，不直接冒充当前机器实测。</p>
+          </div>
+          <div class="formula-card">
+            <div class="formula-title">复用侧</div>
+            <div class="formula"><span class="accent">复用时间</span> =
+  transfer_fixed_seconds
+  + size_bytes / transfer_bytes_per_second
+  + materialization_seconds</div>
+            <p class="small">如果候选直接提供了实测或估算的 <code>reuse_elapsed_s</code>，就使用该值，不再套用搬运估算公式。</p>
+          </div>
+        </div>
+
+        <div class="rule-inline">
+          <b>选择复用当且仅当：</b>
+          <span class="mono">savings_seconds &gt; 0</span>
+          <b>且</b>
+          <span class="mono">savings_seconds ≥ min_savings_seconds</span>。
+          多个合格候选都可比较时，选择 <span class="mono">savings_seconds</span> 最大的一个；完全相同时保留原候选顺序中的第一个。
+        </div>
+
+        <div class="callout">
+          <b>为什么还要“最小节省阈值”？</b>预计节省 0.1 秒虽然数学上为正，但估算误差、搬运风险和调度抖动都可能吞掉收益。阈值把“名义上省一点”与“工程上确实值得复用”分开。
+        </div>
+      </div>
+    </section>
+
+    <section id="calculator" class="section" aria-labelledby="calculator-title">
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <div class="kicker">08 · 可交互算例</div>
+            <h2 id="calculator-title">拿 R008 真实来源数据现场演示：参数一改，决定就会翻转</h2>
+            <p class="lead">默认参数下，R008 的 34287 字节产物对应 49.9 秒实测重算耗时，复用估算约 0.733 秒，因此选择复用；把固定搬运开销调到 60 秒后，复用反而更慢，系统选择重算。</p>
+          </div>
+          <span class="tag green">不依赖网络 · 可直接演示</span>
+        </div>
+
+        <div class="calculator">
+          <div class="calc-inputs">
+            <div class="preset-row" aria-label="算例预设">
+              <button class="btn btn-light" type="button" data-preset="default">R008 真实来源 → 复用</button>
+              <button class="btn btn-danger" type="button" data-preset="expensive-transfer">固定搬运 60 秒 → 重算</button>
+              <button class="btn btn-light" type="button" data-preset="strict-threshold">阈值 60 秒 → 重算</button>
+            </div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="rerunSeconds">重算时间 elapsed_s</label>
+                <div class="field-unit"><input id="rerunSeconds" type="number" min="0" step="0.1" value="49.9"><span class="unit">秒</span></div>
+              </div>
+              <div class="field">
+                <label for="sizeBytes">产物大小 size_bytes</label>
+                <div class="field-unit"><input id="sizeBytes" type="number" min="0" step="1" value="34287"><span class="unit">B</span></div>
+              </div>
+              <div class="field">
+                <label for="fixedSeconds">固定搬运开销</label>
+                <div class="field-unit"><input id="fixedSeconds" type="number" min="0" step="0.1" value="0.5"><span class="unit">秒</span></div>
+              </div>
+              <div class="field">
+                <label for="bandwidthMib">估算带宽</label>
+                <div class="field-unit"><input id="bandwidthMib" type="number" min="0.001" step="0.1" value="1"><span class="unit">MiB/s</span></div>
+              </div>
+              <div class="field">
+                <label for="materializeSeconds">物化开销</label>
+                <div class="field-unit"><input id="materializeSeconds" type="number" min="0" step="0.1" value="0.2"><span class="unit">秒</span></div>
+              </div>
+              <div class="field">
+                <label for="minSavings">最小节省阈值</label>
+                <div class="field-unit"><input id="minSavings" type="number" min="0" step="0.1" value="1"><span class="unit">秒</span></div>
+              </div>
+            </div>
+            <div class="calc-footnote" id="bandwidthNote">当前换算：1 MiB/s = 1,048,576 B/s。</div>
+          </div>
+
+          <div class="calc-output">
+            <span class="decision-pill reuse" id="decisionPill" aria-live="polite">计算结果：复用</span>
+            <div class="calc-summary">
+              <strong id="savingsResult">预计节省 49.167 秒</strong>
+              <p id="calcExplanation">复用预计 0.733 秒，重算预计 49.900 秒；节省 49.167 秒，超过 1.000 秒阈值。</p>
+            </div>
+            <div class="bar-chart" aria-label="重算与复用耗时对比">
+              <div class="bar-row">
+                <div class="bar-label"><span>重算</span><span id="rerunBarLabel">49.900 秒</span></div>
+                <div class="bar-track"><div class="bar-fill rerun" id="rerunBar"></div></div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label"><span>复用</span><span id="reuseBarLabel">0.733 秒</span></div>
+                <div class="bar-track"><div class="bar-fill reuse" id="reuseBar"></div></div>
+              </div>
+            </div>
+            <div class="calc-footnote">
+              <b>判定顺序：</b>先要求预计节省 &gt; 0，再要求达到阈值。即使“最大候选”仍不达标，也会选择重算，而不是勉强复用。
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sources" class="section" aria-labelledby="sources-title">
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <div class="kicker">09 · 成本来源</div>
+            <h2 id="sources-title">“实测、估计、缺失”必须分开写，不能混成一个数</h2>
+            <p class="lead">同一个 49.9 秒，在本机实测和跨成员历史记录里的可信含义不同。R008 的 49.9 秒来源耗时是实测，0.733 秒复用耗时则是策略估算。</p>
+          </div>
+          <span class="tag blue">来源透明比数字漂亮更重要</span>
+        </div>
+
+        <div class="source-grid">
+          <article class="source-card measured">
+            <span class="tag green">measured</span>
+            <h3>实测</h3>
+            <ul>
+              <li>本机非零进程墙钟时间</li>
+              <li>候选提供实测的 <code>reuse_elapsed_s</code> 且来源为 <code>measured</code></li>
+              <li>重算和复用两侧都实测时，<code>cost_source=measured</code></li>
+            </ul>
+          </article>
+          <article class="source-card estimated">
+            <span class="tag">estimated</span>
+            <h3>估计</h3>
+            <ul>
+              <li>跨成员／跨 profile 的历史耗时</li>
+              <li>复用时间由固定开销、大小和带宽公式估算</li>
+              <li>记录 <code>cost_source=estimated</code>，并分别写出重算与复用来源</li>
+            </ul>
+          </article>
+          <article class="source-card missing">
+            <span class="tag red">missing</span>
+            <h3>缺失</h3>
+            <ul>
+              <li>缓存命中、耗时未知或不是正数</li>
+              <li>大小无效、来源字段非法</li>
+              <li>全部候选都缺成本时退回原简单规则，并标 <code>cost_source=missing</code></li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="grid-2" style="margin-top:18px">
+          <div class="card soft">
+            <h3>部分候选缺成本怎么办？</h3>
+            <p>只跳过数据不完整的候选，继续比较其余合格候选，并在原因里记录跳过的数量。不能让一个坏字段把所有候选都拖回默认规则。</p>
+          </div>
+          <div class="card soft">
+            <h3>旧记录没有来源怎么办？</h3>
+            <p>本地旧记录按兼容规则处理；跨成员旧记录没有来源时按 <code>estimated</code> 处理，并保留 <code>elapsed_origin_source=unknown</code>，避免把来源机器实测误当成请求方实测。</p>
+          </div>
+        </div>
+
+        <div class="callout amber">
+          <b>Lotaru 给我们的启发：</b>历史运行时间依赖机器、环境和工具版本；预测值必须和实测值分开，数据不足时不能假装预测可靠。本实现目前只采用这些原则，没有训练 Lotaru 式预测模型，也没有把论文误差数字当作本项目结果。
+        </div>
+      </div>
+    </section>
+
+    <section id="record" class="section" aria-labelledby="record-title">
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <div class="kicker">10 · 决策记录</div>
+            <h2 id="record-title">决策记录：每一次选择都能说清楚“用了谁、为什么”</h2>
+            <p class="lead">一条可解释的 R05 记录至少能回答：用了什么策略、选了谁、为什么、成本来源是什么、参数是多少。</p>
+          </div>
+          <span class="tag red">reason_text 必须可读</span>
+        </div>
+
+        <pre class="record" aria-label="R05 决策记录示例"><span class="k">final_decision.action</span> = <span class="s">"reuse"</span>
+<span class="k">final_decision.selected_candidate_uuid</span> = <span class="s">"aae215ce-3796-4e9c-bbd6-6455cf104c08"</span>
+<span class="k">final_decision.effective_seed</span> = <span class="w">41</span>
+<span class="k">reason.reason_code</span> = <span class="s">"R05"</span>
+<span class="k">reason.reason_text</span> =
+  成本策略选择 aae215ce-... 复用：
+  重算预计 49.900s，复用预计 0.733s，预计节省 49.167s（阈值 1.000s）；
+  policy_fixed=0.500s；policy_bandwidth=1048576.000B/s；
+  policy_materialization=0.200s；
+  cost_source=estimated；rerun_source=measured；reuse_source=estimated</pre>
+
+        <div class="read-list" style="margin-top:18px">
+          <div class="read-item"><code>reuse_policy</code><p>用户选的是允许复用、强制重算还是新采样。成本策略只能作用于 <code>allow_reuse</code>。</p></div>
+          <div class="read-item"><code>action</code><p>最终动作是 <code>reuse</code>、<code>rerun</code> 或 <code>new_sample</code>。看到复用决定时，还要核对候选 UUID。</p></div>
+          <div class="read-item"><code>selected_candidate_uuid</code><p>真正被复用的是哪一个结果。重算时应为 <code>null</code>，避免记录和实际执行对象脱节。</p></div>
+          <div class="read-item"><code>reason_code</code><p>R05 表示自定义或成本决策器给出的决定；强制重算、新采样仍按 R03、R04 记录。</p></div>
+          <div class="read-item"><code>cost_source</code><p>说明这次比较整体属于实测、估计还是缺失回退。看到 <code>estimated</code> 就不应宣称是“实测性能结论”。</p></div>
+          <div class="read-item"><code>rerun_source / reuse_source</code><p>分别说明重算侧和复用侧的时间来源，便于检查跨成员历史记录是否只作为估计值。</p></div>
+        </div>
+
+        <div class="callout green">
+          <b>现场演示的证据点：</b>修改参数后，选择与理由文本同步变化，说明成本参数真正参与了决策，而不是展示一条写死的文案。
+        </div>
+      </div>
+    </section>
+    <section id="boundary" class="section" aria-labelledby="boundary-title">
+      <div class="panel">
+        <div class="section-head">
+          <div>
+            <div class="kicker">11 · R008 真实验收与边界</div>
+            <h2 id="boundary-title">真实成本决策路径已通过，剩余是标定与扩展验证</h2>
+            <p class="lead">在单个真实 Coder／AiiDA Profile 和真实 CPU ProteinMPNN 下，六项检查全部通过。当前证据证明路径按受控参数工作，不证明跨机器性能优势。</p>
+          </div>
+          <span class="tag green">可配置 · 可解释 · 可安全降级</span>
+        </div>
+
+        <div class="table-wrap" style="margin:0 0 18px">
+          <table aria-label="R008 四条路径真实运行记录">
+            <thead>
+              <tr>
+                <th>演示路径</th>
+                <th>决定</th>
+                <th>原生过程</th>
+                <th>关键参数</th>
+                <th>真实结果</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>复用</b></td>
+                <td>R05 <code>reuse</code></td>
+                <td>WorkChain <b>96</b></td>
+                <td>原种子 <code>41</code></td>
+                <td>0 个 CalcJob；预计复用 <code>0.733s</code>。另以 WorkChain 83 的 R01 复用作为默认规则基线。</td>
+              </tr>
+              <tr>
+                <td><b>成本判定重算</b></td>
+                <td>R05 <code>rerun</code></td>
+                <td>WorkChain <b>109</b>／CalcJob <b>110</b></td>
+                <td>固定开销 <code>60s</code>；原种子 <code>41</code></td>
+                <td>1 个 CalcJob；复用预计 <code>60.033s</code>，预计节省 <code>-10.133s</code>，没有搬运候选。</td>
+              </tr>
+              <tr>
+                <td><b>新采样</b></td>
+                <td>R04 <code>new_sample</code></td>
+                <td>WorkChain <b>128</b>／CalcJob <b>129</b></td>
+                <td>新种子 <code>1035027373</code></td>
+                <td>1 个真实 CalcJob；有效种子不同于来源种子 41，不是复用旧结果。</td>
+              </tr>
+              <tr>
+                <td><b>失败拦截</b></td>
+                <td><code>qualified=false</code> → 安全重算</td>
+                <td>失败 CalcJob <b>143</b>；重算 WorkChain <b>154</b>／CalcJob <b>155</b></td>
+                <td>原种子 <code>41</code></td>
+                <td><code>exit_status=301</code>；失败候选未复用，随后真实重算 1 次并成功。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout green">
+          <b>证据阅读方式：</b>上表已经把四条路径各自的关键原生过程编号、种子和结果放进演示页；完整运行身份、原始状态、子过程和六项硬性检查保存在 <a href="../experiments/R008-cost-decision/evidence/real-run-3.json">real-run-3.json</a>，逐阶段说明见 <a href="../experiments/R008-cost-decision/record.md">R008 运行记录</a>。
+        </div>
+
+        <div class="boundary-grid">
+          <article class="boundary done">
+            <h3>R008 真实验收 6/6</h3>
+            <ul>
+              <li>来源候选为真实非缓存实测：<code>49.9s</code>、<code>34287B</code>。</li>
+              <li>默认 R01 复用与成本 R05 复用均为 0 个 CalcJob、0 次模型执行。</li>
+              <li>成本 R05 重算真实创建 1 个 CalcJob。</li>
+              <li>新采样使用新种子 <code>1035027373</code> 并真实计算 1 次。</li>
+              <li>失败候选保持 <code>qualified=false</code>，随后安全重算 1 次。</li>
+              <li>六项硬性检查全部为真；证据为 <code>real-run-3.json</code>，状态 <code>passed</code>。</li>
+            </ul>
+          </article>
+          <article class="boundary todo">
+            <h3>仍未验证</h3>
+            <ul>
+              <li><code>0.733s</code> 复用耗时仍是公式估算，不是实测搬运时间。</li>
+              <li>默认固定开销、带宽、物化和阈值尚未用更多样本标定。</li>
+              <li>更大产物、跨机器和更多成员组合的实际收益尚未验证。</li>
+              <li>尚未证明成本策略优于 LRU。</li>
+              <li>策略面板的修改审计与回退仍需完善。</li>
+              <li>Lotaru 类预测模型尚未实现；当前只吸收来源分离和保守处理原则。</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="callout green">
+          <b>当前结论：</b>R008 已在单 Profile 的真实 Path 上通过成本复用、成本重算、新采样和失败拦截；下一步是参数标定、跨机器／大产物验证和策略面板完善。<br><a href="../experiments/R008-cost-decision/record.md">查看 R008 运行记录</a> · <a href="../experiments/R008-cost-decision/evidence/real-run-3.json">查看最终证据</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>成本决策原理 · 开发任务 5.0 · 2026-11-18</p>
+    <p>实现依据：<a href="cost_decision.md">成本决策实现说明</a> · <a href="../src/ai4s_workflows/cost_decision.py">成本决策源码</a> · <a href="../configs/reuse-cost-policy.example.json">示例策略配置</a></p>
+  </footer>
+
+  <script>
+    (() => {
+      const ids = [
+        "rerunSeconds",
+        "sizeBytes",
+        "fixedSeconds",
+        "bandwidthMib",
+        "materializeSeconds",
+        "minSavings"
+      ];
+      const fields = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
+      const decisionPill = document.getElementById("decisionPill");
+      const savingsResult = document.getElementById("savingsResult");
+      const calcExplanation = document.getElementById("calcExplanation");
+      const rerunBar = document.getElementById("rerunBar");
+      const reuseBar = document.getElementById("reuseBar");
+      const rerunBarLabel = document.getElementById("rerunBarLabel");
+      const reuseBarLabel = document.getElementById("reuseBarLabel");
+      const bandwidthNote = document.getElementById("bandwidthNote");
+
+      const presets = {
+        "default": {
+          rerunSeconds: 49.9,
+          sizeBytes: 34287,
+          fixedSeconds: 0.5,
+          bandwidthMib: 1,
+          materializeSeconds: 0.2,
+          minSavings: 1
+        },
+        "expensive-transfer": {
+          rerunSeconds: 49.9,
+          sizeBytes: 34287,
+          fixedSeconds: 60,
+          bandwidthMib: 1,
+          materializeSeconds: 0,
+          minSavings: 1
+        },
+        "strict-threshold": {
+          rerunSeconds: 49.9,
+          sizeBytes: 34287,
+          fixedSeconds: 0.5,
+          bandwidthMib: 1,
+          materializeSeconds: 0.2,
+          minSavings: 60
+        }
+      };
+
+      function formatSeconds(value) {
+        return `${value.toFixed(3)} 秒`;
+      }
+
+      function applyPreset(name) {
+        const preset = presets[name];
+        if (!preset) return;
+        for (const [id, value] of Object.entries(preset)) {
+          fields[id].value = String(value);
+        }
+        update();
+      }
+
+      function update() {
+        const values = Object.fromEntries(
+          ids.map((id) => [id, Number(fields[id].value)])
+        );
+        const valid =
+          Number.isFinite(values.rerunSeconds) &&
+          values.rerunSeconds > 0 &&
+          Number.isFinite(values.sizeBytes) &&
+          values.sizeBytes >= 0 &&
+          Number.isFinite(values.fixedSeconds) &&
+          values.fixedSeconds >= 0 &&
+          Number.isFinite(values.bandwidthMib) &&
+          values.bandwidthMib > 0 &&
+          Number.isFinite(values.materializeSeconds) &&
+          values.materializeSeconds >= 0 &&
+          Number.isFinite(values.minSavings) &&
+          values.minSavings >= 0;
+
+        if (!valid) {
+          decisionPill.className = "decision-pill invalid";
+          decisionPill.textContent = "输入无效";
+          savingsResult.textContent = "请检查输入范围";
+          calcExplanation.textContent = "重算时间和带宽必须大于 0；大小、固定开销、物化开销和阈值必须为非负数。";
+          rerunBar.style.width = "0%";
+          reuseBar.style.width = "0%";
+          rerunBarLabel.textContent = "—";
+          reuseBarLabel.textContent = "—";
+          bandwidthNote.textContent = "请输入有效参数后再计算。";
+          return;
+        }
+
+        const bytesPerSecond = values.bandwidthMib * 1024 * 1024;
+        const transferSeconds = values.sizeBytes / bytesPerSecond;
+        const reuseSeconds =
+          values.fixedSeconds + transferSeconds + values.materializeSeconds;
+        const savingsSeconds = values.rerunSeconds - reuseSeconds;
+        const shouldReuse =
+          savingsSeconds > 0 && savingsSeconds >= values.minSavings;
+        const largest = Math.max(values.rerunSeconds, reuseSeconds, 0.001);
+
+        rerunBar.style.width = `${(values.rerunSeconds / largest) * 100}%`;
+        reuseBar.style.width = `${(reuseSeconds / largest) * 100}%`;
+        rerunBarLabel.textContent = formatSeconds(values.rerunSeconds);
+        reuseBarLabel.textContent = formatSeconds(reuseSeconds);
+        bandwidthNote.textContent =
+          `当前换算：${values.bandwidthMib.toFixed(3)} MiB/s = ` +
+          `${Math.round(bytesPerSecond).toLocaleString("zh-CN")} B/s；` +
+          `传输本身约 ${transferSeconds.toFixed(3)} 秒。`;
+
+        if (shouldReuse) {
+          decisionPill.className = "decision-pill reuse";
+          decisionPill.textContent = "计算结果：复用";
+          savingsResult.textContent = `预计节省 ${savingsSeconds.toFixed(3)} 秒`;
+          calcExplanation.textContent =
+            `复用预计 ${reuseSeconds.toFixed(3)} 秒，重算预计 ` +
+            `${values.rerunSeconds.toFixed(3)} 秒；节省 ` +
+            `${savingsSeconds.toFixed(3)} 秒，达到 ` +
+            `${values.minSavings.toFixed(3)} 秒阈值。`;
+        } else {
+          decisionPill.className = "decision-pill rerun";
+          decisionPill.textContent = "计算结果：重算";
+          savingsResult.textContent =
+            savingsSeconds > 0
+              ? `预计节省 ${savingsSeconds.toFixed(3)} 秒，但未达阈值`
+              : `复用反而慢 ${Math.abs(savingsSeconds).toFixed(3)} 秒`;
+          calcExplanation.textContent =
+            savingsSeconds <= 0
+              ? `复用预计 ${reuseSeconds.toFixed(3)} 秒，重算预计 ` +
+                `${values.rerunSeconds.toFixed(3)} 秒；预计节省 ` +
+                `${savingsSeconds.toFixed(3)} 秒，不满足“节省 > 0”。`
+              : `复用预计 ${reuseSeconds.toFixed(3)} 秒，重算预计 ` +
+                `${values.rerunSeconds.toFixed(3)} 秒；虽然节省 ` +
+                `${savingsSeconds.toFixed(3)} 秒，但低于 ` +
+                `${values.minSavings.toFixed(3)} 秒阈值。`;
+        }
+      }
+
+      ids.forEach((id) => fields[id].addEventListener("input", update));
+      document.querySelectorAll("[data-preset]").forEach((button) => {
+        button.addEventListener("click", () => applyPreset(button.dataset.preset));
+      });
+      update();
+    })();
+  </script>
+</body>
+</html>

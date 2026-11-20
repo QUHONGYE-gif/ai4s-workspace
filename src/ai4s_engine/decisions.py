@@ -1,14 +1,17 @@
 """Connect the native cache selection point to the team's agreement-4/5 modules."""
 from aiida import orm
 from ai4s_query.candidates import build_candidate
-from ai4s_workflows.decision import make_decision_record, save_decision_record
+from ai4s_engine.candidate_selection import reject_identity_unresolved_candidates
+from ai4s_workflows.cost_decision import configured_cost_decision_function
+from ai4s_workflows.decision import DecisionError, make_decision_record, save_decision_record
 
 
 def select_cache(node, native_candidates):
     context = node.base.extras.get('ai4s_context')
     candidates, source_by_output = [], {}
     sources = {source.uuid: source for source in native_candidates}
-    if not node.base.attributes.get('ai4s_identity_unresolved', None):
+    unresolved = node.base.attributes.get('ai4s_identity_unresolved', None)
+    if not unresolved:
         fingerprint = node.base.caching._compute_hash()
         for (source,) in orm.QueryBuilder().append(orm.CalcJobNode, filters={'extras._aiida_hash': fingerprint}).all():
             sources.setdefault(source.uuid, source)
@@ -35,11 +38,21 @@ def select_cache(node, native_candidates):
     shared = {(item['uuid'], item['fingerprint']): item for item in context.get('shared_candidates', [])}
     candidates = [shared.get((item['uuid'], item['fingerprint']), item)
                   if item['qualified'] else item for item in candidates]
+    if unresolved:
+        reject_identity_unresolved_candidates(candidates, unresolved)
+    cost_decision = None
+    if context['reuse_policy'] == 'allow_reuse':
+        cost_decision = configured_cost_decision_function()
+        if context.get('cost_decision_required') is True and cost_decision is None:
+            raise DecisionError(
+                'cost decision was required when the request was submitted, '
+                'but the daemon cannot load an enabled cost policy'
+            )
     record = make_decision_record(
         request_id=context['request_id'], process_uuid=node.uuid,
         reuse_policy=context['reuse_policy'], candidates=candidates,
-        original_seed=context['original_seed'], seed_factory=lambda _: context['effective_seed'])
-    unresolved = node.base.attributes.get('ai4s_identity_unresolved', None)
+        original_seed=context['original_seed'], decision_function=cost_decision,
+        seed_factory=lambda _: context['effective_seed'])
     if unresolved:
         record['reason']['reason_text'] += '; 模型身份无法确定，禁止缓存：' + unresolved
     save_decision_record(node, record)

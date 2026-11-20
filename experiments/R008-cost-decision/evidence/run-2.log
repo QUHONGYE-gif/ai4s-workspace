@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/home/coder/runs/cost-decision-20261118/snapshot/scripts/verify_cost_decision_real.py", line 475, in <module>
+    main()
+  File "/home/coder/runs/cost-decision-20261118/snapshot/scripts/verify_cost_decision_real.py", line 380, in main
+    invalid_builder.pdb_file = SinglefileData(file=invalid_pdb_path)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/coder/aiida-core-dev-wyh-clean2/src/aiida/orm/nodes/data/singlefile.py", line 101, in __init__
+    self.set_file(file, filename=filename)
+  File "/home/coder/aiida-core-dev-wyh-clean2/src/aiida/orm/nodes/data/singlefile.py", line 194, in set_file
+    raise ValueError(f'path `{file}` is not absolute')
+ValueError: path `evidence/invalid-input.pdb` is not absolute
