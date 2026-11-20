@@ -63,22 +63,22 @@ python scripts/verify_cost_decision_real.py \
 - 最终证据：[real-run-3.json](evidence/real-run-3.json)，SHA-256 `5d4ba067d8342620c2c29c784f42229015f89497e60e1a1e5718707dd37711c6`，`status=passed`。
 - 最终运行日志：[run-3.log](evidence/run-3.log)。文件为空是正常的；脚本仅在出现错误时写入日志。
 - 无效输入：[invalid-input.pdb](evidence/invalid-input.pdb)。
-- 验证脚本：[verify_cost_decision_real.py](../../scripts/verify_cost_decision_real.py)，SHA-256 `5f98c65d3429592d6c0f447927d279ba2cedab11dde87dc9cca238b1a8e8cd3d`。
+- 验证脚本：[verify_cost_decision_real.py](../../scripts/verify_cost_decision_real.py)，SHA-256 `0539a98a2875f9544b158308749fce13ba66cae3b2e6a18ae95bf966fb59d91e`。
 - 说明与展示入口：[成本决策说明](../../docs/cost_decision.md) · [投屏页面](../../docs/cost_decision_visual.html) · [演示讲稿](../../docs/cost_decision_speech.md)。
 
-当前工作区关键源码 SHA-256：
+验收提交 `0ca663d` 的关键源码 SHA-256（运行使用外部 snapshot，以下哈希用于核对仓库内容）：
 
 ```text
 9e769e03a5816435ee00e3ea1517fa27a38b83e5c03de3d0fcad8c6ab8f4ddd0  src/ai4s_engine/decisions.py
 0ff8ae8d2a109b7e3f1e72e7a34600adc7d964c5bb5493bc1d5fba914bac3a51  src/ai4s_engine/service.py
 6ac70b0265c0b9e39b9220565f4dbc906d57d318c3adfe0a46137dd05d0e8ff8  src/ai4s_engine/sharing.py
-c4bdcb0e9e60eee1b718866e718fc9f3738e5609d0a153318b7247f9323886aa  src/ai4s_engine/candidate_selection.py
+b07e200544cf8230329cf3be327748166d195bd27a72a206ff31dfdd72442ab6  src/ai4s_engine/candidate_selection.py
 1a3efe793ca3b710cd57256afcf090481f32c4ab4f891cfc96682b42fffa2e91  src/ai4s_query/candidates.py
-a2ef8a88204e62deb84ae27592671cc35a52edd86d1bdd544c24f433d6bdb128  src/ai4s_query/decision.py
+ef42590ff6e35883689c435ba5cb24a84aaa281e5a32062c17036a344e771113  src/ai4s_query/decision.py
 378cd41ba475601e911380a7932e884b6631af148bdfdb1bd572c64325634a39  src/ai4s_workflows/workflows.py
 bacaf41fb088ae7037acd5c8bd619228c4d95f2bb161b095e35460362d1866aa  src/ai4s_workflows/cost_decision.py
 7872d7cc18032e1097bae9230539de298dade7a64bbefcc347ca4e2c509581a8  tests/test_cost_decision.py
-5f98c65d3429592d6c0f447927d279ba2cedab11dde87dc9cca238b1a8e8cd3d  scripts/verify_cost_decision_real.py
+0539a98a2875f9544b158308749fce13ba66cae3b2e6a18ae95bf966fb59d91e  scripts/verify_cost_decision_real.py
 ```
 
 ## 失败尝试与处理
