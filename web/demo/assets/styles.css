@@ -3733,18 +3733,35 @@ a.brand {
   text-align: left; line-height: var(--leading-sm); min-height: 44px; padding: 8px 12px;
   border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--paper); color: var(--gray-800);
 }
-#policy-chat { display: grid; gap: 12px }
-.policy-message { min-width: 0; padding: 12px; border-radius: var(--radius-xl); background: var(--gray-50) }
-.policy-message.user { width: fit-content; max-width: 90%; justify-self: end; background: var(--accent-soft) }
-.policy-message > span { color: var(--muted); font-size: var(--text-xs); font-weight: 600 }
-.policy-message-body { margin-top: 4px; line-height: 1.65; overflow-wrap: anywhere }
-.policy-message.user .policy-message-body { white-space: pre-wrap }
-.policy-message-body > :first-child { margin-top: 0 }
-.policy-message-body :is(ul, ol) { padding-inline-start: 20px; margin: 8px 0 }
-.policy-message-body h4 { margin: 8px 0 4px }
-.policy-message-body pre { max-width: 100%; overflow: auto; padding: 8px; background: var(--paper); border-radius: var(--radius-md) }
+#policy-chat { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px }
+.policy-message { min-width: 0 }
+.policy-message[data-role="user"] {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 8px;
+  width: fit-content; max-width: 88%; justify-self: end; padding: 8px 12px;
+  border-radius: var(--radius-xl); background: var(--accent-soft);
+}
+.policy-message-author {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--gray-700); font-size: var(--text-xs); font-weight: 600;
+}
+.policy-message-avatar {
+  display: grid; place-items: center; width: 24px; height: 24px;
+  color: var(--accent-700); background: var(--accent-soft); border-radius: var(--radius-md);
+}
+.policy-message-avatar .icon { width: 16px; height: 16px }
+.policy-message-body { margin-top: 8px; line-height: 1.7; overflow-wrap: anywhere }
+.policy-message[data-role="user"] .policy-message-body { margin-top: 0; white-space: pre-wrap }
+.policy-message-body > :is(p, ul, ol, pre, h4) { margin: 0 }
+.policy-message-body > * + :is(p, ul, ol, pre, h4) { margin-top: 12px }
+.policy-message-body > h4 { font-size: var(--text-sm); color: var(--gray-900) }
+.policy-message-body > :is(ul, ol) { padding-inline-start: 1.4em }
+.policy-message-body li + li { margin-top: 4px }
+.policy-message-body li::marker { color: var(--muted) }
+.policy-message-body code { padding: 2px 4px; background: var(--gray-50); border-radius: var(--radius-sm) }
+.policy-message-body pre { overflow: auto; padding: 8px; background: var(--gray-50); border-radius: var(--radius-md) }
+.policy-message-body pre code { padding: 0 }
 .policy-chat-status:not(:empty) { margin-top: 12px }
-.policy-proposal { padding: 12px; border: 1px solid var(--selection-border); border-radius: var(--radius-xl); background: var(--paper) }
+.policy-proposal { margin-top: 12px; padding: 12px; border: 1px solid var(--selection-border); border-radius: var(--radius-xl); background: var(--paper) }
 .policy-proposal[data-status="pending"] { background: var(--accent-soft); border-color: var(--accent-300) }
 .policy-proposal[data-status="saved"] .pill { background: var(--green-50); color: var(--green-700) }
 .policy-proposal h3 { font-size: var(--text-sm) }

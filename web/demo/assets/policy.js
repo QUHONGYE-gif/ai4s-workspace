@@ -392,18 +392,24 @@ export function mountPolicy(host) {
 
   const messageRenderer = import("../agent/assets/message.js").then(module => module.renderMessage).catch(() => null);
 
-  async function appendMessage(role, text) {
+  function appendMessage(role, text, renderMessage) {
     const item = document.createElement("div");
-    item.className = `policy-message ${role}`;
-    const name = document.createElement("span");
-    name.textContent = role === "user" ? "你" : "策略助手";
+    item.className = "policy-message";
+    item.dataset.role = role;
+    const author = document.createElement("div");
+    author.className = "policy-message-author";
+    if (role === "assistant") {
+      author.innerHTML = `<span class="policy-message-avatar"><svg class="icon" aria-hidden="true"><use href="#i-chat" /></svg></span>策略助手`;
+    } else {
+      author.textContent = "你";
+    }
     const body = document.createElement("div");
     body.className = "policy-message-body";
-    const renderMessage = role === "assistant" ? await messageRenderer : null;
     if (renderMessage) body.innerHTML = renderMessage(text);
     else body.textContent = text;
-    item.append(name, body);
+    item.append(author, body);
     $("#policy-chat").append(item);
+    return item;
   }
 
   function finishProposal(text, status) {
@@ -417,7 +423,7 @@ export function mountPolicy(host) {
     $("#policy-pending-dot").hidden = true;
   }
 
-  function showAgentProposal(proposal) {
+  function showAgentProposal(proposal, reply) {
     finishProposal("已被新提案替代", "expired");
     const card = document.createElement("article");
     card.className = "policy-proposal";
@@ -434,7 +440,7 @@ export function mountPolicy(host) {
     const [confirm, cancel] = actions.querySelectorAll("button");
     agentProposal = {proposal, card, badge: card.querySelector(".pill"), actions, confirm, cancel};
     $("#policy-pending-dot").hidden = false;
-    $("#policy-chat").append(card);
+    reply.append(card);
     cancel.onclick = () => finishProposal("已取消", "dismissed");
     confirm.onclick = () => {
       chatFeedback();
@@ -537,8 +543,8 @@ export function mountPolicy(host) {
     scrollChat();
     const ok = await run(async () => {
       const result = await api("/messages", {expected_revision: state.revision, message: text});
-      await appendMessage("assistant", result.reply);
-      if (result.proposal) showAgentProposal(result.proposal);
+      const reply = appendMessage("assistant", result.reply, await messageRenderer);
+      if (result.proposal) showAgentProposal(result.proposal, reply);
     }, "chat");
     if (ok) message.value = "";
     $("#policy-chat-status").textContent = "";
