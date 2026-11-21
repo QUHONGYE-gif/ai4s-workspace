@@ -267,29 +267,30 @@ class ProteinMPNNFilterWorkChain(WorkChain):
         if "existing_mpnn_result" in self.inputs:
             return None
 
-        try:
-            params = self.inputs.mpnn_params.get_dict()
-            candidates = (
-                self.inputs.reuse_candidates.get_list()
-                if "reuse_candidates" in self.inputs
-                else []
-            )
-            decision_function = (
-                load_decision_function(self.inputs.decision_function.value)
-                if "decision_function" in self.inputs
-                else None
-            )
-            return ReuseConfiguration(
-                request_id=self.inputs.request_id.value,
-                reuse_policy=self.inputs.reuse_policy.value,
-                original_seed=params["seed"],
-                input_rewriter=self._rewrite_reuse_inputs,
-                candidates=candidates,
-                decision_function=decision_function,
-                materialization=ReuseMaterialization.CONSUME_CANDIDATE,
-            )
-        except Exception:
-            return None
+        # Do not swallow decision-loader failures. A submitted request that
+        # names a decision function must either use it or fail explicitly; a
+        # daemon-side import or environment error must not silently change the
+        # effective reuse policy.
+        params = self.inputs.mpnn_params.get_dict()
+        candidates = (
+            self.inputs.reuse_candidates.get_list()
+            if "reuse_candidates" in self.inputs
+            else []
+        )
+        decision_function = (
+            load_decision_function(self.inputs.decision_function.value)
+            if "decision_function" in self.inputs
+            else None
+        )
+        return ReuseConfiguration(
+            request_id=self.inputs.request_id.value,
+            reuse_policy=self.inputs.reuse_policy.value,
+            original_seed=params["seed"],
+            input_rewriter=self._rewrite_reuse_inputs,
+            candidates=candidates,
+            decision_function=decision_function,
+            materialization=ReuseMaterialization.CONSUME_CANDIDATE,
+        )
 
     def _rewrite_reuse_inputs(self, inputs, decision):
         """Apply the kernel decision to the concrete WorkChain inputs."""

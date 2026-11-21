@@ -1,0 +1,8 @@
+{
+  "schema_version": "ai4s-cost-policy-1",
+  "enabled": false,
+  "transfer_fixed_seconds": 0.5,
+  "transfer_bytes_per_second": 1048576,
+  "materialization_seconds": 0.2,
+  "min_savings_seconds": 1.0
+}
