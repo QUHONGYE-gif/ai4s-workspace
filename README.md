@@ -25,6 +25,8 @@
 | [存储层原型说明](src/storage/README.md) | 运行复用验证原型，查看命令行与数据落地位置 |
 | [查询模块说明](src/ai4s_query/README.md) | AiiDA 运行结果与来源查询：状态、血缘、产物校验与复用区分 |
 | [跨成员候选查找与查询接口](docs/task4-candidates-and-query-api.md) | 任务 4.0 站 5/9：约定④ 候选列表、共享方式选型、只读查询服务与真实运行记录 |
+| [空间预算与删除保留策略](docs/task5-storage-budget.md) | 任务 5.0：删什么、先删谁、删后如何补回，以及是否引入 Agent |
+| [R008 淘汰策略实验](experiments/R008-storage-budget/record.md) | 同一访问序列下 LRU 与打分策略的三档配额对照与复现命令 |
 
 ## 代码位置
 
@@ -35,6 +37,7 @@
 - `tools/pymol_web/`：PyMOL 启动与路径代理。
 - `configs/`、`coder/`、`docker/`、`compose*.yaml`：配置、模板与镜像定义。
 - `tests/`：已有的输入边界、状态接口及前端逻辑检查。
+- `experiments/`：运行记录与随记录的源码／证据；本轮淘汰实验台在 `experiments/R008-storage-budget/code/`，实验数据用 `AI4S_EVICT_LAB` 指到源码树之外。
 
 凭据、模型、数据库、缓存和运行产物不提交到 Git。个人环境参数由实际部署配置提供。
 

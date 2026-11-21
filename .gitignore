@@ -38,3 +38,6 @@ src/storage/reports/
 .terraform/
 *.tfstate
 *.tfstate.*
+
+# Local run artifacts of the retention lab
+/experiments/R008-storage-budget/code/lab/

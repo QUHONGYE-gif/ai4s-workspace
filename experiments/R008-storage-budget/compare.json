@@ -1,0 +1,68 @@
+{
+  "quota": {
+    "32": {
+      "lru": {
+        "peak_mb": 31.9,
+        "evictions": 12,
+        "restores": 9,
+        "recompute_s": 510.0,
+        "extra_s": 508.9,
+        "hits": 6,
+        "computed": 11
+      },
+      "scored": {
+        "peak_mb": 30.4,
+        "evictions": 7,
+        "restores": 4,
+        "recompute_s": 300.0,
+        "extra_s": 299.5,
+        "hits": 11,
+        "computed": 11
+      }
+    },
+    "40": {
+      "lru": {
+        "peak_mb": 39.8,
+        "evictions": 11,
+        "restores": 8,
+        "recompute_s": 420.0,
+        "extra_s": 419.0,
+        "hits": 7,
+        "computed": 11
+      },
+      "scored": {
+        "peak_mb": 38.4,
+        "evictions": 5,
+        "restores": 3,
+        "recompute_s": 245.0,
+        "extra_s": 244.6,
+        "hits": 12,
+        "computed": 11
+      }
+    },
+    "46": {
+      "lru": {
+        "peak_mb": 45.9,
+        "evictions": 8,
+        "restores": 7,
+        "recompute_s": 385.0,
+        "extra_s": 384.2,
+        "hits": 8,
+        "computed": 11
+      },
+      "scored": {
+        "peak_mb": 45.9,
+        "evictions": 3,
+        "restores": 2,
+        "recompute_s": 195.0,
+        "extra_s": 194.8,
+        "hits": 13,
+        "computed": 11
+      }
+    }
+  },
+  "sequence_len": 26,
+  "catalog_mb": 50.9,
+  "artifacts": 11,
+  "time_scale": 0.0015
+}
