@@ -60,6 +60,72 @@ function changeRows(diff, showScope = false) {
   return list;
 }
 
+const historySources = {manual: "手动修改", agent: "助手提案", undo: "撤回"};
+const historyTime = new Intl.DateTimeFormat("zh-CN", {
+  year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
+  hourCycle: "h23",
+});
+
+function historyEntry(event, isCurrent) {
+  const diff = Object.keys(labels)
+    .filter(field => event.before[field] !== event.after[field])
+    .map(field => ({field, before: event.before[field], after: event.after[field]}));
+  const entry = document.createElement("li");
+  entry.className = "policy-history-entry";
+  const content = document.createElement("div");
+  content.className = "policy-history-content";
+  const title = document.createElement("h3");
+  if (diff.length === 1) {
+    const {field, before, after} = diff[0];
+    const previous = document.createElement("span");
+    previous.className = "policy-history-previous";
+    previous.textContent = valueLabel(field, before);
+    const next = document.createElement("span");
+    next.textContent = valueLabel(field, after);
+    title.append(`${labels[field]}：`, previous, " → ", next);
+    if (field !== "reuse_policy") {
+      const scope = document.createElement("span");
+      scope.className = "policy-scope";
+      scope.textContent = "仅用于模拟";
+      title.append(scope);
+    }
+  } else {
+    title.textContent = `修改了 ${diff.length} 项设置`;
+  }
+  const metadata = document.createElement("p");
+  metadata.className = "policy-history-meta";
+  const author = document.createElement("span");
+  author.textContent = `${event.actor.display_name} · ${historySources[event.source]}`;
+  const time = document.createElement("time");
+  time.dateTime = event.time;
+  time.textContent = historyTime.format(new Date(event.time));
+  metadata.append(author, time);
+  content.append(title, metadata);
+
+  if (diff.length > 1) {
+    const details = document.createElement("details");
+    details.className = "policy-history-diff";
+    const summary = document.createElement("summary");
+    summary.textContent = diff.map(({field}) => labels[field]).join("、");
+    summary.prepend("查看差异：");
+    details.append(summary, changeRows(diff, true));
+    content.append(details);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "policy-history-actions";
+  const version = document.createElement("span");
+  version.className = "policy-history-version";
+  version.textContent = `版本 ${event.revision}`;
+  if (isCurrent) {
+    entry.classList.add("is-current");
+    version.textContent += " · 当前";
+  }
+  actions.append(version);
+  entry.append(content, actions);
+  return entry;
+}
+
 function proposalImpact(diff) {
   const reuse = diff.find(item => item.field === "reuse_policy");
   return reuse ? `下次沿用工作区默认设置的真实实验：${modeDescriptions[reuse.after]} 保存后不会启动实验。`
@@ -106,9 +172,14 @@ export function mountPolicy(host) {
       </div>
     </div>
     <details class="panel policy-history">
-      <summary><strong>修改记录</strong><span class="small muted" id="policy-history-count"></span></summary>
-      <div class="policy-history-body"><div id="policy-history"></div>
-      <button class="btn" id="policy-undo" type="button" hidden>撤回最近一次修改</button></div>
+      <summary class="policy-history-heading"><strong>修改记录</strong><span id="policy-history-count"></span></summary>
+      <div class="policy-history-body">
+        <p id="policy-history-empty" class="small muted">暂无修改记录。</p>
+        <ol id="policy-history" aria-label="策略版本，最新在前" hidden></ol>
+        <button class="btn policy-history-undo" id="policy-undo" type="button" hidden>
+          <svg class="icon" aria-hidden="true"><use href="#i-reset" /></svg>撤回最近一次修改
+        </button>
+      </div>
     </details>
     <dialog class="modal policy-dialog" aria-labelledby="policy-confirm-title">
       <h2 id="policy-confirm-title">核对策略修改</h2>
@@ -252,22 +323,15 @@ export function mountPolicy(host) {
     if (sample.open) void loadSimulation();
 
     const history = $("#policy-history");
-    const count = saved.history.length;
-    $("#policy-history-count").textContent = `${count} 条`;
-    undo.hidden = count === 0;
-    history.replaceChildren();
-    if (!count) history.textContent = "暂无修改记录。";
-    const sources = {manual: "手动修改", agent: "助手提案", undo: "撤回"};
-    for (const event of [...saved.history].reverse()) {
-      const entry = document.createElement("details");
-      const title = document.createElement("summary");
-      const time = new Date(event.time).toLocaleString("zh-CN", {hour12: false});
-      title.textContent = `版本 ${event.revision} · ${sources[event.source]} · ${event.actor.display_name} · ${time}`;
-      entry.append(title, changeRows(Object.keys(labels)
-        .filter(field => event.before[field] !== event.after[field])
-        .map(field => ({field, before: event.before[field], after: event.after[field]}))));
-      history.append(entry);
-    }
+    const entries = [...saved.history].reverse().map(event => historyEntry(event, event.revision === saved.revision));
+    const latestActions = entries[0]?.querySelector(".policy-history-actions");
+    if (latestActions) latestActions.append(undo);
+    else $(".policy-history-body").append(undo);
+    undo.hidden = !latestActions;
+    history.replaceChildren(...entries);
+    history.hidden = entries.length === 0;
+    $("#policy-history-empty").hidden = entries.length > 0;
+    $("#policy-history-count").textContent = `${entries.length} 条`;
   }
 
   async function run(action, area = "settings") {
@@ -438,13 +502,14 @@ export function mountPolicy(host) {
   dialog.addEventListener("close", () => { manualProposal = null; });
   dialogCancel.onclick = () => dialog.close();
   dialogConfirm.onclick = async () => {
+    const focusAfterSave = manualProposal?.source === "undo" ? undo : edit;
     if (await run(async () => {
       const saved = await confirmProposal(manualProposal);
       render(saved);
       dialog.close();
       settingsFeedback(`策略已保存为版本 ${saved.revision}。`);
       chatFeedback();
-    })) edit.focus();
+    })) focusAfterSave.focus();
   };
 
   message.oninput = syncControls;
