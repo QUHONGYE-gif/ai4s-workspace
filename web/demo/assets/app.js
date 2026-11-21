@@ -35,6 +35,7 @@
     policyDraft = { name: '', reuse: 'cost', storage: 'lru', description: '' };
   const assistantViews = {};
   let reuseCanvas = null;
+  let comparisonPolicy = 'cost';
   let workflowFormError = '',
     policyFormError = '',
     registrationCheck = '',
@@ -2060,9 +2061,9 @@ ${esc(d.workflowCommand)}</textarea
   const newPolicyPage = function newPolicyPage() {
     return (
       heading(
-        '新增策略',
-        '设置什么时候复用结果，以及保存哪些结果。',
-        /* HTML */ `<button class="btn" data-nav="policy">返回策略列表</button>`,
+        '新增模拟策略',
+        '定义一种规则，用于对比示例结果的复用和保存方式。',
+        /* HTML */ `<a class="btn" href="#/policy?view=comparison">返回模拟对比</a>`,
       ) +
       /* HTML */ `<form id="create-policy" novalidate>
         <div class="create-layout">
@@ -2143,7 +2144,7 @@ ${esc(policyDraft.description)}</textarea
               </p>
               <div class="create-actions">
                 <button type="button" class="btn" data-nav="policy">取消</button
-                ><button type="submit" class="btn primary">保存策略 ${icon('check')}</button>
+                ><button type="submit" class="btn primary">保存模拟策略 ${icon('check')}</button>
               </div>
             </div>
           </section>
@@ -2170,7 +2171,7 @@ ${esc(policyDraft.description)}</textarea
                   ><b id="storage-preview">${storageLabel(policyDraft.storage)}</b>
                 </div>
               </div>
-              <div class="callout">保存后，回到列表点击“应用此策略”，就能查看预计用时的变化。</div>
+              <div class="callout">保存后返回「模拟对比」，查看该方案的预计用时。</div>
             </div>
           </aside>
         </div>
@@ -3353,72 +3354,110 @@ ${esc(policyDraft.description)}</textarea
   };
   const policyPage = function policyPage() {
     const cards = allPolicies();
+    if (!cards.some((card) => card.id === comparisonPolicy)) comparisonPolicy = 'cost';
     return (
-      heading(
-        '复用与存储',
-        '决定哪些结果直接用、哪些重新算，以及保存哪些数据。',
-      ) +
-      /* HTML */ `<section class="policy-editor" id="policy-editor" aria-label="工作区默认策略"></section>
-        <details class="reuse-policies"><summary>模拟对比</summary>
-        <div id="reuse-explorer"></div>
-        <div class="section-label"><span>用同一组任务比较预计用时</span><button class="btn" data-nav="newpolicy">新增模拟策略</button></div>
-        <div class="policy-grid">
-          ${cards
-            .map((c) => {
-              const p = plan(config, c.id),
-                m = metrics(p);
-              return /* HTML */ `<div
-                class="panel policy-card ${policy === c.id ? 'selected' : ''}"
-              >
-                <span class="pill ${c.custom ? 'blue' : ''}"
-                  >${c.custom ? '自定义策略' : '内置策略'}</span
-                >
-                <h3>${esc(c.name)}</h3>
-                <p>${esc(c.description)}</p>
-                <div class="policy-number">${fmt(m.total)}</div>
-                <div class="small muted">预计用时 · ${m.reuse} 个步骤直接复用</div>
-                <div class="kv" style="margin-top:16px">
-                  <span>读取结果</span><strong>${fmt(m.load)}</strong>
-                </div>
-                <div class="kv"><span>重新计算</span><strong>${fmt(m.compute)}</strong></div>
-                <div class="policy-rule">
-                  <span>复用</span>${reuseLabel(c.reuse)}<br /><span>保存</span>${storageLabel(
-                    c.storage,
-                  )}
-                </div>
-                <button
-                  class="btn ${policy === c.id ? 'primary' : ''}"
-                  data-policy="${c.id}"
-                  ${busy ? 'disabled' : ''}
-                >
-                  ${policy === c.id ? '正在使用' : '应用此策略'}
-                </button>
-              </div>`;
-            })
-            .join('')}
+      heading('复用与存储', '管理工作区默认策略，查看示例中的复用与存储取舍。') +
+      /* HTML */ `<section class="policy-workspace" aria-label="复用与存储">
+        <div class="policy-toolbar">
+          <div class="policy-tabs" role="tablist" aria-label="策略视图">
+            <button id="policy-default-tab" type="button" role="tab" aria-controls="policy-default" aria-selected="true">默认策略</button>
+            <button id="policy-comparison-tab" type="button" role="tab" aria-controls="policy-comparison" aria-selected="false" tabindex="-1">模拟对比</button>
+          </div>
+          <button class="btn policy-assistant-toggle" id="policy-assistant-toggle" type="button" aria-expanded="false" aria-controls="policy-assistant" disabled>
+            ${icon('chat')}<span>策略助手</span><span class="policy-pending-dot" id="policy-pending-dot" aria-label="有待确认的提案" hidden></span>
+          </button>
         </div>
-        <div class="panel panel-quiet" style="margin-top:24px">
-          <div class="panel-head">
-            <div class="panel-title">怎么选择？</div>
-            <span class="pill">示例空间：4 GB</span>
+        <div class="policy-layout">
+          <aside class="panel policy-assistant" id="policy-assistant" aria-labelledby="policy-assistant-title" hidden></aside>
+          <div class="policy-content">
+            <section class="policy-editor" id="policy-default" role="tabpanel" aria-labelledby="policy-default-tab" tabindex="0">
+              <p class="muted" role="status">正在加载策略面板…</p>
+            </section>
+            <section class="policy-comparison" id="policy-comparison" role="tabpanel" aria-labelledby="policy-comparison-tab" tabindex="0" hidden>
+              <header class="panel policy-comparison-head">
+                <div><span class="pill">示例数据</span><h2>用同一组任务对比策略</h2>
+                <p>预计耗时来自模拟，切换方案不会更改工作区策略或实验草稿。</p></div>
+                <button class="btn" type="button" data-nav="newpolicy">新增模拟策略</button>
+              </header>
+              <div class="policy-grid">
+                ${cards.map((card) => {
+                  const sample = {reuseScope: 'team', choices: {}, intent: 'replay'};
+                  const result = metrics(plan(baseConfig, card.id, sample));
+                  const selected = comparisonPolicy === card.id;
+                  return /* HTML */ `<article class="panel policy-card ${selected ? 'selected' : ''}">
+                    <div class="policy-card-meta"><span class="pill">${card.custom ? '自定义' : '内置方案'}</span>
+                    <span class="policy-selection-label" ${selected ? '' : 'hidden'}>当前模拟方案</span></div>
+                    <h3>${esc(card.name)}</h3>
+                    <p>${esc(card.description)}</p>
+                    <div class="policy-number">${fmt(result.total)}</div>
+                    <div class="small muted">预计用时 · ${result.reuse} 步直接复用</div>
+                    <dl class="policy-costs">
+                      <div><dt>读取结果</dt><dd>${fmt(result.load)}</dd></div>
+                      <div><dt>重新计算</dt><dd>${fmt(result.compute)}</dd></div>
+                    </dl>
+                    <div class="policy-rule"><span>复用</span>${reuseLabel(card.reuse)}<br><span>保存</span>${storageLabel(card.storage)}</div>
+                    <button class="btn" type="button" data-comparison-policy="${esc(card.id)}" aria-pressed="${selected}" aria-label="选为对比方案：${esc(card.name)}">选为对比方案</button>
+                  </article>`;
+                }).join('')}
+              </div>
+              <details class="panel policy-sample" id="policy-sample">
+                <summary>用固定示例检查已保存的设置</summary>
+                <p class="small muted">这里单独读取当前工作区策略，与上方所选对比方案无关。</p>
+                <p id="policy-simulation" role="status"></p>
+              </details>
+              <div id="reuse-explorer"></div>
+            </section>
           </div>
-          <div class="flow-notes">
-            <div class="flow-note">
-              <b>先看结果还能不能用</b>
-              <p>输入、模型或设置变了，相关步骤就需要重新计算。</p>
-            </div>
-            <div class="flow-note">
-              <b>再比较读取和重算时间</b>
-              <p>已有结果不一定更快。数据较远、读取较慢时，可以选择重算。</p>
-            </div>
-            <div class="flow-note">
-              <b>重要结果可以固定保留</b>
-              <p>在数据目录中固定的结果，不会被自动清理。</p>
-            </div>
-          </div>
-        </div></details>`
+        </div>
+      </section>`
     );
   };
+
+  function bindPolicyPage() {
+    const workspace = $('.policy-workspace');
+    const tabs = [...workspace.querySelectorAll('[role="tab"]')];
+    function showTab(activeTab) {
+      for (const tab of tabs) {
+        const active = tab === activeTab;
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+        document.getElementById(tab.getAttribute('aria-controls')).hidden = !active;
+      }
+      if (activeTab.id === 'policy-comparison-tab' && !reuseCanvas) {
+        reuseCanvas = window.ReuseCanvas.mount($('#reuse-explorer'));
+      }
+    }
+    tabs.forEach((tab, index) => {
+      tab.onclick = () => showTab(tab);
+      tab.onkeydown = (event) => {
+        const target = {ArrowLeft: 1 - index, ArrowRight: 1 - index, Home: 0, End: 1}[event.key];
+        if (target === undefined) return;
+        event.preventDefault();
+        showTab(tabs[target]);
+        tabs[target].focus();
+      };
+    });
+    showTab(tabs[Number(page.query.get('view') === 'comparison')]);
+
+    const choices = [...workspace.querySelectorAll('[data-comparison-policy]')];
+    for (const choice of choices) {
+      choice.onclick = () => {
+        comparisonPolicy = choice.dataset.comparisonPolicy;
+        for (const button of choices) {
+          const selected = button === choice;
+          button.setAttribute('aria-pressed', String(selected));
+          const card = button.closest('.policy-card');
+          card.classList.toggle('selected', selected);
+          card.querySelector('.policy-selection-label').hidden = !selected;
+        }
+      };
+    }
+    import('./policy.js')
+      .then(({mountPolicy}) => { if (workspace.isConnected) mountPolicy(workspace); })
+      .catch(() => {
+        if (workspace.isConnected) workspace.querySelector('#policy-default').textContent = '策略面板未能加载，请刷新。';
+      });
+  }
   const missingPage = function missingPage(message) {
     return heading(
       message,
@@ -3790,8 +3829,9 @@ ${esc(policyDraft.description)}</textarea
         }
         policyDraft = { name: '', reuse: 'cost', storage: 'lru', description: '' };
         policyFormError = '';
-        nav('policy');
-        notify('策略已保存，可以在列表中应用。');
+        comparisonPolicy = result.id;
+        nav('policy', '', {view: 'comparison'});
+        notify('模拟策略已保存。');
       };
     }
     for (const formId of ['create-workflow', 'create-policy']) {
@@ -4185,20 +4225,6 @@ ${esc(policyDraft.description)}</textarea
         invalidateDraft();
         render();
       };
-    document.querySelectorAll('[data-policy]').forEach(
-      (el) =>
-        (el.onclick = () => {
-          const d = currentDraft();
-          if (!d) {
-            notify('先创建实验，再选择本次策略。');
-            return;
-          }
-          d.policy = el.dataset.policy;
-          invalidateDraft();
-          notify('已应用到当前实验草稿，请重新检查计划。');
-          render();
-        }),
-    );
     if ($('#about-inline')) $('#about-inline').onclick = showAbout;
     bindProductActions();
   };
@@ -4268,7 +4294,7 @@ ${esc(policyDraft.description)}</textarea
         artifact: '产物详情',
         tools: activeTool ? toolInfo[activeTool].name : '常用工具',
         policy: '复用与存储',
-        newpolicy: '新增策略',
+        newpolicy: '新增模拟策略',
       }[route] || '工作流';
     $('#active-context').textContent = '当前流程 · ' + workflowInfo[activeWorkflow].short;
     showMember();
@@ -4277,18 +4303,7 @@ ${esc(policyDraft.description)}</textarea
     $('#run-count').textContent = product.experiments.filter((e) => !e.fixture).length;
     bind();
     window.Motion?.afterRender($('#main'), route + '/' + (page.id || ''));
-    if (route === 'policy') {
-      const comparison = $('.reuse-policies');
-      comparison.addEventListener('toggle', () => {
-        if (comparison.open && comparison.isConnected && !reuseCanvas) {
-          reuseCanvas = window.ReuseCanvas.mount($('#reuse-explorer'));
-        }
-      });
-      const editor = $('#policy-editor');
-      import('./policy.js')
-        .then(({mountPolicy}) => { if (editor.isConnected) mountPolicy(editor); })
-        .catch(() => { editor.textContent = '策略面板未能加载，请刷新。'; });
-    }
+    if (route === 'policy' && $('.policy-workspace')) bindPolicyPage();
     bindPymolControls();
     bindCreation();
     bindRegistration();
