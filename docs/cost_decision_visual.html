@@ -948,7 +948,7 @@
       <div class="hero-copy">
         <span class="eyebrow">开发任务 5.0 · 成本、空间与策略面板 · R008 真实验收 6/6 通过</span>
         <h1 id="hero-title">复用不是“找到就赚到”，<br><span>先比较时间成本再决定</span></h1>
-        <p class="hero-lead">旧结果已经在库里，不等于把它搬回来就更快。系统先确认候选合格，再估算“复用要多久、重算要多久”，只有当节省超过阈值时才复用。</p>
+        <p class="hero-lead">旧结果已经在库里，系统会先确认候选合格，再估算复用与重算的预计墙钟时间，并给出一项可复核、可追溯的决定。</p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#flow">先看全景决策图</a>
           <a class="btn btn-ghost" href="#calculator">跳到现场算例</a>
@@ -1000,10 +1000,6 @@
           </article>
         </div>
 
-        <div class="callout green">
-          <b>核心判断：</b>复用只有在“取回旧结果”明显快于“重新计算”时才划算。这个“明显”由最小节省阈值控制，避免为了节省几毫秒而引入搬运和依赖风险。
-        </div>
-
         <div class="metric-grid" aria-label="默认参数">
           <div class="metric"><div class="value">false</div><div class="label">enabled</div><div class="note">默认关闭，保持原行为</div></div>
           <div class="metric"><div class="value">0.5 s</div><div class="label">固定搬运开销</div><div class="note">工程默认值</div></div>
@@ -1011,7 +1007,6 @@
           <div class="metric"><div class="value">0.2 s</div><div class="label">物化开销</div><div class="note">恢复输入的时间</div></div>
           <div class="metric"><div class="value">1.0 s</div><div class="label">最小节省阈值</div><div class="note">不够明显就不复用</div></div>
         </div>
-        <p class="small" style="margin-top:12px">注意：这些默认值是用于建立透明、可测试基线的工程参数，不是 Lotaru 论文结论，也不是当前项目已经标定的跨机器精度。</p>
       </div>
     </section>
 
@@ -1075,10 +1070,6 @@
               </div>
             </div>
           </div>
-
-          <div class="callout amber" style="margin-bottom:0">
-            <b>这里最容易讲错：</b>如果成本判定为“不划算”，系统不会先搬运所有远程候选再比较，而是直接不搬，原参数、原种子重算。只有判定复用且候选不在本地时，才搬运选中的那一个。
-          </div>
         </div>
       </div>
     </section>
@@ -1102,10 +1093,9 @@
               比较：rerun_estimate vs reuse_estimate<br>
               输出：reuse／rerun + selected_uuid + R05 reason_text
             </div>
-            <div class="rule-inline">只处理 <code>allow_reuse</code>；<code>force_rerun</code> 和 <code>new_sample</code> 保持原语义，不会被成本策略改写。</div>
           </article>
           <article class="formula-card">
-            <div class="formula-title">启用时要改的最小配置</div>
+            <div class="formula-title">启用成本决策的最小配置</div>
             <pre class="record" style="margin-top:12px;padding:14px;font-size:12px">{
   "schema_version": "ai4s-cost-policy-1",
   "enabled": true,
@@ -1114,6 +1104,11 @@
   "materialization_seconds": 0.2,
   "min_savings_seconds": 1.0
 }</pre>
+            <div class="small" style="margin-top:12px; line-height:1.7">
+              <code>schema_version</code>：保持 <code>ai4s-cost-policy-1</code>；<code>enabled</code>：成本决策总开关。<br>
+              <code>transfer_fixed_seconds</code>：连接、定位和读取的固定开销；<code>transfer_bytes_per_second</code>：搬运带宽估计。<br>
+              <code>materialization_seconds</code>：恢复为当前输入所需时间；<code>min_savings_seconds</code>：选择复用所需的最小节省。
+            </div>
           </article>
         </div>
 
@@ -1136,7 +1131,7 @@
         </div>
 
         <div class="callout amber">
-          <b>配置切换方式：</b>服务进程和 daemon 都设置 <code>AI4S_COST_POLICY_FILE=&lt;同一策略文件的绝对路径&gt;</code>，修改后重启两边；随后检查决策记录是否出现 <code>R05</code>、<code>cost_source</code>、<code>rerun_source</code> 和 <code>reuse_source</code>。<a href="../configs/reuse-cost-policy.example.json">查看示例配置</a>
+          <b>配置切换方式：</b>将现有示例复制为部署文件；服务进程和 daemon 都设置 <code>AI4S_COST_POLICY_FILE=&lt;同一策略文件的绝对路径&gt;</code>，修改后重启两边；随后检查决策记录是否出现 <code>R05</code>、<code>cost_source</code>、<code>rerun_source</code> 和 <code>reuse_source</code>。
         </div>
       </div>
     </section>
@@ -1147,7 +1142,6 @@
           <div>
             <div class="kicker">04 · 四条路径</div>
             <h2 id="paths-title">用户策略决定大方向，成本决策只处理其中一个岔路</h2>
-            <p class="lead">把四条路径放在同一张图里，最容易和队友对齐：复用、成本判定后重算、新采样、失败拦截。</p>
           </div>
           <span class="tag green">绿色复用 · 琥珀重算 · 蓝色新采样 · 红色失败</span>
         </div>
@@ -1200,17 +1194,6 @@
             </ul>
             <div class="code-line"><b>记录：</b>失败原因、重试和最终决定都进入决策记录。</div>
           </article>
-        </div>
-
-        <div class="grid-2" style="margin-top:18px">
-          <div class="card soft">
-            <h3>用户选择为什么不能被覆盖？</h3>
-            <p>成本策略解决的是“允许复用范围内，哪个动作更划算”。如果用户要新样本，复用旧结果会改变科学语义；如果用户要强制重算，复用会违背用户对可复现性和独立计算的明确要求。</p>
-          </div>
-          <div class="card soft">
-            <h3>为什么把失败单独算一条路径？</h3>
-            <p>失败不是“成本比较高”的问题，而是候选根本不具备被比较的资格。先排除失败，再算成本，才能保证“便宜”永远不会把坏结果重新带回执行链路。</p>
-          </div>
         </div>
       </div>
     </section>
@@ -1317,7 +1300,7 @@
           <div>
             <div class="kicker">07 · 公式</div>
             <h2 id="formula-title">四行公式，把“值不值得”变成可复核计算</h2>
-            <p class="lead">公式故意保持简单：每一项都能在决策记录里找到对应字段，队友可以手算复核。</p>
+            <p class="lead">每一项都能在决策记录里找到对应字段。</p>
           </div>
           <span class="tag amber">预计节省 = 重算时间 − 复用时间</span>
         </div>
@@ -1571,10 +1554,6 @@
               </tr>
             </tbody>
           </table>
-        </div>
-
-        <div class="callout green">
-          <b>证据阅读方式：</b>上表已经把四条路径各自的关键原生过程编号、种子和结果放进演示页；完整运行身份、原始状态、子过程和六项硬性检查保存在 <a href="../experiments/R008-cost-decision/evidence/real-run-3.json">real-run-3.json</a>，逐阶段说明见 <a href="../experiments/R008-cost-decision/record.md">R008 运行记录</a>。
         </div>
 
         <div class="boundary-grid">
