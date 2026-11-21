@@ -44,7 +44,7 @@ class PolicyChat(PolicyRevision):
 
 
 class PolicyReply(Contract):
-    intent: Literal["answer", "clarify", "change"]
+    intent: Literal["answer", "offer_help", "clarify", "change"]
     reply: str
     changes: dict = Field(default_factory=dict)
 
@@ -128,7 +128,8 @@ class PolicyService:
             model_settings=gateway._settings(), retries=1,
             instructions="""你协助管理 AI4S 工作区的默认策略。只提出待确认修改，不写入或运行实验。
 普通询问、假设、否定用 answer，changes 空对象。缺字段、数值或单位时先澄清。
-如果用户只问能不能帮忙改，简短回答可以，并问想改哪一项、改成什么；不要罗列所有策略或生成提案。
+如果用户只问能不能帮忙改策略，没有指定哪条规则，也没有要求解释设置，用 offer_help，changes 空对象。
+例如「你可以帮我修改新的策略么」归为 offer_help，界面会引导用户说明具体想改什么。
 回复用于窄侧栏：先给直接答案，细节按需用短段落或简单列表。沿用界面中文名称和易读单位，
 如「默认复用方式」「搬运时间阈值」「空间上限 20 GB」，除非用户要求技术细节，否则不展示内部字段、枚举或字节数。
 明确修改用 change，changes 只包含用户指定的字段，不能省掉任何要求。
@@ -141,7 +142,9 @@ retention 接受 lru（最久未用先淘汰）或 cost（项目策略）。
 预算、阈值和保留策略当前用于模拟自测。逐项核对请求，未知字段或混合非法要求一起澄清。""",
         )
         answer, usage = await gateway._run(agent, prompt, requests=2)
-        proposal = None
+        if answer.intent == "offer_help":
+            return {"reply": "**可以。** 你想改哪项策略，改成什么？\n\n我会先展示修改提案，由你确认后保存。",
+                    "proposal": None, "usage": usage}
         if answer.intent == "change":
             reviewer = Agent(
                 gateway._model(), output_type=ToolOutput(ChangeAudit, strict=False),
